@@ -1195,32 +1195,32 @@ window.addEventListener('load',()=>{
 });
 
 function saveApiKey(){
-  // Trim spaces, newlines, zero-width chars that Safari might add
-  const raw=document.getElementById('dash-api-input').value;
-  const val=raw.replace(/[\s\u200B\u200C\u200D\uFEFF]/g,'').trim();
+  const raw=document.getElementById('dash-api-input')||document.getElementById('b1-api-input');
+  const val=(raw?raw.value:'').replace(/[\s\u200B\u200C\u200D\uFEFF]/g,'').trim();
   if(!val||!val.includes('sk-')){
-    const s=document.getElementById('dash-api-status');s.textContent='✗ Key không hợp lệ — phải chứa sk-';s.style.color='var(--red)';s.style.display='block';return;
+    const s=document.getElementById('dash-api-status')||document.getElementById('b1-api-status');
+    if(s){s.textContent='✗ Key không hợp lệ — phải chứa sk-';s.style.color='var(--red)';s.style.display='block';}
+    return;
   }
   STATE.apiKey=val;
-  document.getElementById('dash-api-input').value='••••••••••••••••••••';
-  document.getElementById('dash-api-status').textContent='✓ ĐÃ LƯU — SẴN SÀNG';
-  document.getElementById('dash-api-status').className='api-status ok';
+  const inp=document.getElementById('dash-api-input');
+  if(inp) inp.value='••••••••••••••••••••';
+  const sts=document.getElementById('dash-api-status');
+  if(sts){sts.textContent='✓ ĐÃ LƯU — SẴN SÀNG';sts.className='api-status ok';}
   saveState();
 }
 
 function syncKey(prefix){
   const inp=document.getElementById(`${prefix}-api-input`);
   if(!inp)return;
-  const val=inp.value.trim();
-  if(val&&val!=='••••••••••••••••••••'&&val.startsWith('sk-')){
+  const val=inp.value.replace(/[\s\u200B\u200C\u200D\uFEFF]/g,'').trim();
+  if(val&&val!=='••••••••••••••••••••'&&val.includes('sk-')){
     STATE.apiKey=val;
-    document.getElementById('dash-api-input').value='••••••••••••••••••••';
-    document.getElementById('dash-api-status').textContent='✓ ĐÃ LƯU';
-    document.getElementById('dash-api-status').className='api-status ok';
     saveState();
   }
   const st=document.getElementById(`${prefix}-api-status`);
   if(st){st.textContent='✓ SẴN SÀNG';st.className='api-status ok';}
+  inp.value='••••••••••••••••••••';
   checkB1Ready();
 }
 
