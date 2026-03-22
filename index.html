@@ -1168,9 +1168,11 @@ window.addEventListener('load',()=>{
 });
 
 function saveApiKey(){
-  const val=document.getElementById('dash-api-input').value.trim();
-  if(!val||!val.startsWith('sk-')){
-    const s=document.getElementById('dash-api-status');s.textContent='✗ Key không hợp lệ';s.style.color='var(--red)';s.style.display='block';return;
+  // Trim spaces, newlines, zero-width chars that Safari might add
+  const raw=document.getElementById('dash-api-input').value;
+  const val=raw.replace(/[\s\u200B\u200C\u200D\uFEFF]/g,'').trim();
+  if(!val||!val.includes('sk-')){
+    const s=document.getElementById('dash-api-status');s.textContent='✗ Key không hợp lệ — phải chứa sk-';s.style.color='var(--red)';s.style.display='block';return;
   }
   STATE.apiKey=val;
   document.getElementById('dash-api-input').value='••••••••••••••••••••';
