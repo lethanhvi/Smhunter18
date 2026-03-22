@@ -1241,7 +1241,7 @@ function updateDashboard(){
 const PSYCH_POOL = [
   // THỂ CHẤT (id 1-3, danger=yes)
   { id:1,  cat:'physical', danger:'yes', text:'Tôi đang mệt mỏi về thể chất?', sub:'' },
-  { id:2,  cat:'physical', danger:'yes', text:'Tôi ngủ đủ giấc tối qua?', sub:'< 6 tiếng = YES' },
+  { id:2,  cat:'physical', danger:'no',  text:'Tôi ngủ đủ giấc tối qua?', sub:'Ngủ < 6 tiếng = NO' },
   { id:3,  cat:'physical', danger:'yes', text:'Tôi đang đói / khát / khó chịu cơ thể?', sub:'' },
   // TÂM LÝ (id 4-8, danger=yes)
   { id:4,  cat:'mental',   danger:'yes', text:'Tôi đang bực bội về lệnh thua trước?', sub:'' },
@@ -1358,7 +1358,7 @@ function startPsychTimer(qid){
 // ══════════════════════════════════════════════
 // PSYCH CHECK — ANSWERS
 // ══════════════════════════════════════════════
-const psychDanger={1:'yes',2:'yes',3:'yes',4:'yes',5:'yes',6:'yes',7:'yes',8:'yes',9:'yes',10:'no'};
+const psychDanger={1:'yes',2:'no',3:'yes',4:'yes',5:'yes',6:'yes',7:'yes',8:'yes',9:'yes',10:'no'};
 
 function pAnswer(q,val,event){
   event.stopPropagation();
