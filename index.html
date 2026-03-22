@@ -306,13 +306,11 @@ input[type="file"]{display:none}
     </div>
   </div>
 
-  <div class="api-panel">
-    <div class="panel-title">🔑 ANTHROPIC API KEY</div>
-    <div class="api-row">
-      <input type="password" class="api-input" id="dash-api-input" placeholder="sk-ant-api03-..." autocomplete="off">
-      <button class="api-save" onclick="saveApiKey()">LƯU</button>
-    </div>
-    <div class="api-status" id="dash-api-status"></div>
+  <div id="quote-panel" style="background:var(--surface);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:16px 20px;margin-bottom:20px;animation:fadeDown 0.5s 0.15s ease both;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,var(--gold),transparent)"></div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--gold);letter-spacing:2px;margin-bottom:10px;opacity:0.7">💡 KIM CHỈ NAM</div>
+    <div style="font-size:13px;color:#c5c9d6;line-height:1.7;font-style:italic" id="quote-text">--</div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;text-align:right" id="quote-author">--</div>
   </div>
 
   <div class="stages" id="stage-list">
@@ -822,6 +820,7 @@ function goTo(name) {
   const id = screenMap[name] || 'dashboard';
   if (name === 'dashboard') {
     document.getElementById('dashboard').style.display = 'block';
+    showRandomQuote();
   } else {
     document.getElementById(id).classList.add('active');
   }
@@ -1080,6 +1079,32 @@ function tick() {
 setInterval(tick,1000); tick();
 
 // ══════════════════════════════════════════════
+// TRADING QUOTES
+// ══════════════════════════════════════════════
+const QUOTES = [
+  { text: "Mục tiêu của trader giỏi là thực hiện lệnh tốt nhất. Tiền chỉ là thứ yếu.", author: "— Alexander Elder" },
+  { text: "Không quan trọng bạn đúng hay sai — quan trọng là bạn kiếm bao nhiêu khi đúng và mất bao nhiêu khi sai.", author: "— George Soros" },
+  { text: "Thị trường có thể phi lý lâu hơn bạn có thể trụ được.", author: "— John Maynard Keynes" },
+  { text: "Lên kế hoạch cho lệnh. Giao dịch theo kế hoạch.", author: "— Quy tắc vàng" },
+  { text: "Người nghiệp dư tập trung vào lợi nhuận. Người chuyên nghiệp tập trung vào rủi ro.", author: "— Trader chuyên nghiệp" },
+  { text: "Quy trình đúng liên tục chính là thành tích.", author: "— The Process" },
+  { text: "Bảo vệ vốn là nhiệm vụ số một. Lợi nhuận là nhiệm vụ số hai.", author: "— Paul Tudor Jones" },
+  { text: "Đừng tập trung vào việc kiếm tiền. Hãy tập trung vào việc bảo vệ những gì bạn có.", author: "— Paul Tudor Jones" },
+  { text: "Kỷ luật là cầu nối giữa mục tiêu và thành tích.", author: "— Jim Rohn" },
+  { text: "Thị trường không quan tâm bạn nghĩ gì. Chỉ có price action mới nói thật.", author: "— SMC Principle" },
+  { text: "1 lệnh tốt mỗi tuần đủ để thay đổi cuộc đời. Đừng cần 10 lệnh tệ mỗi ngày.", author: "— Smart Hunter" },
+  { text: "Không có setup nào đáng giá hơn sự bình tĩnh của bạn.", author: "— The5%ers Principle" },
+];
+
+function showRandomQuote(){
+  const q = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+  const t = document.getElementById('quote-text');
+  const a = document.getElementById('quote-author');
+  if(t) t.textContent = `"${q.text}"`;
+  if(a) a.textContent = q.author;
+}
+
+// ══════════════════════════════════════════════
 // STATE PERSISTENCE
 // ══════════════════════════════════════════════
 function saveState(){
@@ -1131,11 +1156,12 @@ function loadState(){
       b5Trail:      saved.b5Trail      || ''
     });
 
-    // Restore API key UI
+    // Restore API key UI - only update if element exists
     if(STATE.apiKey){
-      document.getElementById('dash-api-input').value='••••••••••••••••••••';
-      document.getElementById('dash-api-status').textContent='✓ API KEY ĐÃ SẴN SÀNG';
-      document.getElementById('dash-api-status').className='api-status ok';
+      const inp = document.getElementById('dash-api-input');
+      const sts = document.getElementById('dash-api-status');
+      if(inp) inp.value='••••••••••••••••••••';
+      if(sts){ sts.textContent='✓ API KEY ĐÃ SẴN SÀNG'; sts.className='api-status ok'; }
     }
 
     // Restore stage cards
@@ -1164,6 +1190,7 @@ function showResumeBanner(){
 // API KEY
 // ══════════════════════════════════════════════
 window.addEventListener('load',()=>{
+  showRandomQuote();
   loadState();
 });
 
