@@ -1661,7 +1661,7 @@ QUY TẮC BẮT BUỘC — KHÔNG NGOẠI LỆ:
 
 QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt, không dùng tiếng Anh.
 Trả về DUY NHẤT JSON:
-{"verdict":"FIRE"|"WAIT"|"CANCEL","verdict_reason":"...","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"phải ≤ 15 pip","tp_pips":"phải ≥ 45 pip","lot":"...","rr":"X:Y — phải >= 1:3","structure":"...","zone":"...","risk":"...","fail_reasons":"..."}`;
+{"verdict":"FIRE"|"WAIT"|"CANCEL","verdict_reason":"...","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"phải ≤ 15 pip","tp_pips":"phải ≥ 45 pip","lot":"...","rr":"X:Y — phải >= 1:3","structure":"...","zone":"...","risk":"...","fail_reasons":["Lý do 1 ngắn gọn","Lý do 2 ngắn gọn","Lý do 3 ngắn gọn"]}`;
     const b64=STATE.imgs.b4_m5.split(',')[1];
     const mtype=STATE.imgs.b4_m5.split(';')[0].split(':')[1];
     const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mtype,data:b64}},{type:'text',text:'Chart M5 XAUUSD. Phân tích JSON.'}]}]});
@@ -1694,7 +1694,32 @@ Trả về DUY NHẤT JSON:
     document.getElementById('b4-c-str').textContent=r.structure||'';
     document.getElementById('b4-c-zone').textContent=r.zone||'';
     document.getElementById('b4-c-risk').textContent=r.risk||'';
-    document.getElementById('b4-c-fail').textContent=r.fail_reasons||'';
+    // Render fail_reasons as clean numbered list
+    const failEl = document.getElementById('b4-c-fail');
+    if(r.fail_reasons){
+      if(Array.isArray(r.fail_reasons)){
+        failEl.innerHTML = r.fail_reasons.map((f,i)=>
+          `<div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start">
+            <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--red);font-weight:700;min-width:20px">${i+1}.</span>
+            <span style="font-size:13px;color:#c5c9d6;line-height:1.6">${f}</span>
+          </div>`
+        ).join('');
+      } else {
+        // Fallback: split by numbered pattern
+        const parts = r.fail_reasons.split(/(?=\d+\.)/).filter(s=>s.trim());
+        if(parts.length > 1){
+          failEl.innerHTML = parts.map(p=>{
+            const m = p.match(/^(\d+)\.\s*(.*)/s);
+            return m ? `<div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start">
+              <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--red);font-weight:700;min-width:20px">${m[1]}.</span>
+              <span style="font-size:13px;color:#c5c9d6;line-height:1.6">${m[2].trim()}</span>
+            </div>` : '';
+          }).join('');
+        } else {
+          failEl.textContent = r.fail_reasons;
+        }
+      }
+    }
     document.getElementById('b4-sec-str').classList.add('open');
     if(r.verdict==='FIRE') document.getElementById('b4-sec-zone').classList.add('open');
     document.getElementById('b4-result').style.display='block';
