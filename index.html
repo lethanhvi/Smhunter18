@@ -1534,7 +1534,21 @@ async function runBo1(){
   document.getElementById('b1-analyze-btn').disabled=true;
   document.getElementById('b1-error').classList.remove('show');
   try{
-    const sys=`Bạn là Institutional Market Structure Analyst chuyên phân tích XAUUSD cho Prop Firm Trader. Account: The5%ers $2,500, GMT+3. Chỉ tìm setup A+.\nQUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt, không dùng tiếng Anh.\nTrả về DUY NHẤT JSON, không markdown:\n{"bias":"BUY"|"SELL"|"NEUTRAL","bias_reason":"...","structure":"...","liquidity":"...","zones":"...","dxy":"...","intent":"..."}`;
+    const sys=`Bạn là Institutional Market Structure Analyst chuyên phân tích XAUUSD cho Prop Firm Trader. Account: The5%ers $2,500, GMT+3. Chỉ tìm setup A+.
+
+YÊU CẦU BẮT BUỘC — phải có vùng giá cụ thể:
+- structure: Mô tả cấu trúc D1+H4, xác định Higher High/Lower High gần nhất với GIÁ CỤ THỂ
+- liquidity: Liệt kê vùng Buy Side / Sell Side Liquidity với GIÁ CỤ THỂ (VD: BSL tại 4,420 / SSL tại 4,280)
+- zones: Liệt kê TỐI THIỂU 2-3 vùng quan trọng với GIÁ CỤ THỂ:
+  + Supply Zone / OB Bearish: vùng xxx-xxx (kháng cự để SELL)
+  + Demand Zone / OB Bullish: vùng xxx-xxx (hỗ trợ để BUY)
+  + Fair Value Gap nếu có: vùng xxx-xxx
+- dxy: Nhận định DXY tác động thế nào đến XAUUSD
+- intent: Accumulation / Distribution / Manipulation — Smart Money đang làm gì
+
+QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt, không dùng tiếng Anh.
+Trả về DUY NHẤT JSON, không markdown:
+{"bias":"BUY"|"SELL"|"NEUTRAL","bias_reason":"...","structure":"...có giá cụ thể...","liquidity":"...BSL tại X, SSL tại Y...","zones":"...Supply Zone X-X, Demand Zone Y-Y, FVG Z-Z...","dxy":"...","intent":"..."}`;
     const d1b64=STATE.imgs.b1_d1.split(',')[1],h4b64=STATE.imgs.b1_h4.split(',')[1];
     const d1t=STATE.imgs.b1_d1.split(';')[0].split(':')[1],h4t=STATE.imgs.b1_h4.split(';')[0].split(':')[1];
     const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:d1t,data:d1b64}},{type:'text',text:'Chart 1: D1'},{type:'image',source:{type:'base64',media_type:h4t,data:h4b64}},{type:'text',text:'Chart 2: H4. Phân tích JSON.'}]}]});
