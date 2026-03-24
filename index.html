@@ -1323,9 +1323,8 @@ function renderPsychQuestions(){
         <span class="item-num">${num}</span>
         <div class="item-text">${q.text}${sub}</div>
         <div class="tog-grp" id="tog-p${q.id}">
-          <button class="tog-btn yes" onclick="pAnswer(${q.id},'yes',event)" disabled>YES</button>
-          <button class="tog-btn no" onclick="pAnswer(${q.id},'no',event)" disabled>NO</button>
-          <span class="psych-timer" id="pt-${q.id}" style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);min-width:20px;text-align:center">3</span>
+          <button class="tog-btn yes" onclick="pAnswer(${q.id},'yes',event)">YES</button>
+          <button class="tog-btn no" onclick="pAnswer(${q.id},'no',event)">NO</button>
         </div>
       </div>`;
       displayNum++;
@@ -1361,34 +1360,12 @@ function renderPsychQuestions(){
 }
 
 function startPsychTimer(qid){
+  // No timer — just ensure buttons are enabled for current question
   const timerEl = document.getElementById(`pt-${qid}`);
   const grp = document.getElementById(`tog-p${qid}`);
-  if (!timerEl || !grp) return;
-  if (STATE.psychAnswers[qid]) {
-    timerEl.textContent='';
-    grp.querySelectorAll('.tog-btn').forEach(b=>b.disabled=false);
-    return;
-  }
-
-  let count = 3;
-  timerEl.textContent = count;
-  timerEl.style.color = 'var(--amber)';
-
-  function tick(){
-    count--;
-    if(count > 0){
-      timerEl.textContent = count;
-      setTimeout(tick, 1000);
-    } else {
-      timerEl.textContent = '';
-      timerEl.style.color = '';
-      grp.querySelectorAll('.tog-btn').forEach(b => {
-        b.disabled = false;
-        b.style.opacity = '1';
-      });
-    }
-  }
-  setTimeout(tick, 1000);
+  if(!grp) return;
+  if(timerEl) timerEl.textContent='';
+  grp.querySelectorAll('.tog-btn').forEach(b => b.disabled = false);
 }
 
 // ══════════════════════════════════════════════
@@ -1655,7 +1632,22 @@ async function runBo4(){
   const buf=125-loss;
   const lotNote=buf<75?'Giảm lot 0.5% ($12.5)':'Risk 1% ($25) bình thường';
   try{
-    const sys=`Bạn là Prop Firm Trader Sniper Entry XAUUSD — The5%ers $2,500.\nBias: ${STATE.bias}\nNarrative: ${STATE.b2Narrative||'Không có'}\nDaily loss: $${loss} | Buffer: $${buf} | ${lotNote}\nNếu R:R < 1:3 → verdict = CANCEL.\nQUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt, không dùng tiếng Anh.\nTrả về DUY NHẤT JSON:\n{"verdict":"FIRE"|"WAIT"|"CANCEL","verdict_reason":"...","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"...","tp_pips":"...","lot":"...","rr":"...","structure":"...","zone":"...","risk":"...","fail_reasons":"..."}`;
+    const sys=`Bạn là Prop Firm Trader Sniper Entry XAUUSD — The5%ers $2,500.
+Bias: ${STATE.bias}
+Narrative: ${STATE.b2Narrative||'Không có'}
+Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
+
+QUY TẮC BẮT BUỘC — KHÔNG NGOẠI LỆ:
+- SL tối đa: 15 pip — nếu cần SL rộng hơn → verdict = CANCEL
+- TP tối thiểu: 45 pip (để đạt R:R 1:3)
+- R:R tối thiểu: 1:3 — tính chính xác trước khi ra verdict
+- Lot size: risk 1% account ($25) với SL 15 pip → lot chuẩn ~0.17
+- Nếu không tìm được entry có SL ≤ 15 pip VÀ TP ≥ 45 pip → verdict = CANCEL
+- Chỉ FIRE khi: cấu trúc M5 rõ + SL ≤ 15 pip + TP ≥ 45 pip + R:R ≥ 1:3
+
+QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt, không dùng tiếng Anh.
+Trả về DUY NHẤT JSON:
+{"verdict":"FIRE"|"WAIT"|"CANCEL","verdict_reason":"...","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"phải ≤ 15 pip","tp_pips":"phải ≥ 45 pip","lot":"...","rr":"X:Y — phải >= 1:3","structure":"...","zone":"...","risk":"...","fail_reasons":"..."}`;
     const b64=STATE.imgs.b4_m5.split(',')[1];
     const mtype=STATE.imgs.b4_m5.split(';')[0].split(':')[1];
     const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mtype,data:b64}},{type:'text',text:'Chart M5 XAUUSD. Phân tích JSON.'}]}]});
