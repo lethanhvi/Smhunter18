@@ -371,6 +371,33 @@ input[type="file"]{display:none}
     </div>
   </div>
 
+  <!-- PRICE ALERT WIDGET -->
+  <div style="background:var(--surface);border:1px solid rgba(201,168,76,0.25);border-radius:10px;padding:14px 18px;margin-top:16px">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:2px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+      <span>🔔 PRICE ALERTS</span>
+      <span style="font-size:9px;color:var(--muted)" id="alert-count">0 alerts</span>
+    </div>
+
+    <!-- Input row -->
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input type="number" id="alert-price-input" placeholder="Nhập giá VD: 4350" step="0.01"
+        style="flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text);outline:none">
+      <select id="alert-type" style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:9px 10px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text);outline:none;cursor:pointer">
+        <option value="above">↑ TRÊN</option>
+        <option value="below">↓ DƯỚI</option>
+      </select>
+      <button onclick="addAlert()" style="background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.35);border-radius:6px;padding:9px 14px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--gold);cursor:pointer;font-weight:700;touch-action:manipulation">+</button>
+    </div>
+
+    <!-- Alert list -->
+    <div id="alert-list"></div>
+
+    <!-- Manual check instruction -->
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-top:8px;line-height:1.6;letter-spacing:0.5px">
+      ⚡ Nhập giá mục tiêu → Khi giá chạm vùng → Nhấn 🔔 để kích hoạt cảnh báo
+    </div>
+  </div>
+
   <button class="reset-all-btn" onclick="resetAll()">⚠ &nbsp; RESET TOÀN BỘ HỆ THỐNG</button>
 </div>
 </div>
@@ -1080,6 +1107,89 @@ function tick() {
 setInterval(tick,1000); tick();
 
 // ══════════════════════════════════════════════
+// PRICE ALERTS
+// ══════════════════════════════════════════════
+let priceAlerts = JSON.parse(localStorage.getItem('shs_alerts')||'[]');
+
+function saveAlerts(){ localStorage.setItem('shs_alerts', JSON.stringify(priceAlerts)); }
+
+function addAlert(){
+  const inp = document.getElementById('alert-price-input');
+  const type = document.getElementById('alert-type').value;
+  const price = parseFloat(inp.value);
+  if(!price || isNaN(price)) return;
+
+  priceAlerts.push({ id: Date.now(), price, type, triggered: false });
+  saveAlerts();
+  inp.value = '';
+  renderAlerts();
+  if(navigator.vibrate) navigator.vibrate(20);
+}
+
+function triggerAlert(id){
+  const alert = priceAlerts.find(a => a.id === id);
+  if(!alert) return;
+  alert.triggered = true;
+  saveAlerts();
+  renderAlerts();
+
+  // Vibrate pattern
+  if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+
+  // Browser notification if permitted
+  if(Notification.permission === 'granted'){
+    new Notification('🔔 SMART HUNTER ALERT', {
+      body: `Giá đã chạm ${alert.price} (${alert.type === 'above' ? '↑ TRÊN' : '↓ DƯỚI'})`,
+      icon: ''
+    });
+  } else if(Notification.permission !== 'denied'){
+    Notification.requestPermission().then(p => {
+      if(p === 'granted'){
+        new Notification('🔔 SMART HUNTER ALERT', {
+          body: `Giá đã chạm ${alert.price}`
+        });
+      }
+    });
+  }
+}
+
+function deleteAlert(id){
+  priceAlerts = priceAlerts.filter(a => a.id !== id);
+  saveAlerts();
+  renderAlerts();
+}
+
+function renderAlerts(){
+  const list = document.getElementById('alert-list');
+  const count = document.getElementById('alert-count');
+  if(!list) return;
+
+  count.textContent = `${priceAlerts.length} alert${priceAlerts.length !== 1 ? 's' : ''}`;
+
+  if(priceAlerts.length === 0){
+    list.innerHTML = '<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--muted);text-align:center;padding:8px 0">Chưa có alert nào</div>';
+    return;
+  }
+
+  list.innerHTML = priceAlerts.map(a => `
+    <div style="display:flex;align-items:center;gap:8px;background:${a.triggered ? 'rgba(46,204,138,0.08)' : 'var(--bg2)'};border:1px solid ${a.triggered ? 'rgba(46,204,138,0.3)' : 'var(--border2)'};border-radius:6px;padding:9px 12px;margin-bottom:6px;transition:all 0.2s">
+      <span style="font-size:14px">${a.triggered ? '✅' : '⏳'}</span>
+      <div style="flex:1">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:12px;color:${a.triggered ? 'var(--green)' : 'var(--text)'}">
+          ${a.type === 'above' ? '↑' : '↓'} ${a.price.toLocaleString()}
+        </span>
+        ${a.triggered ? '<span style="font-family:\'Share Tech Mono\',monospace;font-size:9px;color:var(--green);margin-left:8px">TRIGGERED</span>' : ''}
+      </div>
+      ${!a.triggered ? `<button onclick="triggerAlert(${a.id})" style="background:rgba(255,181,71,0.15);border:1px solid rgba(255,181,71,0.3);border-radius:5px;padding:5px 10px;font-size:14px;cursor:pointer;touch-action:manipulation" title="Kích hoạt cảnh báo">🔔</button>` : ''}
+      <button onclick="deleteAlert(${a.id})" style="background:rgba(232,65,90,0.1);border:1px solid rgba(232,65,90,0.2);border-radius:5px;padding:5px 8px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--red);cursor:pointer;touch-action:manipulation">✕</button>
+    </div>
+  `).join('');
+}
+
+// Init alerts on load
+window.addEventListener('load', () => { renderAlerts(); });
+
+// ══════════════════════════════════════════════
 // TRADING QUOTES
 // ══════════════════════════════════════════════
 const QUOTES = [
@@ -1535,6 +1645,13 @@ async function runBo1(){
   document.getElementById('b1-error').classList.remove('show');
   try{
     const sys=`Bạn là Institutional Market Structure Analyst chuyên phân tích XAUUSD cho Prop Firm Trader. Account: The5%ers $2,500, GMT+3. Chỉ tìm setup A+.
+
+QUY TẮC BIAS BẮT BUỘC:
+- Chỉ ra SELL khi D1 bearish rõ ràng (Lower High + Lower Low + nến đỏ dominant)
+- Chỉ ra BUY khi D1 bullish rõ ràng (Higher High + Higher Low + nến xanh dominant)
+- Nếu D1 và H4 mâu thuẫn → D1 LUÔN THẮNG → ưu tiên bias theo D1, không ngoại lệ
+- H4 chỉ dùng để xác nhận timing và tìm vùng entry — không dùng để xác định bias
+- Nếu D1 không rõ ràng → bias = NEUTRAL, không được đoán
 
 YÊU CẦU BẮT BUỘC — phải có vùng giá cụ thể:
 - structure: Mô tả cấu trúc D1+H4, xác định Higher High/Lower High gần nhất với GIÁ CỤ THỂ
