@@ -3,61 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SM Hunter Gold Alert</title>
+<title>SM Hunter Gold Alert PRO</title>
 <style>
-body {
-    background: #0b0f1a;
-    color: #eaeaea;
-    font-family: Arial;
-    padding: 20px;
-}
-.box {
-    border: 1px solid #2c3e50;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-}
-.live {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: red;
-}
-input, select, button {
-    padding: 10px;
-    margin-top: 10px;
-}
-.alert-item {
-    margin-top: 10px;
-}
+body { background:#0b0f1a; color:#fff; font-family:Arial; padding:20px;}
+.box { border:1px solid #2c3e50; border-radius:12px; padding:20px; margin-bottom:20px;}
+.live { display:flex; align-items:center; gap:10px; font-size:24px;}
+.dot { width:10px; height:10px; border-radius:50%; background:red;}
+input, select, button { padding:10px; margin-top:10px; width:100%; }
+button { background:#f1c40f; border:none; cursor:pointer;}
+.alert-item { margin-top:10px; }
 </style>
 </head>
 
 <body>
 
 <div class="box">
-    <h2>📡 XAUUSD LIVE</h2>
-    <div class="live">
-        <div id="live-price">---.--</div>
-        <div class="dot" id="live-dot"></div>
-    </div>
+<h2>📡 XAUUSD LIVE</h2>
+<div class="live">
+<span id="live-price">---.--</span>
+<div id="live-dot" class="dot"></div>
+</div>
 </div>
 
 <div class="box">
-    <h3>🔔 Thêm Alert</h3>
-    <input id="price-input" placeholder="Nhập giá (VD: 2350)" />
-    <select id="type">
-        <option value="above">Giá lên</option>
-        <option value="below">Giá xuống</option>
-    </select>
-    <button onclick="addAlert()">Thêm</button>
-
-    <div id="alert-list"></div>
+<h3>🔔 Thêm Alert</h3>
+<input id="price-input" placeholder="Nhập giá (VD: 2350)">
+<select id="type">
+<option value="above">Giá lên</option>
+<option value="below">Giá xuống</option>
+</select>
+<button onclick="addAlert()">Thêm Alert</button>
+<div id="alert-list"></div>
 </div>
 
 <script>
@@ -66,61 +42,75 @@ const dot = document.getElementById("live-dot");
 
 let alerts = [];
 
-async function fetchPrice() {
+async function fetchGoldPrice() {
+  try {
+    let res = await fetch("https://api.metals.live/v1/spot/gold");
+    let data = await res.json();
+    let price = data[0].gold;
+
+    if (!price) throw "Primary API fail";
+
+    updateUI(price);
+
+  } catch (e) {
+    // fallback using CORS proxy
     try {
-        const res = await fetch("https://api.gold-api.com/price/XAUUSD");
-        const data = await res.json();
+      let res = await fetch("https://api.allorigins.win/raw?url=https://api.metals.live/v1/spot/gold");
+      let data = await res.json();
+      let price = data[0].gold;
 
-        const price = data.price;
+      updateUI(price);
 
-        priceEl.textContent = price.toFixed(2);
-        dot.style.background = "lime";
-
-        checkAlerts(price);
-
-    } catch (e) {
-        dot.style.background = "red";
-        console.log("Error:", e);
+    } catch (err) {
+      dot.style.background = "red";
+      console.log("All API failed");
     }
+  }
 }
 
-setInterval(fetchPrice, 3000);
-fetchPrice();
-
-function addAlert() {
-    const price = parseFloat(document.getElementById("price-input").value);
-    const type = document.getElementById("type").value;
-
-    if (!price) return;
-
-    alerts.push({ price, type, triggered: false });
-    renderAlerts();
+function updateUI(price){
+  priceEl.textContent = price.toFixed(2);
+  dot.style.background = "#00ff9d";
+  checkAlerts(price);
 }
 
-function renderAlerts() {
-    const list = document.getElementById("alert-list");
-    list.innerHTML = "";
+setInterval(fetchGoldPrice, 3000);
+fetchGoldPrice();
 
-    alerts.forEach(a => {
-        const div = document.createElement("div");
-        div.className = "alert-item";
-        div.textContent = `${a.type === "above" ? "↑" : "↓"} ${a.price}`;
-        list.appendChild(div);
-    });
+function addAlert(){
+  const price = parseFloat(document.getElementById("price-input").value);
+  const type = document.getElementById("type").value;
+
+  if (!price) return;
+
+  alerts.push({price, type, triggered:false});
+  renderAlerts();
 }
 
-function checkAlerts(current) {
-    alerts.forEach(a => {
-        if (a.triggered) return;
+function renderAlerts(){
+  const list = document.getElementById("alert-list");
+  list.innerHTML = "";
 
-        if (a.type === "above" && current >= a.price) trigger(a);
-        if (a.type === "below" && current <= a.price) trigger(a);
-    });
+  alerts.forEach(a=>{
+    const div = document.createElement("div");
+    div.className="alert-item";
+    div.textContent = (a.type==="above"?"↑":"↓") + " " + a.price;
+    list.appendChild(div);
+  });
 }
 
-function trigger(a) {
-    a.triggered = true;
-    alert("🚨 Giá chạm mức!");
+function checkAlerts(current){
+  alerts.forEach(a=>{
+    if(a.triggered) return;
+
+    if(a.type==="above" && current>=a.price) trigger(a);
+    if(a.type==="below" && current<=a.price) trigger(a);
+  });
+}
+
+function trigger(a){
+  a.triggered = true;
+  alert("🚨 Giá chạm mức!");
 }
 </script>
 
