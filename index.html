@@ -682,7 +682,14 @@ input[type="file"]{display:none}
   <div class="error-box" id="b4-error"><div class="error-title">⚠ LỖI</div><div class="error-msg" id="b4-error-msg"></div></div>
 
   <div id="b4-result" style="display:none">
-    <div class="verdict-box" id="b4-verdict-box"><div class="v-emoji" id="b4-emoji">--</div><div class="v-label">ENTRY DECISION</div><div class="v-title" id="b4-vtitle">---</div><div class="v-sub" id="b4-vreason"></div></div>
+    <div class="verdict-box" id="b4-verdict-box">
+      <div class="v-emoji" id="b4-emoji">--</div>
+      <div class="v-label">ENTRY DECISION</div>
+      <div class="v-title" id="b4-vtitle">---</div>
+      <!-- SMC Checklist inside verdict -->
+      <div id="b4-smc-checklist" style="margin:12px 0;text-align:left"></div>
+      <div class="v-sub" id="b4-vreason"></div>
+    </div>
     <div class="entry-card" id="b4-entry-card" style="display:none">
       <div class="entry-title">📋 THIẾT LẬP LỆNH</div>
       <div class="entry-grid">
@@ -1933,8 +1940,30 @@ Trả về DUY NHẤT JSON:
     const vbox=document.getElementById('b4-verdict-box');
     vbox.className='verdict-box '+(r.verdict==='FIRE'?'fire':r.verdict==='CANCEL'?'cancel':'wait');
     document.getElementById('b4-emoji').textContent=r.verdict==='FIRE'?'🎯':r.verdict==='CANCEL'?'🚫':'⏸';
-    const vtMap={FIRE:'🎯 ĐẶT LỆNH NGAY',WAIT:'⏸ CHỜ THÊM XÁC NHẬN',CANCEL:'🚫 HỦY QUÂN — KHÔNG ĐỦ ĐIỀU KIỆN'};
+    const vtMap={FIRE:'ĐẶT LỆNH NGAY',WAIT:'CHỜ THÊM XÁC NHẬN',CANCEL:'HỦY QUÂN — KHÔNG ĐỦ ĐIỀU KIỆN'};
     document.getElementById('b4-vtitle').textContent=vtMap[r.verdict]||r.verdict;
+
+    // SMC Checklist in verdict box
+    const checklistEl = document.getElementById('b4-smc-checklist');
+    if(checklistEl){
+      const checks = [
+        { step:'1', label:'Liquidity Sweep', value: r.sweep, icon:'💧' },
+        { step:'2', label:'CHoCH xác nhận', value: r.choch, icon:'🔄' },
+        { step:'3', label:'FVG / Order Block', value: r.fvg_ob, icon:'📦' },
+      ];
+      checklistEl.innerHTML = checks.map(c => {
+        const txt = c.value||'';
+        const passed = txt && !txt.match(/chưa|chưa có|không có|Chưa|Không/i);
+        return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:${passed?'rgba(46,204,138,0.08)':'rgba(232,65,90,0.08)'};border:1px solid ${passed?'rgba(46,204,138,0.2)':'rgba(232,65,90,0.2)'};border-radius:6px;margin-bottom:6px">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:13px;min-width:24px;font-weight:700;color:${passed?'var(--green)':'var(--red)'}">${passed?'✅':'❌'}</span>
+          <div style="flex:1">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${passed?'var(--green)':'var(--red)'};letter-spacing:1px;font-weight:700;margin-bottom:3px">${c.icon} BƯỚC ${c.step}: ${c.label}</div>
+            <div style="font-size:11px;color:#8a9ab8;line-height:1.5">${txt||'Chưa xác nhận'}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
     document.getElementById('b4-vreason').textContent=r.verdict_reason||'';
     if(r.verdict==='FIRE'){
       STATE.b4Entry=r.entry||'';
