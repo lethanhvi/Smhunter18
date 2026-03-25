@@ -694,6 +694,7 @@ input[type="file"]{display:none}
         <div class="e-item"><div class="e-key">R:R RATIO</div><div class="e-val" id="b4-rr">---</div></div>
       </div>
     </div>
+    <div class="report-sec open" id="b4-sec-smc"><div class="rep-hdr" onclick="toggleRep('b4-sec-smc')"><div class="rep-icon">📋</div><div class="rep-title">SMC CHECKLIST</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b4-c-smc"></div></div></div>
     <div class="report-sec" id="b4-sec-str"><div class="rep-hdr" onclick="toggleRep('b4-sec-str')"><div class="rep-icon">🏗</div><div class="rep-title">CẤU TRÚC M5</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b4-c-str"></div></div></div>
     <div class="report-sec" id="b4-sec-zone"><div class="rep-hdr" onclick="toggleRep('b4-sec-zone')"><div class="rep-icon">🎯</div><div class="rep-title">VÙNG PENDING ORDER</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b4-c-zone"></div></div></div>
     <div class="report-sec" id="b4-sec-risk"><div class="rep-hdr" onclick="toggleRep('b4-sec-risk')"><div class="rep-icon">⚖️</div><div class="rep-title">RISK MANAGEMENT</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b4-c-risk"></div></div></div>
@@ -1900,17 +1901,31 @@ Bias: ${STATE.bias}
 Narrative: ${STATE.b2Narrative||'Không có'}
 Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
 
-QUY TẮC BẮT BUỘC — KHÔNG NGOẠI LỆ:
-- SL tối đa: 15 pip — nếu cần SL rộng hơn → verdict = CANCEL
-- TP tối thiểu: 45 pip (để đạt R:R 1:3)
-- R:R tối thiểu: 1:3 — tính chính xác trước khi ra verdict
-- Lot size: risk 1% account ($25) với SL 15 pip → lot chuẩn ~0.17
-- Nếu không tìm được entry có SL ≤ 15 pip VÀ TP ≥ 45 pip → verdict = CANCEL
-- Chỉ FIRE khi: cấu trúc M5 rõ + SL ≤ 15 pip + TP ≥ 45 pip + R:R ≥ 1:3
+CHECKLIST SMC BẮT BUỘC — phải đủ CẢ 3 điều kiện mới được FIRE:
+
+✅ ĐIỀU KIỆN 1 — LIQUIDITY SWEEP:
+- Giá đã quét qua Buy Side Liquidity (BSL) hoặc Sell Side Liquidity (SSL) rõ ràng
+- Nếu chưa sweep → verdict = WAIT, không ngoại lệ
+
+✅ ĐIỀU KIỆN 2 — CHOCH (Change of Character):
+- Sau sweep phải có CHoCH xác nhận đảo chiều trên M5
+- CHoCH = giá phá vỡ swing high/low ngược chiều sweep
+- Nếu chưa có CHoCH → verdict = WAIT
+
+✅ ĐIỀU KIỆN 3 — FVG hoặc OB:
+- Phải xác định được Fair Value Gap hoặc Order Block tại vùng retest
+- Entry PHẢI tại 50% của FVG hoặc 50% của OB — không entry trước hoặc sau vùng này
+- Nếu không có FVG/OB rõ ràng → verdict = WAIT
+
+QUY TẮC RISK BẮT BUỘC:
+- SL đặt phía trên OB/FVG (cho SELL) hoặc dưới OB/FVG (cho BUY)
+- Khoảng cách Entry → SL tối đa 15 pip (150 points) — nếu hơn → verdict = CANCEL
+- TP tối thiểu 45 pip để đạt R:R 1:3
+- Lot size: risk 1% ($25) với SL 15 pip → lot ~0.17
 
 QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt, không dùng tiếng Anh.
 Trả về DUY NHẤT JSON:
-{"verdict":"FIRE"|"WAIT"|"CANCEL","verdict_reason":"...","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"phải ≤ 15 pip","tp_pips":"phải ≥ 45 pip","lot":"...","rr":"X:Y — phải >= 1:3","structure":"...","zone":"...","risk":"...","fail_reasons":["Lý do 1 ngắn gọn","Lý do 2 ngắn gọn","Lý do 3 ngắn gọn"]}`;
+{"verdict":"FIRE"|"WAIT"|"CANCEL","verdict_reason":"...","sweep":"Đã sweep BSL/SSL tại giá X chưa — MÔ TẢ CỤ THỂ","choch":"Đã có CHoCH tại giá X chưa — MÔ TẢ CỤ THỂ","fvg_ob":"FVG/OB tại vùng X-Y, entry tại 50% = Z — MÔ TẢ CỤ THỂ","order_type":"...","entry":"50% của FVG/OB","sl":"...","tp":"...","sl_pips":"phải ≤ 15 pip","tp_pips":"phải ≥ 45 pip","lot":"...","rr":"X:Y — phải >= 1:3","fail_reasons":["Lý do 1","Lý do 2","Lý do 3"]}`;
     const b64=STATE.imgs.b4_m5.split(',')[1];
     const mtype=STATE.imgs.b4_m5.split(';')[0].split(':')[1];
     const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mtype,data:b64}},{type:'text',text:'Chart M5 XAUUSD. Phân tích JSON.'}]}]});
@@ -1940,6 +1955,26 @@ Trả về DUY NHẤT JSON:
       document.getElementById('b4-entry-card').style.display='none';
       document.getElementById('b4-rules').style.display='none';
     }
+    // SMC Checklist
+    const smcEl = document.getElementById('b4-c-smc');
+    if(smcEl){
+      const checks = [
+        { label:'Liquidity Sweep', value: r.sweep, icon:'💧' },
+        { label:'CHoCH xác nhận', value: r.choch, icon:'🔄' },
+        { label:'FVG / Order Block', value: r.fvg_ob, icon:'📦' },
+      ];
+      smcEl.innerHTML = checks.map(c => {
+        const passed = c.value && !c.value.includes('chưa') && !c.value.includes('Chưa') && !c.value.includes('không') && !c.value.includes('Không');
+        return `<div style="margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-size:14px">${c.icon}</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${passed?'var(--green)':'var(--red)'};letter-spacing:1px;font-weight:700">${passed?'✅':'❌'} ${c.label}</span>
+          </div>
+          <div style="font-size:12px;color:#8a9ab8;line-height:1.6;padding-left:22px">${c.value||'--'}</div>
+        </div>`;
+      }).join('');
+    }
+
     document.getElementById('b4-c-str').textContent=r.structure||'';
     document.getElementById('b4-c-zone').textContent=r.zone||'';
     document.getElementById('b4-c-risk').textContent=r.risk||'';
