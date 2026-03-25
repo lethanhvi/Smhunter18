@@ -1754,20 +1754,38 @@ function handleImg(prefix,tf,input){
 // ══════════════════════════════════════════════
 // API CALL HELPER
 // ══════════════════════════════════════════════
-async function callAPI(body){
-  const res=await fetch('/api/analyze',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({apiKey:STATE.apiKey,body})
-  });
-  if(!res.ok){
-    let msg=`HTTP ${res.status}`;
-    try{const e=await res.json();msg=e.error?.message||msg;}catch(e){}
-    throw new Error(msg);
+async function callAPI(body, retries=3){
+  for(let i=0; i<retries; i++){
+    try{
+      const res=await fetch('/api/analyze',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({apiKey:STATE.apiKey,body})
+      });
+      if(!res.ok){
+        let msg=`HTTP ${res.status}`;
+        try{const e=await res.json();msg=e.error?.message||msg;}catch(e){}
+        // Retry on overload (529) or server error (500,502,503)
+        if((res.status===529||res.status>=500) && i<retries-1){
+          const wait=(i+1)*3000; // 3s, 6s, 9s
+          await new Promise(r=>setTimeout(r,wait));
+          continue;
+        }
+        throw new Error(msg);
+      }
+      const data=await res.json();
+      const text=data.content.map(c=>c.text||'').join('');
+      return JSON.parse(text.replace(/```json|```/g,'').trim());
+    } catch(e){
+      if(i===retries-1) throw e;
+      // Retry on network error
+      if(e.message==='Failed to fetch'||e.message?.includes('overload')||e.message?.includes('Overload')){
+        await new Promise(r=>setTimeout(r,(i+1)*3000));
+        continue;
+      }
+      throw e;
+    }
   }
-  const data=await res.json();
-  const text=data.content.map(c=>c.text||'').join('');
-  return JSON.parse(text.replace(/```json|```/g,'').trim());
 }
 
 function vnTime(){const now=new Date();const vn=new Date(now.getTime()+(7*60+now.getTimezoneOffset())*60000);return vn.toTimeString().slice(0,5);}
