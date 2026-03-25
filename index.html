@@ -1126,20 +1126,50 @@ let currentPrice = 0;
 let priceWS = null;
 
 function startPriceFeed(){
-  // XAUUSDT on Binance = Gold price
-  try {
-    priceWS = new WebSocket('wss://stream.binance.com:9443/ws/xauusdt@ticker');
+  fetchGoldPrice();
+  setInterval(fetchGoldPrice, 10000); // cập nhật mỗi 10 giây
+}
 
-    priceWS.onmessage = (e) => {
-      const data = JSON.parse(e.data);
-      currentPrice = parseFloat(data.c); // current price
-      updatePriceDisplay(currentPrice);
-      checkAlertTriggers(currentPrice);
-    };
+async function fetchGoldPrice(){
+  // Try multiple free sources
+  const sources = [
+    // Source 1: Metals-API via allorigins proxy
+    async () => {
+      const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/XAU/USD'));
+      const d = await r.json();
+      const parsed = JSON.parse(d.contents);
+      return parseFloat(parsed[0]?.spreadProfilePrices?.[0]?.ask || 0);
+    },
+    // Source 2: Frankfurter XAU/USD
+    async () => {
+      const r = await fetch('https://api.frankfurter.app/latest?from=XAU&to=USD');
+      const d = await r.json();
+      return parseFloat(d.rates?.USD || 0);
+    },
+    // Source 3: Open Exchange via proxy
+    async () => {
+      const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://openexchangerates.org/api/latest.json?app_id=free&base=XAU'));
+      const d = await r.json();
+      const parsed = JSON.parse(d.contents);
+      return parseFloat(parsed.rates?.USD || 0);
+    }
+  ];
 
-    priceWS.onerror = () => { reconnectPriceFeed(); };
-    priceWS.onclose = () => { setTimeout(reconnectPriceFeed, 3000); };
-  } catch(e) { console.warn('Price feed failed:', e); }
+  for(const src of sources){
+    try{
+      const price = await src();
+      if(price > 1000 && price < 10000){ // sanity check for gold
+        currentPrice = price;
+        updatePriceDisplay(price);
+        checkAlertTriggers(price);
+        return;
+      }
+    } catch(e){ continue; }
+  }
+
+  // All failed - show error state
+  const dot = document.getElementById('live-dot');
+  if(dot){ dot.style.background='var(--red)'; dot.style.boxShadow='0 0 6px var(--red)'; }
 }
 
 function playAlertSound(){
