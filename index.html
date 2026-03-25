@@ -373,9 +373,21 @@ input[type="file"]{display:none}
 
   <!-- PRICE ALERT WIDGET -->
   <div style="background:var(--surface);border:1px solid rgba(201,168,76,0.25);border-radius:10px;padding:14px 18px;margin-top:16px">
-    <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:2px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:2px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
       <span>🔔 PRICE ALERTS</span>
       <span style="font-size:9px;color:var(--muted)" id="alert-count">0 alerts</span>
+    </div>
+
+    <!-- Live price display -->
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:3px">XAUUSD LIVE</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:700;color:var(--text)" id="live-price">---.--</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div id="live-dot" style="width:8px;height:8px;border-radius:50%;background:var(--muted);transition:all 0.3s"></div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted)">LIVE</span>
+      </div>
     </div>
 
     <!-- Input row -->
@@ -393,8 +405,9 @@ input[type="file"]{display:none}
     <div id="alert-list"></div>
 
     <!-- Manual check instruction -->
-    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-top:8px;line-height:1.6;letter-spacing:0.5px">
-      ⚡ Nhập giá mục tiêu → Khi giá chạm vùng → Nhấn 🔔 để kích hoạt cảnh báo
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-top:8px;line-height:1.6;letter-spacing:0.5px;display:flex;align-items:center;justify-content:space-between">
+      <span>⚡ Tự động kích hoạt khi giá chạm mức đặt</span>
+      <button onclick="playAlertSound();strongVibrate()" style="background:rgba(77,159,255,0.1);border:1px solid rgba(77,159,255,0.2);border-radius:4px;padding:4px 8px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--blue);cursor:pointer;touch-action:manipulation">TEST 🔔</button>
     </div>
   </div>
 
@@ -1107,6 +1120,110 @@ function tick() {
 setInterval(tick,1000); tick();
 
 // ══════════════════════════════════════════════
+// REAL-TIME PRICE FEED (Binance WebSocket)
+// ══════════════════════════════════════════════
+let currentPrice = 0;
+let priceWS = null;
+
+function startPriceFeed(){
+  // XAUUSDT on Binance = Gold price
+  try {
+    priceWS = new WebSocket('wss://stream.binance.com:9443/ws/xauusdt@ticker');
+
+    priceWS.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      currentPrice = parseFloat(data.c); // current price
+      updatePriceDisplay(currentPrice);
+      checkAlertTriggers(currentPrice);
+    };
+
+    priceWS.onerror = () => { reconnectPriceFeed(); };
+    priceWS.onclose = () => { setTimeout(reconnectPriceFeed, 3000); };
+  } catch(e) { console.warn('Price feed failed:', e); }
+}
+
+function playAlertSound(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Beep 1
+    const o1 = ctx.createOscillator();
+    const g1 = ctx.createGain();
+    o1.connect(g1); g1.connect(ctx.destination);
+    o1.frequency.value = 880;
+    o1.type = 'sine';
+    g1.gain.setValueAtTime(0.8, ctx.currentTime);
+    g1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    o1.start(ctx.currentTime);
+    o1.stop(ctx.currentTime + 0.3);
+
+    // Beep 2
+    const o2 = ctx.createOscillator();
+    const g2 = ctx.createGain();
+    o2.connect(g2); g2.connect(ctx.destination);
+    o2.frequency.value = 1100;
+    o2.type = 'sine';
+    g2.gain.setValueAtTime(0.8, ctx.currentTime + 0.35);
+    g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.65);
+    o2.start(ctx.currentTime + 0.35);
+    o2.stop(ctx.currentTime + 0.65);
+
+    // Beep 3 — longer
+    const o3 = ctx.createOscillator();
+    const g3 = ctx.createGain();
+    o3.connect(g3); g3.connect(ctx.destination);
+    o3.frequency.value = 1320;
+    o3.type = 'sine';
+    g3.gain.setValueAtTime(1.0, ctx.currentTime + 0.7);
+    g3.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.4);
+    o3.start(ctx.currentTime + 0.7);
+    o3.stop(ctx.currentTime + 1.4);
+  } catch(e){ console.warn('Audio failed:', e); }
+}
+
+function strongVibrate(){
+  if(!navigator.vibrate) return;
+  // Pattern: rung mạnh 3 lần
+  navigator.vibrate([400, 150, 400, 150, 600]);
+}
+
+function updatePriceDisplay(price){
+  const el = document.getElementById('live-price');
+  const dot = document.getElementById('live-dot');
+  if(el) el.textContent = price.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  if(dot) { dot.style.background='var(--green)'; dot.style.boxShadow='0 0 6px var(--green)'; }
+}
+
+function checkAlertTriggers(price){
+  let triggered = false;
+  priceAlerts.forEach(a => {
+    if(a.triggered) return;
+    const hit = (a.type==='above' && price >= a.price) || (a.type==='below' && price <= a.price);
+    if(hit){
+      a.triggered = true;
+      triggered = true;
+      // Sound + strong vibration
+      playAlertSound();
+      strongVibrate();
+      // Notification
+      if(Notification.permission==='granted'){
+        new Notification('🔔 SMART HUNTER — GIÁ ĐÃ CHẠM!', {
+          body: `XAUUSD ${a.type==='above'?'↑':'↓'} ${a.price.toLocaleString()} | Giá hiện tại: ${price.toLocaleString()}`,
+        });
+      }
+    }
+  });
+  if(triggered){ saveAlerts(); renderAlerts(); }
+}
+
+// Request notification permission on load
+function requestNotifPermission(){
+  if('Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
+}
+
+// ══════════════════════════════════════════════
 // PRICE ALERTS
 // ══════════════════════════════════════════════
 let priceAlerts = JSON.parse(localStorage.getItem('shs_alerts')||'[]');
@@ -1132,25 +1249,7 @@ function triggerAlert(id){
   alert.triggered = true;
   saveAlerts();
   renderAlerts();
-
-  // Vibrate pattern
   if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
-
-  // Browser notification if permitted
-  if(Notification.permission === 'granted'){
-    new Notification('🔔 SMART HUNTER ALERT', {
-      body: `Giá đã chạm ${alert.price} (${alert.type === 'above' ? '↑ TRÊN' : '↓ DƯỚI'})`,
-      icon: ''
-    });
-  } else if(Notification.permission !== 'denied'){
-    Notification.requestPermission().then(p => {
-      if(p === 'granted'){
-        new Notification('🔔 SMART HUNTER ALERT', {
-          body: `Giá đã chạm ${alert.price}`
-        });
-      }
-    });
-  }
 }
 
 function deleteAlert(id){
@@ -1178,16 +1277,19 @@ function renderAlerts(){
         <span style="font-family:'Share Tech Mono',monospace;font-size:12px;color:${a.triggered ? 'var(--green)' : 'var(--text)'}">
           ${a.type === 'above' ? '↑' : '↓'} ${a.price.toLocaleString()}
         </span>
-        ${a.triggered ? '<span style="font-family:\'Share Tech Mono\',monospace;font-size:9px;color:var(--green);margin-left:8px">TRIGGERED</span>' : ''}
+        ${a.triggered ? '<span style="font-family:\'Share Tech Mono\',monospace;font-size:9px;color:var(--green);margin-left:8px">TRIGGERED ✓</span>' : ''}
       </div>
-      ${!a.triggered ? `<button onclick="triggerAlert(${a.id})" style="background:rgba(255,181,71,0.15);border:1px solid rgba(255,181,71,0.3);border-radius:5px;padding:5px 10px;font-size:14px;cursor:pointer;touch-action:manipulation" title="Kích hoạt cảnh báo">🔔</button>` : ''}
       <button onclick="deleteAlert(${a.id})" style="background:rgba(232,65,90,0.1);border:1px solid rgba(232,65,90,0.2);border-radius:5px;padding:5px 8px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--red);cursor:pointer;touch-action:manipulation">✕</button>
     </div>
   `).join('');
 }
 
-// Init alerts on load
-window.addEventListener('load', () => { renderAlerts(); });
+// Init
+window.addEventListener('load', () => {
+  renderAlerts();
+  startPriceFeed();
+  requestNotifPermission();
+});
 
 // ══════════════════════════════════════════════
 // TRADING QUOTES
