@@ -2089,5 +2089,307 @@ if('serviceWorker'in navigator){
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
 }
 </script>
+<script>
+/* =========================
+   LIVE PRICE ENGINE (FIX)
+========================= */
+
+let lastPrice = null;
+let isOnline = false;
+
+// CONFIG — đổi nếu bạn dùng MT5 bridge
+const API_URL = "http://localhost:5000/price"; 
+// fallback public (chỉ demo)
+const FALLBACK_URL = "https://api.gold-api.com/price/XAUUSD";
+
+/* UI refs */
+const priceEl = document.getElementById("live-price");
+const dotEl = document.getElementById("live-dot");
+
+/* Update UI */
+function updateUI(price) {
+  if (!priceEl) return;
+
+  priceEl.textContent = price.toFixed(2);
+
+  if (lastPrice !== null) {
+    if (price > lastPrice) {
+      priceEl.style.color = "var(--green)";
+    } else if (price < lastPrice) {
+      priceEl.style.color = "var(--red)";
+    }
+  }
+
+  lastPrice = price;
+}
+
+function setOnline() {
+  isOnline = true;
+  dotEl.style.background = "var(--green)";
+  dotEl.style.boxShadow = "0 0 6px var(--green)";
+}
+
+function setOffline() {
+  isOnline = false;
+  dotEl.style.background = "var(--red)";
+  dotEl.style.boxShadow = "0 0 6px var(--red)";
+}
+
+/* Fetch từ MT5 */
+async function fetchFromMT5() {
+  const res = await fetch(API_URL);
+  if (!res.ok) throw new Error("MT5 error");
+
+  const data = await res.json();
+
+  if (!data.bid) throw new Error("No bid");
+
+  return data.bid; // chuẩn SELL logic
+}
+
+/* Fallback */
+async function fetchFallback() {
+  const res = await fetch(FALLBACK_URL);
+  const data = await res.json();
+
+  if (!data.price) throw new Error("No fallback");
+
+  return data.price;
+}
+
+/* Main loop */
+async function fetchGoldPrice() {
+  try {
+    const price = await fetchFromMT5();
+    updateUI(price);
+    setOnline();
+    checkAlerts(price);
+  } catch (e) {
+    console.warn("MT5 fail → fallback", e);
+
+    try {
+      const price = await fetchFallback();
+      updateUI(price);
+      setOffline(); // fallback vẫn coi là không chuẩn
+      checkAlerts(price);
+    } catch (err) {
+      console.error("ALL FAIL", err);
+      setOffline();
+    }
+  }
+}
+
+/* =========================
+   ALERT SYSTEM FIX
+========================= */
+
+let alerts = [];
+
+function addAlert() {
+  const price = parseFloat(document.getElementById("alert-price-input").value);
+  const type = document.getElementById("alert-type").value;
+
+  if (!price) return;
+
+  alerts.push({ price, type, hit: false });
+  renderAlerts();
+}
+
+function renderAlerts() {
+  const list = document.getElementById("alert-list");
+  const count = document.getElementById("alert-count");
+
+  list.innerHTML = "";
+
+  alerts.forEach((a, i) => {
+    const el = document.createElement("div");
+    el.style.fontSize = "11px";
+    el.style.marginBottom = "4px";
+    el.textContent = `${a.type === "above" ? "↑" : "↓"} ${a.price}`;
+    list.appendChild(el);
+  });
+
+  count.textContent = alerts.length + " alerts";
+}
+
+function checkAlerts(currentPrice) {
+  alerts.forEach(a => {
+    if (a.hit) return;
+
+    if (
+      (a.type === "above" && currentPrice >= a.price) ||
+      (a.type === "below" && currentPrice <= a.price)
+    ) {
+      a.hit = true;
+      triggerAlert(a, currentPrice);
+    }
+  });
+}
+
+function triggerAlert(alert, price) {
+  playAlertSound();
+  strongVibrate();
+  alert("🚨 PRICE HIT: " + price);
+}
+
+/* =========================
+   INIT
+========================= */
+
+setInterval(fetchGoldPrice, 1500);
+fetchGoldPrice();
+
+</script>
+<script>
+/* =========================
+   LIVE PRICE ENGINE (FIX)
+========================= */
+
+let lastPrice = null;
+let isOnline = false;
+
+// CONFIG — đổi nếu bạn dùng MT5 bridge
+const API_URL = "http://localhost:5000/price"; 
+// fallback public (chỉ demo)
+const FALLBACK_URL = "https://api.gold-api.com/price/XAUUSD";
+
+/* UI refs */
+const priceEl = document.getElementById("live-price");
+const dotEl = document.getElementById("live-dot");
+
+/* Update UI */
+function updateUI(price) {
+  if (!priceEl) return;
+
+  priceEl.textContent = price.toFixed(2);
+
+  if (lastPrice !== null) {
+    if (price > lastPrice) {
+      priceEl.style.color = "var(--green)";
+    } else if (price < lastPrice) {
+      priceEl.style.color = "var(--red)";
+    }
+  }
+
+  lastPrice = price;
+}
+
+function setOnline() {
+  isOnline = true;
+  dotEl.style.background = "var(--green)";
+  dotEl.style.boxShadow = "0 0 6px var(--green)";
+}
+
+function setOffline() {
+  isOnline = false;
+  dotEl.style.background = "var(--red)";
+  dotEl.style.boxShadow = "0 0 6px var(--red)";
+}
+
+/* Fetch từ MT5 */
+async function fetchFromMT5() {
+  const res = await fetch(API_URL);
+  if (!res.ok) throw new Error("MT5 error");
+
+  const data = await res.json();
+
+  if (!data.bid) throw new Error("No bid");
+
+  return data.bid; // chuẩn SELL logic
+}
+
+/* Fallback */
+async function fetchFallback() {
+  const res = await fetch(FALLBACK_URL);
+  const data = await res.json();
+
+  if (!data.price) throw new Error("No fallback");
+
+  return data.price;
+}
+
+/* Main loop */
+async function fetchGoldPrice() {
+  try {
+    const price = await fetchFromMT5();
+    updateUI(price);
+    setOnline();
+    checkAlerts(price);
+  } catch (e) {
+    console.warn("MT5 fail → fallback", e);
+
+    try {
+      const price = await fetchFallback();
+      updateUI(price);
+      setOffline(); // fallback vẫn coi là không chuẩn
+      checkAlerts(price);
+    } catch (err) {
+      console.error("ALL FAIL", err);
+      setOffline();
+    }
+  }
+}
+
+/* =========================
+   ALERT SYSTEM FIX
+========================= */
+
+let alerts = [];
+
+function addAlert() {
+  const price = parseFloat(document.getElementById("alert-price-input").value);
+  const type = document.getElementById("alert-type").value;
+
+  if (!price) return;
+
+  alerts.push({ price, type, hit: false });
+  renderAlerts();
+}
+
+function renderAlerts() {
+  const list = document.getElementById("alert-list");
+  const count = document.getElementById("alert-count");
+
+  list.innerHTML = "";
+
+  alerts.forEach((a, i) => {
+    const el = document.createElement("div");
+    el.style.fontSize = "11px";
+    el.style.marginBottom = "4px";
+    el.textContent = `${a.type === "above" ? "↑" : "↓"} ${a.price}`;
+    list.appendChild(el);
+  });
+
+  count.textContent = alerts.length + " alerts";
+}
+
+function checkAlerts(currentPrice) {
+  alerts.forEach(a => {
+    if (a.hit) return;
+
+    if (
+      (a.type === "above" && currentPrice >= a.price) ||
+      (a.type === "below" && currentPrice <= a.price)
+    ) {
+      a.hit = true;
+      triggerAlert(a, currentPrice);
+    }
+  });
+}
+
+function triggerAlert(alert, price) {
+  playAlertSound();
+  strongVibrate();
+  alert("🚨 PRICE HIT: " + price);
+}
+
+/* =========================
+   INIT
+========================= */
+
+setInterval(fetchGoldPrice, 1500);
+fetchGoldPrice();
+
+</script>
 </body>
 </html>
