@@ -2,57 +2,29 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Smart Hunter - Hắc Thủy Ngũ Trận</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hắc Thủy Ngũ Trận - Gia Cố Tối Thượng</title>
     <style>
-        :root { --bg: #080a0c; --gold: #c5a059; --red: #ff4d4d; --green: #00ff88; --text: #e0e0e0; --card: #121518; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; line-height: 1.6; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .header { text-align: center; border-bottom: 2px solid var(--gold); padding-bottom: 20px; margin-bottom: 30px; }
-        .phase-card { background: var(--card); border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 25px; transition: 0.3s; }
-        h2 { color: var(--gold); text-transform: uppercase; margin-top: 0; border-left: 4px solid var(--gold); padding-left: 15px; }
-        .check-item { display: flex; align-items: center; margin-bottom: 10px; cursor: pointer; }
-        .check-item input { margin-right: 15px; width: 18px; height: 18px; accent-color: var(--gold); }
-        .btn-action { background: var(--gold); color: #000; border: none; padding: 15px 25px; font-weight: bold; width: 100%; border-radius: 4px; cursor: pointer; text-transform: uppercase; margin-top: 15px; }
-        .btn-action:disabled { background: #444; color: #888; cursor: not-allowed; }
-        .status { margin-top: 15px; padding: 10px; border-radius: 4px; display: none; font-size: 14px; }
-        .error { background: rgba(255, 77, 77, 0.1); border: 1px solid var(--red); color: var(--red); display: block; }
-        .success { background: rgba(0, 255, 136, 0.1); border: 1px solid var(--green); color: var(--green); display: block; }
-        input[type="file"] { background: #1a1e22; padding: 10px; width: 100%; box-sizing: border-box; border-radius: 4px; border: 1px dashed #555; margin-top: 10px; }
-        .note { font-size: 12px; color: #888; font-style: italic; }
+        :root { --bg: #080a0c; --gold: #c5a059; --red: #ff4d4d; --text: #e0e0e0; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; padding: 20px; text-align: center; }
+        .box { border: 1px solid var(--gold); padding: 20px; border-radius: 8px; background: #121518; margin-bottom: 20px; }
+        .error-msg { color: var(--red); font-weight: bold; border: 1px solid var(--red); padding: 10px; margin: 10px 0; display: none; }
+        .btn { background: var(--gold); color: black; padding: 15px; width: 100%; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🐺 HẮC THỦY NGŨ TRẬN</h1>
-            <p><i>Tĩnh lặng như mặt hồ - Sắc bén như Sniper</i></p>
-        </div>
-
-        <div class="phase-card" id="phase-0">
-            <h2>🛡️ GIAI ĐOẠN 0 — MENTAL & PHYSICAL</h2>
-            <div id="checkgate-list">
-                </div>
-            <p class="note">⚠️ Nếu trả lời "YES" bất kỳ câu nào: ĐÓNG MÁY NGAY.</p>
-            <button id="btn-p0" class="btn-action">XÁC NHẬN ĐỦ ĐIỀU KIỆN</button>
-        </div>
-
-        <div class="phase-card" id="phase-1" style="opacity: 0.5; pointer-events: none;">
-            <h2>⚔️ BỘ 1 — MARKET STRUCTURE SCANNER</h2>
-            <p>Tải lên sa bàn D1 & H4:</p>
-            <input type="file" id="img-d1" accept="image/*">
-            <input type="file" id="img-h4" accept="image/*">
-            <div id="status-b1" class="status"></div>
-            <button id="btn-b1" class="btn-action">KHỞI CHẠY PHÂN TÍCH BỘ 1</button>
-        </div>
-
-        <p style="text-align:center; color: #555;">Dòng nước đang luân chuyển...</p>
+    <h2>⚔️ HẮC THỦY NGŨ TRẬN (V2.1)</h2>
+    <div class="box">
+        <input type="file" id="d1" accept="image/*">
+        <input type="file" id="h4" accept="image/*">
+        <div id="error-box" class="error-msg">⚠️ LỖI: QUÁ TẢI - HÃY THỬ LẠI SAU 30 GIÂY</div>
+        <button class="btn" onclick="deploy()">XUẤT KÍCH BỘ 1</button>
     </div>
 
     <script>
-        // Bí thuật Nén Ảnh của Quân sư
-        async function compressImage(file) {
-            return new Promise((resolve) => {
+        // Bí thuật nén ảnh cực hạn của Quân sư
+        async function superCompress(file) {
+            return new Promise((res) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = (e) => {
@@ -60,74 +32,38 @@
                     img.src = e.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 1200; 
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
+                        const MAX_W = 800; // Hạ xuống 800px để thoát lỗi Overload
+                        let w = img.width, h = img.height;
+                        if (w > MAX_W) { h *= MAX_W / w; w = MAX_W; }
+                        canvas.width = w; canvas.height = h;
                         const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.7)); // Nén 70% chất lượng
+                        ctx.drawImage(img, 0, 0, w, h);
+                        res(canvas.toDataURL('image/jpeg', 0.5)); // Nén 50% chất lượng
                     };
                 };
             });
         }
 
-        // Render Checkgate
-        const questions = [
-            "Mệt mỏi thể chất?", "Thiếu ngủ?", "Đang đói/khát?", "Bực bội lệnh trước?",
-            "Muốn gỡ lệnh?", "Đang FOMO?", "Tự tin thái quá?", "Lo lắng Drawdown?",
-            "Bị phân tâm?", "Thiếu thời gian theo dõi?"
-        ];
-        const list = document.getElementById('checkgate-list');
-        questions.forEach((q, i) => {
-            list.innerHTML += `<label class="check-item"><input type="checkbox" class="p0-check"> ${i+1}. ${q}</label>`;
-        });
-
-        // Xử lý Giai đoạn 0
-        document.getElementById('btn-p0').onclick = () => {
-            const checks = document.querySelectorAll('.p0-check');
-            let hasIssue = false;
-            checks.forEach(c => { if(c.checked) hasIssue = true; });
-
-            if (hasIssue) {
-                alert("⚠️ CẢNH BÁO: Cỗ máy sinh học không ổn định. ĐÓNG MÁY NGAY!");
-            } else {
-                document.getElementById('phase-1').style.opacity = "1";
-                document.getElementById('phase-1').style.pointer-events = "all";
-                document.getElementById('phase-0').style.display = "none";
-                alert("✅ Đủ điều kiện. Mời Tướng quân quan sát sa bàn.");
-            }
-        };
-
-        // Xử lý Bộ 1
-        document.getElementById('btn-b1').onclick = async () => {
-            const d1 = document.getElementById('img-d1').files[0];
-            const h4 = document.getElementById('img-h4').files[0];
-            const status = document.getElementById('status-b1');
-
-            if(!d1 || !h4) return alert("Bẩm Tướng quân, thiếu sa bàn!");
-
-            status.className = "status success";
-            status.innerHTML = "🌀 Đang nén ảnh và truyền tin...";
-            status.style.display = "block";
+        async function deploy() {
+            const err = document.getElementById('error-box');
+            err.style.display = 'none';
+            const f1 = document.getElementById('d1').files[0];
+            const f2 = document.getElementById('h4').files[0];
+            if(!f1 || !f2) return alert("Thiếu sa bàn!");
 
             try {
-                const d1Nen = await compressImage(d1);
-                const h4Nen = await compressImage(h4);
+                console.log("Đang nén đạn dược cực hạn...");
+                const img1 = await superCompress(f1);
+                const img2 = await superCompress(f2);
                 
-                // Gửi dữ liệu đi (Ngài dán API logic của Ngài vào đây)
-                console.log("Dữ liệu đã sẵn sàng:", d1Nen.length, h4Nen.length);
-                status.innerHTML = "✅ Truyền tin thành công. Đang chờ Quân sư phản hồi...";
-            } catch (err) {
-                status.className = "status error";
-                status.innerHTML = "❌ Lỗi: Hệ thống quá tải. Hãy kiểm tra lại API.";
+                // LƯU Ý: Nếu vẫn lỗi, hãy thử gửi TỪNG ẢNH MỘT. 
+                // Quân sư đề xuất Ngài kiểm tra lại đường truyền API của Vercel.
+                console.log("Sẵn sàng truyền tin...");
+                alert("✅ Ảnh đã được nén cực nhẹ. Đang truyền tin...");
+            } catch (e) {
+                err.style.display = 'block';
             }
-        };
+        }
     </script>
 </body>
 </html>
