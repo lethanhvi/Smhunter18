@@ -1897,12 +1897,12 @@ function checkB4Ready(){
 }
 
 async function runBo4TruyKich(){
-  // Directly run Truy Kich mode
   document.getElementById('b4-result').style.display='none';
   document.getElementById('b4-loading').classList.add('show');
   document.querySelector('#b4-loading .load-txt').textContent='CHẠY MODE TRUY KÍCH...';
   document.querySelector('#b4-loading .load-sub').textContent='Phân tích H1 + M15 + M5';
   document.getElementById('b4-truy-kich-btn').disabled=true;
+  document.getElementById('b4-analyze-btn').disabled=true;
   document.getElementById('b4-error').classList.remove('show');
 
   const loss=parseFloat(document.getElementById('b4-loss').value)||0;
@@ -1910,8 +1910,113 @@ async function runBo4TruyKich(){
   const lotNote=buf<75?'Giảm lot 0.5% ($12.5)':'Risk 1% ($25) bình thường';
 
   try{
-    // Reuse sysTruyKich — call inner function
-    await _runTruyKich(loss, buf, lotNote);
+    const sysTK=`Bạn là Prop Firm Trader chuyên CHIẾN LƯỢC TRUY KÍCH (Continuation) XAUUSD — The5%ers $2,500.
+Bias: ${STATE.bias}
+Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
+
+MODE: TRUY KÍCH — Entry thuận chiều xu hướng mạnh.
+
+CHECKLIST TRUY KÍCH — phải đủ CẢ 3 MẶT TRẬN:
+
+🏴 MẶT TRẬN 1 — H1 (THẦN HỘ MỆNH):
+[ ] Trend cực rõ: Thân nến H1 đóng đặc, râu nến cực ngắn hoặc không có râu chống đối xu hướng
+[ ] Phá vỡ cấu trúc: Giá vừa phá qua Swing High/Low quan trọng H1 với xung lực mạnh
+[ ] Không gần vùng cản lớn: Còn đủ Space để chạy tới target, không bị Supply/Demand đối diện chặn
+
+🏴 MẶT TRẬN 2 — M15 (CĂN CỨ TÁC CHIẾN):
+[ ] FVG uy tín: Có ít nhất 1 vùng FVG rõ rệt vừa được tạo ra
+[ ] Vị trí giá: Giá đang chạm hoặc xâm nhập vào vùng FVG để tìm điểm tựa
+[ ] Đồng pha: M15 và H1 cùng màu, cùng hướng — CỰC KỲ QUAN TRỌNG
+
+🏴 MẶT TRẬN 3 — M5 (TRINH SÁT):
+[ ] Pullback kiệt sức: Nến hồi thân nhỏ, râu nhiều, volume thấp dần
+[ ] TUYỆT ĐỐI không có xung lực ngược: Nếu có 1 nến thân lớn chống xu hướng → HỦY QUÂN
+[ ] Điểm dừng chân: Giá phản ứng (rút râu hoặc Doji) tại FVG M15 hoặc OB mới M5
+
+QUY TẮC RISK:
+- SL tối đa 15 pip, TP tối thiểu 45 pip, R:R ≥ 1:3
+- Lot ~0.17 với risk 1% ($25)
+
+QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt.
+Trả về DUY NHẤT JSON:
+{"verdict":"FIRE"|"WAIT"|"CANCEL","mode":"TRUY_KICH","verdict_reason":"...","mat_tran_1":"H1 đạt/không đạt — mô tả cụ thể","mat_tran_2":"M15 đạt/không đạt — mô tả cụ thể","mat_tran_3":"M5 đạt/không đạt — mô tả cụ thể","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"≤ 15 pip","tp_pips":"≥ 45 pip","lot":"...","rr":"X:Y ≥ 1:3","fail_reasons":["...","...","..."]}`;
+
+    const b64h1=STATE.imgs.b2_h1.split(',')[1];
+    const mtypeh1=STATE.imgs.b2_h1.split(';')[0].split(':')[1];
+    const b64m15=STATE.imgs.b2_m15.split(',')[1];
+    const mtypem15=STATE.imgs.b2_m15.split(';')[0].split(':')[1];
+    const b64m5=STATE.imgs.b4_m5.split(',')[1];
+    const mtypem5=STATE.imgs.b4_m5.split(';')[0].split(':')[1];
+
+    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1200,system:sysTK,messages:[{role:'user',content:[
+      {type:'image',source:{type:'base64',media_type:mtypeh1,data:b64h1}},
+      {type:'text',text:'Chart H1 — Mặt trận 1'},
+      {type:'image',source:{type:'base64',media_type:mtypem15,data:b64m15}},
+      {type:'text',text:'Chart M15 — Mặt trận 2'},
+      {type:'image',source:{type:'base64',media_type:mtypem5,data:b64m5}},
+      {type:'text',text:'Chart M5 — Mặt trận 3. Phân tích Truy Kích JSON.'}
+    ]}]});
+
+    // Render result
+    const vbox=document.getElementById('b4-verdict-box');
+    const isFire=r.verdict==='FIRE';
+    const isCancel=r.verdict==='CANCEL';
+    vbox.className='verdict-box '+(isFire?'fire':isCancel?'cancel':'wait');
+    document.getElementById('b4-emoji').textContent=isFire?'🎯':isCancel?'🚫':'⏸';
+    const vtMap={FIRE:'ĐẶT LỆNH NGAY',WAIT:'CHỜ THÊM XÁC NHẬN',CANCEL:'HỦY QUÂN — KHÔNG ĐỦ ĐIỀU KIỆN'};
+    document.getElementById('b4-vtitle').textContent=vtMap[r.verdict]||r.verdict;
+
+    const checklistEl=document.getElementById('b4-smc-checklist');
+    if(checklistEl){
+      const badge='<div style="font-family:\'Share Tech Mono\',monospace;font-size:9px;background:rgba(255,181,71,0.2);border:1px solid rgba(255,181,71,0.4);color:var(--amber);padding:3px 10px;border-radius:10px;letter-spacing:1px;margin-bottom:8px;display:inline-block">⚡ MODE: TRUY KÍCH</div>';
+      const checks=[
+        {step:'1',label:'H1 — Thần Hộ Mệnh',value:r.mat_tran_1,icon:'🏴'},
+        {step:'2',label:'M15 — Căn Cứ Tác Chiến',value:r.mat_tran_2,icon:'🏴'},
+        {step:'3',label:'M5 — Trinh Sát',value:r.mat_tran_3,icon:'🏴'},
+      ];
+      checklistEl.innerHTML=badge+checks.map(c=>{
+        const txt=c.value||'';
+        const passed=txt&&!txt.match(/không đạt|không có|chưa|Không đạt|Không có|Chưa/i);
+        return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:${passed?'rgba(46,204,138,0.08)':'rgba(232,65,90,0.08)'};border:1px solid ${passed?'rgba(46,204,138,0.2)':'rgba(232,65,90,0.2)'};border-radius:6px;margin-bottom:6px">
+          <span style="font-size:13px;min-width:24px;font-weight:700;color:${passed?'var(--green)':'var(--red)'}">${passed?'✅':'❌'}</span>
+          <div style="flex:1">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${passed?'var(--green)':'var(--red)'};letter-spacing:1px;font-weight:700;margin-bottom:3px">${c.icon} MẶT TRẬN ${c.step}: ${c.label}</div>
+            <div style="font-size:11px;color:#8a9ab8;line-height:1.5">${txt||'Chưa xác nhận'}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    document.getElementById('b4-vreason').textContent=r.verdict_reason||'';
+    if(isFire){
+      STATE.b4Entry=r.entry||''; STATE.b4RR=r.rr||''; saveState();
+      document.getElementById('b4-entry-card').style.display='block';
+      document.getElementById('b4-rules').style.display='block';
+      document.getElementById('b4-etype').textContent=r.order_type||'---';
+      document.getElementById('b4-entry').textContent=r.entry||'---';
+      document.getElementById('b4-sl').textContent=r.sl||'---';
+      document.getElementById('b4-tp').textContent=r.tp||'---';
+      document.getElementById('b4-lot').textContent=r.lot||'---';
+      const rrEl=document.getElementById('b4-rr');
+      rrEl.textContent=r.rr||'---';
+      const rrNum=parseFloat((r.rr||'').replace('1:',''));
+      rrEl.className='e-val '+(rrNum>=3?'good-rr':'bad-rr');
+    } else {
+      document.getElementById('b4-entry-card').style.display='none';
+      document.getElementById('b4-rules').style.display='none';
+    }
+    // Fail reasons
+    const failEl=document.getElementById('b4-c-fail');
+    if(failEl&&r.fail_reasons){
+      if(Array.isArray(r.fail_reasons)){
+        failEl.innerHTML=r.fail_reasons.map((f,i)=>`<div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start"><span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--red);font-weight:700;min-width:20px">${i+1}.</span><span style="font-size:13px;color:#c5c9d6;line-height:1.6">${f}</span></div>`).join('');
+      } else { failEl.textContent=r.fail_reasons; }
+    }
+    document.getElementById('b4-sec-str').classList.add('open');
+    document.getElementById('b4-result').style.display='block';
+    if(navigator.vibrate) navigator.vibrate(isFire?[50,30,80,30,50]:[50,30,50]);
+    setTimeout(()=>document.getElementById('b4-result').scrollIntoView({behavior:'smooth',block:'start'}),200);
+
   } catch(err){
     document.getElementById('b4-error-msg').textContent=err.message;
     document.getElementById('b4-error').classList.add('show');
