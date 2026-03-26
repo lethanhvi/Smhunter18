@@ -379,15 +379,16 @@ input[type="file"]{display:none}
     </div>
 
     <!-- Live price display -->
-    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:3px">XAUUSD LIVE</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:700;color:var(--text)" id="live-price">---.--</div>
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px">XAUUSD LIVE</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div id="live-dot" style="width:8px;height:8px;border-radius:50%;background:var(--muted);transition:all 0.3s"></div>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted)">LIVE</span>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <div id="live-dot" style="width:8px;height:8px;border-radius:50%;background:var(--muted);transition:all 0.3s"></div>
-        <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted)">LIVE</span>
-      </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:700;color:var(--text)" id="live-price">---.--</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:rgba(255,181,71,0.6);margin-top:4px;letter-spacing:0.5px">⚠ Tham khảo — có thể lệch $1-5 so với MT5</div>
     </div>
 
     <!-- Input row -->
