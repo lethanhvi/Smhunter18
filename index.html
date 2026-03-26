@@ -1988,6 +1988,13 @@ Trả về DUY NHẤT JSON:
     }
 
     document.getElementById('b4-vreason').textContent=r.verdict_reason||'';
+
+    // Fill report sections for Truy Kich
+    document.getElementById('b4-c-str').textContent=
+      [r.mat_tran_1, r.mat_tran_2, r.mat_tran_3].filter(Boolean).join('\n\n') || r.structure || '';
+    document.getElementById('b4-c-zone').textContent=r.entry ? `Entry: ${r.entry} | SL: ${r.sl} | TP: ${r.tp}` : r.zone || '';
+    document.getElementById('b4-c-risk').textContent=r.lot ? `Lot: ${r.lot} | R:R: ${r.rr} | SL: ${r.sl_pips} | TP: ${r.tp_pips}` : r.risk || '';
+
     if(isFire){
       STATE.b4Entry=r.entry||''; STATE.b4RR=r.rr||''; saveState();
       document.getElementById('b4-entry-card').style.display='block';
