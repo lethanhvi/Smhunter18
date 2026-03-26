@@ -1897,7 +1897,7 @@ async function runBo4(){
   const buf=125-loss;
   const lotNote=buf<75?'Giảm lot 0.5% ($12.5)':'Risk 1% ($25) bình thường';
   try{
-    const sys=`Bạn là Prop Firm Trader Sniper Entry XAUUSD — The5%ers $2,500.
+    const sysStandard=`Bạn là Prop Firm Trader Sniper Entry XAUUSD — The5%ers $2,500.
 Bias: ${STATE.bias}
 Narrative: ${STATE.b2Narrative||'Không có'}
 Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
@@ -1924,38 +1924,131 @@ QUY TẮC RISK BẮT BUỘC:
 - TP tối thiểu 45 pip để đạt R:R 1:3
 - Lot size: risk 1% ($25) với SL 15 pip → lot ~0.17
 
+Nếu cả 3 điều kiện KHÔNG ĐẠT → trả về verdict = "SWITCH_TO_TRUY_KICH" để chuyển mode.
+
 QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt, không dùng tiếng Anh.
 Trả về DUY NHẤT JSON:
-{"verdict":"FIRE"|"WAIT"|"CANCEL","verdict_reason":"...","sweep":"Đã sweep BSL/SSL tại giá X chưa — MÔ TẢ CỤ THỂ","choch":"Đã có CHoCH tại giá X chưa — MÔ TẢ CỤ THỂ","fvg_ob":"FVG/OB tại vùng X-Y, entry tại 50% = Z — MÔ TẢ CỤ THỂ","order_type":"...","entry":"50% của FVG/OB","sl":"...","tp":"...","sl_pips":"phải ≤ 15 pip","tp_pips":"phải ≥ 45 pip","lot":"...","rr":"X:Y — phải >= 1:3","fail_reasons":["Lý do 1","Lý do 2","Lý do 3"]}`;
-    const b64=STATE.imgs.b4_m5.split(',')[1];
-    const mtype=STATE.imgs.b4_m5.split(';')[0].split(':')[1];
-    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mtype,data:b64}},{type:'text',text:'Chart M5 XAUUSD. Phân tích JSON.'}]}]});
+{"verdict":"FIRE"|"WAIT"|"CANCEL"|"SWITCH_TO_TRUY_KICH","verdict_reason":"...","sweep":"...","choch":"...","fvg_ob":"...","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"...","tp_pips":"...","lot":"...","rr":"...","fail_reasons":["...","...","..."]}`;
+
+    const sysTruyKich=`Bạn là Prop Firm Trader chuyên CHIẾN LƯỢC TRUY KÍCH (Continuation) XAUUSD — The5%ers $2,500.
+Bias: ${STATE.bias}
+Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
+
+MODE: TRUY KÍCH — Entry thuận chiều xu hướng mạnh.
+Checklist SMC chuẩn (Sweep+CHoCH+FVG) KHÔNG ĐẠT → chuyển sang mode này.
+
+CHECKLIST TRUY KÍCH — phải đủ CẢ 3 MẶT TRẬN:
+
+🏴 MẶT TRẬN 1 — H1 (THẦN HỘ MỆNH):
+[ ] Trend cực rõ: Thân nến H1 đóng đặc, râu nến cực ngắn hoặc không có râu chống đối xu hướng
+[ ] Phá vỡ cấu trúc: Giá vừa phá qua Swing High/Low quan trọng H1 với xung lực mạnh
+[ ] Không gần vùng cản lớn: Còn đủ Space để chạy tới target, không bị Supply/Demand đối diện chặn
+
+🏴 MẶT TRẬN 2 — M15 (CĂN CỨ TÁC CHIẾN):
+[ ] FVG uy tín: Có ít nhất 1 vùng FVG rõ rệt vừa được tạo ra
+[ ] Vị trí giá: Giá đang chạm hoặc xâm nhập vào vùng FVG để tìm điểm tựa
+[ ] Đồng pha: M15 và H1 cùng màu, cùng hướng — CỰC KỲ QUAN TRỌNG
+
+🏴 MẶT TRẬN 3 — M5 (TRINH SÁT):
+[ ] Pullback kiệt sức: Nến hồi thân nhỏ, râu nhiều, volume thấp dần
+[ ] TUYỆT ĐỐI không có xung lực ngược: Nếu có 1 nến thân lớn chống xu hướng → HỦY QUÂN
+[ ] Điểm dừng chân: Giá phản ứng (rút râu hoặc Doji) tại FVG M15 hoặc OB mới M5
+
+QUY TẮC RISK:
+- SL tối đa 15 pip, TP tối thiểu 45 pip, R:R ≥ 1:3
+- Lot ~0.17 với risk 1% ($25)
+
+QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt.
+Trả về DUY NHẤT JSON:
+{"verdict":"FIRE"|"WAIT"|"CANCEL","mode":"TRUY_KICH","verdict_reason":"...","mat_tran_1":"H1 đạt/không đạt — mô tả cụ thể","mat_tran_2":"M15 đạt/không đạt — mô tả cụ thể","mat_tran_3":"M5 đạt/không đạt — mô tả cụ thể","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"≤ 15 pip","tp_pips":"≥ 45 pip","lot":"...","rr":"X:Y ≥ 1:3","fail_reasons":["...","...","..."]}`;
+
+    const b64m5=STATE.imgs.b4_m5.split(',')[1];
+    const mtypem5=STATE.imgs.b4_m5.split(';')[0].split(':')[1];
+
+    // Step 1: Run standard SMC check
+    const r1=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sysStandard,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mtypem5,data:b64m5}},{type:'text',text:'Chart M5 XAUUSD. Phân tích SMC checklist JSON.'}]}]});
+
+    let r = r1;
+    let mode = 'SMC';
+
+    // Step 2: Auto switch to Truy Kich if SMC not met
+    if(r1.verdict==='SWITCH_TO_TRUY_KICH' || (r1.verdict==='WAIT' && STATE.imgs.b2_h1 && STATE.imgs.b2_m15)){
+      // Show switching notice
+      document.querySelector('#b4-loading .load-txt').textContent='CHUYỂN MODE TRUY KÍCH...';
+      document.querySelector('#b4-loading .load-sub').textContent='Phân tích H1 + M15 + M5';
+
+      const b64h1=STATE.imgs.b2_h1.split(',')[1];
+      const mtypeh1=STATE.imgs.b2_h1.split(';')[0].split(':')[1];
+      const b64m15=STATE.imgs.b2_m15.split(',')[1];
+      const mtypem15=STATE.imgs.b2_m15.split(';')[0].split(':')[1];
+
+      const r2=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1200,system:sysTruyKich,messages:[{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:mtypeh1,data:b64h1}},
+        {type:'text',text:'Chart H1 — Mặt trận 1'},
+        {type:'image',source:{type:'base64',media_type:mtypem15,data:b64m15}},
+        {type:'text',text:'Chart M15 — Mặt trận 2'},
+        {type:'image',source:{type:'base64',media_type:mtypem5,data:b64m5}},
+        {type:'text',text:'Chart M5 — Mặt trận 3. Phân tích Truy Kích JSON.'}
+      ]}]});
+      r = r2;
+      mode = 'TRUY_KICH';
+    }
+
     // Render
     const vbox=document.getElementById('b4-verdict-box');
-    vbox.className='verdict-box '+(r.verdict==='FIRE'?'fire':r.verdict==='CANCEL'?'cancel':'wait');
-    document.getElementById('b4-emoji').textContent=r.verdict==='FIRE'?'🎯':r.verdict==='CANCEL'?'🚫':'⏸';
+    const isFire = r.verdict==='FIRE';
+    const isCancel = r.verdict==='CANCEL';
+    vbox.className='verdict-box '+(isFire?'fire':isCancel?'cancel':'wait');
+    document.getElementById('b4-emoji').textContent=isFire?'🎯':isCancel?'🚫':'⏸';
+
+    // Mode badge
+    const modeBadge = mode==='TRUY_KICH'
+      ? '<div style="font-family:\'Share Tech Mono\',monospace;font-size:9px;background:rgba(255,181,71,0.2);border:1px solid rgba(255,181,71,0.4);color:var(--amber);padding:3px 10px;border-radius:10px;letter-spacing:1px;margin-bottom:6px;display:inline-block">⚡ MODE: TRUY KÍCH</div>'
+      : '<div style="font-family:\'Share Tech Mono\',monospace;font-size:9px;background:rgba(77,159,255,0.15);border:1px solid rgba(77,159,255,0.3);color:var(--blue);padding:3px 10px;border-radius:10px;letter-spacing:1px;margin-bottom:6px;display:inline-block">🎯 MODE: SMC CHUẨN</div>';
+
     const vtMap={FIRE:'ĐẶT LỆNH NGAY',WAIT:'CHỜ THÊM XÁC NHẬN',CANCEL:'HỦY QUÂN — KHÔNG ĐỦ ĐIỀU KIỆN'};
     document.getElementById('b4-vtitle').textContent=vtMap[r.verdict]||r.verdict;
 
-    // SMC Checklist in verdict box
+    // Checklist display
     const checklistEl = document.getElementById('b4-smc-checklist');
     if(checklistEl){
-      const checks = [
-        { step:'1', label:'Liquidity Sweep', value: r.sweep, icon:'💧' },
-        { step:'2', label:'CHoCH xác nhận', value: r.choch, icon:'🔄' },
-        { step:'3', label:'FVG / Order Block', value: r.fvg_ob, icon:'📦' },
-      ];
-      checklistEl.innerHTML = checks.map(c => {
-        const txt = c.value||'';
-        const passed = txt && !txt.match(/chưa|chưa có|không có|Chưa|Không/i);
-        return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:${passed?'rgba(46,204,138,0.08)':'rgba(232,65,90,0.08)'};border:1px solid ${passed?'rgba(46,204,138,0.2)':'rgba(232,65,90,0.2)'};border-radius:6px;margin-bottom:6px">
-          <span style="font-family:'Share Tech Mono',monospace;font-size:13px;min-width:24px;font-weight:700;color:${passed?'var(--green)':'var(--red)'}">${passed?'✅':'❌'}</span>
-          <div style="flex:1">
-            <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${passed?'var(--green)':'var(--red)'};letter-spacing:1px;font-weight:700;margin-bottom:3px">${c.icon} BƯỚC ${c.step}: ${c.label}</div>
-            <div style="font-size:11px;color:#8a9ab8;line-height:1.5">${txt||'Chưa xác nhận'}</div>
-          </div>
-        </div>`;
-      }).join('');
+      let checksHtml = modeBadge;
+      if(mode==='TRUY_KICH'){
+        const checks=[
+          {step:'1', label:'H1 — Thần Hộ Mệnh', value:r.mat_tran_1, icon:'🏴'},
+          {step:'2', label:'M15 — Căn Cứ Tác Chiến', value:r.mat_tran_2, icon:'🏴'},
+          {step:'3', label:'M5 — Trinh Sát', value:r.mat_tran_3, icon:'🏴'},
+        ];
+        checksHtml += checks.map(c=>{
+          const txt=c.value||'';
+          const passed=txt && !txt.match(/không đạt|không có|chưa|Không đạt|Không có|Chưa/i);
+          return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:${passed?'rgba(46,204,138,0.08)':'rgba(232,65,90,0.08)'};border:1px solid ${passed?'rgba(46,204,138,0.2)':'rgba(232,65,90,0.2)'};border-radius:6px;margin-bottom:6px">
+            <span style="font-size:13px;min-width:24px;font-weight:700;color:${passed?'var(--green)':'var(--red)'}">${passed?'✅':'❌'}</span>
+            <div style="flex:1">
+              <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${passed?'var(--green)':'var(--red)'};letter-spacing:1px;font-weight:700;margin-bottom:3px">${c.icon} MẶT TRẬN ${c.step}: ${c.label}</div>
+              <div style="font-size:11px;color:#8a9ab8;line-height:1.5">${txt||'Chưa xác nhận'}</div>
+            </div>
+          </div>`;
+        }).join('');
+      } else {
+        const checks=[
+          {step:'1', label:'Liquidity Sweep', value:r.sweep, icon:'💧'},
+          {step:'2', label:'CHoCH xác nhận', value:r.choch, icon:'🔄'},
+          {step:'3', label:'FVG / Order Block', value:r.fvg_ob, icon:'📦'},
+        ];
+        checksHtml += checks.map(c=>{
+          const txt=c.value||'';
+          const passed=txt && !txt.match(/chưa|chưa có|không có|Chưa|Không/i);
+          return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:${passed?'rgba(46,204,138,0.08)':'rgba(232,65,90,0.08)'};border:1px solid ${passed?'rgba(46,204,138,0.2)':'rgba(232,65,90,0.2)'};border-radius:6px;margin-bottom:6px">
+            <span style="font-size:13px;min-width:24px;font-weight:700;color:${passed?'var(--green)':'var(--red)'}">${passed?'✅':'❌'}</span>
+            <div style="flex:1">
+              <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${passed?'var(--green)':'var(--red)'};letter-spacing:1px;font-weight:700;margin-bottom:3px">${c.icon} BƯỚC ${c.step}: ${c.label}</div>
+              <div style="font-size:11px;color:#8a9ab8;line-height:1.5">${txt||'Chưa xác nhận'}</div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+      checklistEl.innerHTML = checksHtml;
     }
 
     document.getElementById('b4-vreason').textContent=r.verdict_reason||'';
