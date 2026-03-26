@@ -1134,49 +1134,25 @@ let currentPrice = 0;
 let priceWS = null;
 
 function startPriceFeed(){
-  pollGoldPrice();
-  setInterval(pollGoldPrice, 3000); // poll every 3 seconds
+  fetchPrice();
+  setInterval(fetchPrice, 5000);
 }
 
-async function pollGoldPrice(){
-  const sources = [
-    // Source 1: Yahoo Finance GC=F (Gold Futures - most accurate)
-    async () => {
-      const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?interval=1m&range=1d', {
-        headers: {'User-Agent': 'Mozilla/5.0'}
-      });
-      const d = await r.json();
-      return parseFloat(d?.chart?.result?.[0]?.meta?.regularMarketPrice || 0);
-    },
-    // Source 2: Yahoo Finance XAUUSD=X (spot)
-    async () => {
-      const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/XAUUSD%3DX?interval=1m&range=1d');
-      const d = await r.json();
-      return parseFloat(d?.chart?.result?.[0]?.meta?.regularMarketPrice || 0);
-    },
-    // Source 3: Metals.live API (free, no key needed)
-    async () => {
-      const r = await fetch('https://api.metals.live/v1/spot/gold');
-      const d = await r.json();
-      return parseFloat(d?.[0]?.price || 0);
-    },
-  ];
-
-  for(const src of sources){
-    try{
-      const price = await src();
-      if(price > 1000 && price < 15000){
-        currentPrice = price;
-        updatePriceDisplay(price);
-        checkAlertTriggers(price);
-        return;
-      }
-    } catch(e){ continue; }
+async function fetchPrice(){
+  try{
+    const r = await fetch('/api/price');
+    if(!r.ok) throw new Error('price fetch failed');
+    const d = await r.json();
+    const price = parseFloat(d.price||0);
+    if(price > 1000){
+      currentPrice = price;
+      updatePriceDisplay(price);
+      checkAlertTriggers(price);
+    }
+  } catch(e){
+    const dot = document.getElementById('live-dot');
+    if(dot){ dot.style.background='var(--red)'; dot.style.boxShadow='0 0 6px var(--red)'; }
   }
-
-  // All failed
-  const dot = document.getElementById('live-dot');
-  if(dot){ dot.style.background='var(--red)'; dot.style.boxShadow='0 0 6px var(--red)'; }
 }
 
 function playAlertSound(){
