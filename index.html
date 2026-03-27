@@ -1914,32 +1914,54 @@ async function runBo4TruyKich(){
 Bias: ${STATE.bias}
 Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
 
-MODE: TRUY KÍCH — Entry thuận chiều xu hướng mạnh.
+MODE: TRUY KÍCH — Entry thuận chiều xu hướng chính. Đọc market theo DÒNG CHẢY, không phải trạng thái tĩnh.
 
-CHECKLIST TRUY KÍCH — phải đủ CẢ 3 MẶT TRẬN:
+NGUYÊN TẮC ĐỌC MARKET ĐỘNG:
+1. CONSOLIDATION SAU IMPULSE = TIẾP DIỄN (không phải sideways vô hướng)
+   → Impulse down + consolidate = setup SELL tiếp tục
+   → Impulse up + consolidate = setup BUY tiếp tục
+
+2. XÁC ĐỊNH TREND H1 ĐÚNG:
+   → LH + LL liên tiếp = DOWNTREND dù đang consolidate
+   → HH + HL liên tiếp = UPTREND dù đang consolidate
+   → KHÔNG gọi là sideways nếu structure tổng thể vẫn có hướng
+
+3. FVG có 3 trạng thái — phân biệt rõ:
+   → ĐÃ CÓ + ĐANG RETEST = entry ngay
+   → VỪA HÌNH THÀNH + CHƯA RETEST = đặt limit chờ (setup đang hình thành)
+   → KHÔNG CÓ = WAIT thực sự
+
+4. SETUP IN-PROGRESS khác SETUP KHÔNG TỒN TẠI
+   → Điều kiện đang hình thành → verdict = FORMING với alert zone cụ thể
+
+CHECKLIST TRUY KÍCH:
 
 🏴 MẶT TRẬN 1 — H1 (THẦN HỘ MỆNH):
-[ ] Trend cực rõ: Thân nến H1 đóng đặc, râu nến cực ngắn hoặc không có râu chống đối xu hướng
-[ ] Phá vỡ cấu trúc: Giá vừa phá qua Swing High/Low quan trọng H1 với xung lực mạnh
-[ ] Không gần vùng cản lớn: Còn đủ Space để chạy tới target, không bị Supply/Demand đối diện chặn
+[ ] Xác định trend H1: LH+LL = downtrend / HH+HL = uptrend (dù consolidate)
+[ ] Consolidation sau impulse = continuation, không phải reversal
+[ ] Còn space chạy: không bị Supply/Demand đối diện trong vòng 50 pip
 
 🏴 MẶT TRẬN 2 — M15 (CĂN CỨ TÁC CHIẾN):
-[ ] FVG uy tín: Có ít nhất 1 vùng FVG rõ rệt vừa được tạo ra
-[ ] Vị trí giá: Giá đang chạm hoặc xâm nhập vào vùng FVG để tìm điểm tựa
-[ ] Đồng pha: M15 và H1 cùng màu, cùng hướng — CỰC KỲ QUAN TRỌNG
+[ ] FVG trạng thái: ĐÃ CÓ+RETEST / VỪA HÌNH THÀNH+CHỜ / KHÔNG CÓ
+[ ] Đồng pha M15 với H1: cùng hướng, cùng màu
+[ ] Vị trí giá so với FVG: trong / sắp chạm / còn xa
 
 🏴 MẶT TRẬN 3 — M5 (TRINH SÁT):
-[ ] Pullback kiệt sức: Nến hồi thân nhỏ, râu nhiều, volume thấp dần
-[ ] TUYỆT ĐỐI không có xung lực ngược: Nếu có 1 nến thân lớn chống xu hướng → HỦY QUÂN
-[ ] Điểm dừng chân: Giá phản ứng (rút râu hoặc Doji) tại FVG M15 hoặc OB mới M5
+[ ] Pullback kiệt sức: nến nhỏ dần, râu nhiều, momentum giảm
+[ ] Không có nến thân lớn ngược chiều (nếu có → HỦY QUÂN)
+[ ] Điểm dừng chân tại FVG M15 hoặc OB M5
 
-QUY TẮC RISK:
-- SL tối đa 15 pip, TP tối thiểu 45 pip, R:R ≥ 1:3
-- Lot ~0.17 với risk 1% ($25)
+QUY TẮC RISK: SL ≤ 15 pip, TP ≥ 45 pip, R:R ≥ 1:3, Lot ~0.17
+
+VERDICT 4 MỨC:
+- FIRE = đủ điều kiện, vào lệnh ngay
+- FORMING = setup đang hình thành, đặt alert chờ retest FVG
+- WAIT = chưa đủ điều kiện
+- CANCEL = tín hiệu ngược chiều mạnh, hủy hoàn toàn
 
 QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt.
 Trả về DUY NHẤT JSON:
-{"verdict":"FIRE"|"WAIT"|"CANCEL","mode":"TRUY_KICH","verdict_reason":"...","mat_tran_1":"H1 đạt/không đạt — mô tả cụ thể","mat_tran_2":"M15 đạt/không đạt — mô tả cụ thể","mat_tran_3":"M5 đạt/không đạt — mô tả cụ thể","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"≤ 15 pip","tp_pips":"≥ 45 pip","lot":"...","rr":"X:Y ≥ 1:3","fail_reasons":["...","...","..."]}`;
+{"verdict":"FIRE"|"FORMING"|"WAIT"|"CANCEL","mode":"TRUY_KICH","verdict_reason":"...","mat_tran_1":"trend H1 thực tế LH/LL hay HH/HL — mô tả cụ thể","mat_tran_2":"FVG: đã có+retest / vừa hình thành+chờ / không có — mô tả cụ thể","mat_tran_3":"pullback M5 kiệt sức chưa — mô tả cụ thể","alert_zone":"nếu FORMING — vùng giá cần alert VD: 4430-4435","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"≤ 15 pip","tp_pips":"≥ 45 pip","lot":"...","rr":"X:Y ≥ 1:3","fail_reasons":["...","...","..."]}`;
 
     const b64h1=STATE.imgs.b2_h1.split(',')[1];
     const mtypeh1=STATE.imgs.b2_h1.split(';')[0].split(':')[1];
@@ -1961,10 +1983,19 @@ Trả về DUY NHẤT JSON:
     const vbox=document.getElementById('b4-verdict-box');
     const isFire=r.verdict==='FIRE';
     const isCancel=r.verdict==='CANCEL';
-    vbox.className='verdict-box '+(isFire?'fire':isCancel?'cancel':'wait');
-    document.getElementById('b4-emoji').textContent=isFire?'🎯':isCancel?'🚫':'⏸';
-    const vtMap={FIRE:'ĐẶT LỆNH NGAY',WAIT:'CHỜ THÊM XÁC NHẬN',CANCEL:'HỦY QUÂN — KHÔNG ĐỦ ĐIỀU KIỆN'};
+    const isForming=r.verdict==='FORMING';
+    vbox.className='verdict-box '+(isFire?'fire':isCancel?'cancel':isForming?'wait':'wait');
+    document.getElementById('b4-emoji').textContent=isFire?'🎯':isCancel?'🚫':isForming?'⚡':'⏸';
+    const vtMap={FIRE:'ĐẶT LỆNH NGAY',FORMING:'SETUP ĐANG HÌNH THÀNH — ĐẶT ALERT',WAIT:'CHỜ THÊM XÁC NHẬN',CANCEL:'HỦY QUÂN — KHÔNG ĐỦ ĐIỀU KIỆN'};
     document.getElementById('b4-vtitle').textContent=vtMap[r.verdict]||r.verdict;
+
+    // Show alert zone if FORMING
+    const vrEl = document.getElementById('b4-vreason');
+    if(isForming && r.alert_zone){
+      vrEl.innerHTML=`${r.verdict_reason||''}<br><br><span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--amber)">🔔 ĐẶT ALERT TẠI: ${r.alert_zone}</span>`;
+    } else {
+      vrEl.textContent=r.verdict_reason||'';
+    }
 
     const checklistEl=document.getElementById('b4-smc-checklist');
     if(checklistEl){
