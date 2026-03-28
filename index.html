@@ -2069,6 +2069,382 @@ Trả về DUY NHẤT JSON:
 async function runBo4(){
   document.getElementById('b4-result').style.display='none';
   document.getElementById('b4-loading').classList.add('show');
+  document.querySelector('#b4-loading .load-txt').textContent='PHÂN TÍCH ENTRY ENGINE...';
+  document.querySelector('#b4-loading .load-sub').textContent='SMC · Pullback · Breakout';
+  document.getElementById('b4-analyze-btn').disabled=true;
+  document.getElementById('b4-error').classList.remove('show');
+  const loss=parseFloat(document.getElementById('b4-loss').value)||0;
+  const buf=125-loss;
+  const lotNote=buf<75?'Giảm lot 0.5% ($12.5)':'Risk 1% ($25) bình thường';
+  try{
+    // Get H1+M15 images if available from Bo2
+    const hasHTF = STATE.imgs.b2_h1 && STATE.imgs.b2_m15;
+
+    const sys=`Bạn là Entry Engine Trader XAUUSD — The5%ers $2,500.
+Bias từ Bộ 1: ${STATE.bias} (CHỈ định hướng TP, KHÔNG khóa lệnh)
+Context từ Bộ 2: ${STATE.b2Verdict||'Không có'} — ${STATE.b2Narrative||'Không có'}
+Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
+
+═══════════════════════════════
+KIẾN TRÚC 3 MODE — CHỌN TỰ ĐỘNG:
+═══════════════════════════════
+
+🔴 MODE 1 — SMC (REVERSAL):
+Điều kiện: Giá ở premium/discount + có liquidity sweep + có MSS/CHoCH
+Entry: OB hoặc FVG
+SL: ngoài vùng sweep — range 12-25 pip
+  IF SL < 12 → sweep không rõ → bỏ
+  IF SL > 25 → RR xấu → bỏ
+TP: liquidity đối diện theo bias B1
+RR: ≥ 1:3 bắt buộc
+
+🔵 MODE 2A — PULLBACK (MOMENTUM EARLY):
+Điều kiện: Có impulse mạnh + structure giữ HH-HL/LL-LH + pullback < 50%
+Entry: vùng pullback (OB/FVG nhỏ)
+SL: dưới Higher Low / trên Lower High gần nhất — range 6-15 pip
+  IF SL > 15 → pullback quá sâu → bỏ
+  IF SL < 6 → structure yếu → bỏ
+TP: đỉnh/đáy gần + liquidity gần
+RR: ≥ 1:2 (entry sớm nên RR tốt hơn)
+
+🔥 MODE 2B — BREAKOUT (MOMENTUM CONFIRM):
+Điều kiện: Có impulse trước + tích lũy nhẹ + break high/low gần nhất
+Entry: khi break (entry ngay hoặc retest nhỏ)
+SL: dưới/trên vùng tích lũy — range 5-12 pip
+  IF SL > 12 → base quá rộng → bỏ
+  IF SL < 5 → dễ bị quét → bỏ
+TP: liquidity kế tiếp
+RR: ≥ 1:2
+
+BUFFER: +0.5-1 pip vào SL thực tế
+
+═══════════════════════════════
+QUY TẮC BIAS — QUAN TRỌNG:
+═══════════════════════════════
+IF mode = SMC → ưu tiên theo bias B1, TP full
+IF mode = Momentum (2A/2B):
+  - IGNORE bias B1 (không khóa lệnh)
+  - Nếu thuận bias → TP full (liquidity xa)
+  - Nếu ngược bias → TP ngắn (liquidity gần nhất)
+
+═══════════════════════════════
+PRIORITY ENGINE:
+═══════════════════════════════
+1. Nếu có SMC setup đẹp → MODE 1
+2. Nếu không có SMC nhưng có momentum → MODE 2A (pullback trước)
+3. Nếu miss pullback → MODE 2B (breakout)
+4. Không có gì rõ → NO TRADE
+
+KHÔNG CÓ TRADE = WAIT, không phải CANCEL
+CANCEL chỉ khi: SL ngoài range cho phép của mode đã chọn
+
+QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt.
+Trả về DUY NHẤT JSON:
+{"verdict":"FIRE"|"WAIT"|"CANCEL","mode":"MODE_1_SMC"|"MODE_2A_PULLBACK"|"MODE_2B_BREAKOUT"|"NO_TRADE","mode_reason":"tại sao chọn mode này","verdict_reason":"...","with_bias":"thuận bias/ngược bias — ảnh hưởng TP thế nào","sweep":"...","choch":"...","fvg_ob":"...","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"pip thực tế — phải trong range của mode","tp_pips":"...","lot":"...","rr":"X:Y","fail_reasons":["...","...","..."]}`;
+
+    const b64m5=STATE.imgs.b4_m5.split(',')[1];
+    const mtypem5=STATE.imgs.b4_m5.split(';')[0].split(':')[1];
+
+    // Build message content - add H1+M15 if available
+    const msgContent = [];
+    if(hasHTF){
+      const b64h1=STATE.imgs.b2_h1.split(',')[1];
+      const mtypeh1=STATE.imgs.b2_h1.split(';')[0].split(':')[1];
+      const b64m15=STATE.imgs.b2_m15.split(',')[1];
+      const mtypem15=STATE.imgs.b2_m15.split(';')[0].split(':')[1];
+      msgContent.push({type:'image',source:{type:'base64',media_type:mtypeh1,data:b64h1}});
+      msgContent.push({type:'text',text:'Chart H1 — Context'});
+      msgContent.push({type:'image',source:{type:'base64',media_type:mtypem15,data:b64m15}});
+      msgContent.push({type:'text',text:'Chart M15 — Context'});
+    }
+    msgContent.push({type:'image',source:{type:'base64',media_type:mtypem5,data:b64m5}});
+    msgContent.push({type:'text',text:'Chart M5 — Entry. Phân tích Entry Engine JSON.'});
+
+    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1200,system:sys,messages:[{role:'user',content:msgContent}]});
+
+    // Mode colors
+    const modeColors={
+      'MODE_1_SMC':'rgba(77,159,255,0.2)',
+      'MODE_2A_PULLBACK':'rgba(46,204,138,0.2)',
+      'MODE_2B_BREAKOUT':'rgba(255,181,71,0.2)'
+    };
+    const modeBorderColors={
+      'MODE_1_SMC':'rgba(77,159,255,0.4)',
+      'MODE_2A_PULLBACK':'rgba(46,204,138,0.4)',
+      'MODE_2B_BREAKOUT':'rgba(255,181,71,0.4)'
+    };
+    const modeTextColors={
+      'MODE_1_SMC':'var(--blue)',
+      'MODE_2A_PULLBACK':'var(--green)',
+      'MODE_2B_BREAKOUT':'var(--amber)'
+    };
+    const modeLabels={
+      'MODE_1_SMC':'🔴 MODE 1: SMC REVERSAL',
+      'MODE_2A_PULLBACK':'🔵 MODE 2A: PULLBACK',
+      'MODE_2B_BREAKOUT':'🔥 MODE 2B: BREAKOUT',
+      'NO_TRADE':'⛔ NO TRADE'
+    };
+
+    // Render verdict
+    const vbox=document.getElementById('b4-verdict-box');
+    const isFire=r.verdict==='FIRE';
+    const isCancel=r.verdict==='CANCEL';
+    vbox.className='verdict-box '+(isFire?'fire':isCancel?'cancel':'wait');
+    document.getElementById('b4-emoji').textContent=isFire?'🎯':isCancel?'🚫':'⏸';
+    const vtMap={FIRE:'ĐẶT LỆNH NGAY',WAIT:'CHỜ THÊM XÁC NHẬN',CANCEL:'HỦY — SL NGOÀI RANGE',NO_TRADE:'KHÔNG CÓ SETUP'};
+    document.getElementById('b4-vtitle').textContent=vtMap[r.verdict]||r.verdict;
+    document.getElementById('b4-vreason').textContent=r.verdict_reason||'';
+
+    // Checklist with mode badge
+    const checklistEl=document.getElementById('b4-smc-checklist');
+    if(checklistEl){
+      const mc=modeTextColors[r.mode]||'var(--muted)';
+      const mbg=modeColors[r.mode]||'rgba(100,100,100,0.1)';
+      const mborder=modeBorderColors[r.mode]||'rgba(100,100,100,0.2)';
+      const mlabel=modeLabels[r.mode]||r.mode||'--';
+
+      let html=`<div style="font-family:'Share Tech Mono',monospace;font-size:9px;background:${mbg};border:1px solid ${mborder};color:${mc};padding:4px 12px;border-radius:10px;letter-spacing:1px;margin-bottom:8px;display:inline-block">${mlabel}</div>`;
+
+      if(r.mode_reason){
+        html+=`<div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">${r.mode_reason}</div>`;
+      }
+      if(r.with_bias){
+        const isForward = r.with_bias&&r.with_bias.includes('thuận');
+        html+=`<div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${isForward?'var(--green)':'var(--amber)'};margin-bottom:10px">${isForward?'✅':'⚡'} ${r.with_bias}</div>`;
+      }
+
+      const checks=[
+        {label:'Liquidity Sweep',value:r.sweep,icon:'💧'},
+        {label:'CHoCH / MSS',value:r.choch,icon:'🔄'},
+        {label:'FVG / OB / Pullback Zone',value:r.fvg_ob,icon:'📦'},
+      ];
+      html+=checks.map(c=>{
+        const txt=c.value||'';
+        const passed=txt&&!txt.match(/chưa|không có|Chưa|Không có/i);
+        return `<div style="display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:${passed?'rgba(46,204,138,0.06)':'rgba(100,100,100,0.06)'};border:1px solid ${passed?'rgba(46,204,138,0.15)':'rgba(100,100,100,0.15)'};border-radius:6px;margin-bottom:5px">
+          <span style="font-size:12px;min-width:20px">${passed?'✅':'➖'}</span>
+          <div><div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${passed?'var(--green)':'var(--muted)'};letter-spacing:1px;margin-bottom:2px">${c.icon} ${c.label}</div>
+          <div style="font-size:11px;color:#8a9ab8;line-height:1.5">${txt||'--'}</div></div>
+        </div>`;
+      }).join('');
+      checklistEl.innerHTML=html;
+    }
+
+    // Entry card
+    if(isFire){
+      STATE.b4Entry=r.entry||''; STATE.b4RR=r.rr||''; saveState();
+      document.getElementById('b4-entry-card').style.display='block';
+      document.getElementById('b4-rules').style.display='block';
+      document.getElementById('b4-etype').textContent=r.order_type||'---';
+      document.getElementById('b4-entry').textContent=r.entry||'---';
+      document.getElementById('b4-sl').textContent=r.sl||'---';
+      document.getElementById('b4-tp').textContent=r.tp||'---';
+      document.getElementById('b4-lot').textContent=r.lot||'---';
+      const rrEl=document.getElementById('b4-rr');
+      rrEl.textContent=r.rr||'---';
+      const rrNum=parseFloat((r.rr||'').replace('1:',''));
+      rrEl.className='e-val '+(rrNum>=2?'good-rr':'bad-rr');
+    } else {
+      document.getElementById('b4-entry-card').style.display='none';
+      document.getElementById('b4-rules').style.display='none';
+    }
+
+    // Report sections
+    document.getElementById('b4-c-str').textContent=r.sweep||r.structure||'';
+    document.getElementById('b4-c-zone').textContent=r.fvg_ob||r.zone||'';
+    document.getElementById('b4-c-risk').textContent=r.sl_pips?`SL: ${r.sl_pips} | TP: ${r.tp_pips} | Lot: ${r.lot} | R:R: ${r.rr}`:r.risk||'';
+
+    // Fail reasons
+    const failEl=document.getElementById('b4-c-fail');
+    if(failEl&&r.fail_reasons){
+      if(Array.isArray(r.fail_reasons)){
+        failEl.innerHTML=r.fail_reasons.map((f,i)=>`<div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start"><span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--red);font-weight:700;min-width:20px">${i+1}.</span><span style="font-size:13px;color:#c5c9d6;line-height:1.6">${f}</span></div>`).join('');
+      } else { failEl.textContent=r.fail_reasons; }
+    }
+
+    document.getElementById('b4-sec-str').classList.add('open');
+    if(isFire) document.getElementById('b4-sec-zone').classList.add('open');
+    document.getElementById('b4-result').style.display='block';
+    if(navigator.vibrate)navigator.vibrate(isFire?[50,30,80,30,50]:[50,30,50]);
+    setTimeout(()=>document.getElementById('b4-result').scrollIntoView({behavior:'smooth',block:'start'}),200);
+  }catch(err){document.getElementById('b4-error-msg').textContent=err.message;document.getElementById('b4-error').classList.add('show');}
+  finally{document.getElementById('b4-loading').classList.remove('show');checkB4Ready();}
+}
+
+
+async function runBo4TruyKich(){
+  document.getElementById('b4-result').style.display='none';
+  document.getElementById('b4-loading').classList.add('show');
+  document.querySelector('#b4-loading .load-txt').textContent='CHẠY MODE TRUY KÍCH...';
+  document.querySelector('#b4-loading .load-sub').textContent='Phân tích H1 + M15 + M5';
+  document.getElementById('b4-truy-kich-btn').disabled=true;
+  document.getElementById('b4-analyze-btn').disabled=true;
+  document.getElementById('b4-error').classList.remove('show');
+
+  const loss=parseFloat(document.getElementById('b4-loss').value)||0;
+  const buf=125-loss;
+  const lotNote=buf<75?'Giảm lot 0.5% ($12.5)':'Risk 1% ($25) bình thường';
+
+  try{
+    const sysTK=`Bạn là Prop Firm Trader chuyên CHIẾN LƯỢC TRUY KÍCH (Continuation) XAUUSD — The5%ers $2,500.
+Bias: ${STATE.bias}
+Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
+
+MODE: TRUY KÍCH — Entry thuận chiều xu hướng chính. Đọc market theo DÒNG CHẢY, không phải trạng thái tĩnh.
+
+NGUYÊN TẮC ĐỌC MARKET ĐỘNG:
+1. CONSOLIDATION SAU IMPULSE = TIẾP DIỄN (không phải sideways vô hướng)
+   → Impulse down + consolidate = setup SELL tiếp tục
+   → Impulse up + consolidate = setup BUY tiếp tục
+
+2. XÁC ĐỊNH TREND H1 ĐÚNG:
+   → LH + LL liên tiếp = DOWNTREND dù đang consolidate
+   → HH + HL liên tiếp = UPTREND dù đang consolidate
+   → KHÔNG gọi là sideways nếu structure tổng thể vẫn có hướng
+
+3. FVG có 3 trạng thái — phân biệt rõ:
+   → ĐÃ CÓ + ĐANG RETEST = entry ngay
+   → VỪA HÌNH THÀNH + CHƯA RETEST = đặt limit chờ (setup đang hình thành)
+   → KHÔNG CÓ = WAIT thực sự
+
+4. SETUP IN-PROGRESS khác SETUP KHÔNG TỒN TẠI
+   → Điều kiện đang hình thành → verdict = FORMING với alert zone cụ thể
+
+CHECKLIST TRUY KÍCH:
+
+🏴 MẶT TRẬN 1 — H1 (THẦN HỘ MỆNH):
+[ ] Xác định trend H1: LH+LL = downtrend / HH+HL = uptrend (dù consolidate)
+[ ] Consolidation sau impulse = continuation, không phải reversal
+[ ] Còn space chạy: không bị Supply/Demand đối diện trong vòng 50 pip
+
+🏴 MẶT TRẬN 2 — M15 (CĂN CỨ TÁC CHIẾN):
+[ ] FVG trạng thái: ĐÃ CÓ+RETEST / VỪA HÌNH THÀNH+CHỜ / KHÔNG CÓ
+[ ] Đồng pha M15 với H1: cùng hướng, cùng màu
+[ ] Vị trí giá so với FVG: trong / sắp chạm / còn xa
+
+🏴 MẶT TRẬN 3 — M5 (TRINH SÁT):
+[ ] Pullback kiệt sức: nến nhỏ dần, râu nhiều, momentum giảm
+[ ] Không có nến thân lớn ngược chiều (nếu có → HỦY QUÂN)
+[ ] Điểm dừng chân tại FVG M15 hoặc OB M5
+
+QUY TẮC RISK: SL ≤ 15 pip, TP ≥ 45 pip, R:R ≥ 1:3, Lot ~0.17
+
+VERDICT 4 MỨC:
+- FIRE = đủ điều kiện, vào lệnh ngay
+- FORMING = setup đang hình thành, đặt alert chờ retest FVG
+- WAIT = chưa đủ điều kiện
+- CANCEL = tín hiệu ngược chiều mạnh, hủy hoàn toàn
+
+QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt.
+Trả về DUY NHẤT JSON:
+{"verdict":"FIRE"|"FORMING"|"WAIT"|"CANCEL","mode":"TRUY_KICH","verdict_reason":"...","mat_tran_1":"trend H1 thực tế LH/LL hay HH/HL — mô tả cụ thể","mat_tran_2":"FVG: đã có+retest / vừa hình thành+chờ / không có — mô tả cụ thể","mat_tran_3":"pullback M5 kiệt sức chưa — mô tả cụ thể","alert_zone":"nếu FORMING — vùng giá cần alert VD: 4430-4435","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"≤ 15 pip","tp_pips":"≥ 45 pip","lot":"...","rr":"X:Y ≥ 1:3","fail_reasons":["...","...","..."]}`;
+
+    const b64h1=STATE.imgs.b2_h1.split(',')[1];
+    const mtypeh1=STATE.imgs.b2_h1.split(';')[0].split(':')[1];
+    const b64m15=STATE.imgs.b2_m15.split(',')[1];
+    const mtypem15=STATE.imgs.b2_m15.split(';')[0].split(':')[1];
+    const b64m5=STATE.imgs.b4_m5.split(',')[1];
+    const mtypem5=STATE.imgs.b4_m5.split(';')[0].split(':')[1];
+
+    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1200,system:sysTK,messages:[{role:'user',content:[
+      {type:'image',source:{type:'base64',media_type:mtypeh1,data:b64h1}},
+      {type:'text',text:'Chart H1 — Mặt trận 1'},
+      {type:'image',source:{type:'base64',media_type:mtypem15,data:b64m15}},
+      {type:'text',text:'Chart M15 — Mặt trận 2'},
+      {type:'image',source:{type:'base64',media_type:mtypem5,data:b64m5}},
+      {type:'text',text:'Chart M5 — Mặt trận 3. Phân tích Truy Kích JSON.'}
+    ]}]});
+
+    // Render result
+    const vbox=document.getElementById('b4-verdict-box');
+    const isFire=r.verdict==='FIRE';
+    const isCancel=r.verdict==='CANCEL';
+    const isForming=r.verdict==='FORMING';
+    vbox.className='verdict-box '+(isFire?'fire':isCancel?'cancel':isForming?'wait':'wait');
+    document.getElementById('b4-emoji').textContent=isFire?'🎯':isCancel?'🚫':isForming?'⚡':'⏸';
+    const vtMap={FIRE:'ĐẶT LỆNH NGAY',FORMING:'SETUP ĐANG HÌNH THÀNH — ĐẶT ALERT',WAIT:'CHỜ THÊM XÁC NHẬN',CANCEL:'HỦY QUÂN — KHÔNG ĐỦ ĐIỀU KIỆN'};
+    document.getElementById('b4-vtitle').textContent=vtMap[r.verdict]||r.verdict;
+
+    // Show alert zone if FORMING
+    const vrEl = document.getElementById('b4-vreason');
+    if(isForming && r.alert_zone){
+      vrEl.innerHTML=`${r.verdict_reason||''}<br><br><span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--amber)">🔔 ĐẶT ALERT TẠI: ${r.alert_zone}</span>`;
+    } else {
+      vrEl.textContent=r.verdict_reason||'';
+    }
+
+    const checklistEl=document.getElementById('b4-smc-checklist');
+    if(checklistEl){
+      const badge='<div style="font-family:\'Share Tech Mono\',monospace;font-size:9px;background:rgba(255,181,71,0.2);border:1px solid rgba(255,181,71,0.4);color:var(--amber);padding:3px 10px;border-radius:10px;letter-spacing:1px;margin-bottom:8px;display:inline-block">⚡ MODE: TRUY KÍCH</div>';
+      const checks=[
+        {step:'1',label:'H1 — Thần Hộ Mệnh',value:r.mat_tran_1,icon:'🏴'},
+        {step:'2',label:'M15 — Căn Cứ Tác Chiến',value:r.mat_tran_2,icon:'🏴'},
+        {step:'3',label:'M5 — Trinh Sát',value:r.mat_tran_3,icon:'🏴'},
+      ];
+      checklistEl.innerHTML=badge+checks.map(c=>{
+        const txt=c.value||'';
+        const passed=txt&&!txt.match(/không đạt|không có|chưa|Không đạt|Không có|Chưa/i);
+        return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:${passed?'rgba(46,204,138,0.08)':'rgba(232,65,90,0.08)'};border:1px solid ${passed?'rgba(46,204,138,0.2)':'rgba(232,65,90,0.2)'};border-radius:6px;margin-bottom:6px">
+          <span style="font-size:13px;min-width:24px;font-weight:700;color:${passed?'var(--green)':'var(--red)'}">${passed?'✅':'❌'}</span>
+          <div style="flex:1">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${passed?'var(--green)':'var(--red)'};letter-spacing:1px;font-weight:700;margin-bottom:3px">${c.icon} MẶT TRẬN ${c.step}: ${c.label}</div>
+            <div style="font-size:11px;color:#8a9ab8;line-height:1.5">${txt||'Chưa xác nhận'}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    document.getElementById('b4-vreason').textContent=r.verdict_reason||'';
+
+    // Fill report sections for Truy Kich
+    document.getElementById('b4-c-str').textContent=
+      [r.mat_tran_1, r.mat_tran_2, r.mat_tran_3].filter(Boolean).join('\n\n') || r.structure || '';
+    document.getElementById('b4-c-zone').textContent=r.entry ? `Entry: ${r.entry} | SL: ${r.sl} | TP: ${r.tp}` : r.zone || '';
+    document.getElementById('b4-c-risk').textContent=r.lot ? `Lot: ${r.lot} | R:R: ${r.rr} | SL: ${r.sl_pips} | TP: ${r.tp_pips}` : r.risk || '';
+
+    if(isFire){
+      STATE.b4Entry=r.entry||''; STATE.b4RR=r.rr||''; saveState();
+      document.getElementById('b4-entry-card').style.display='block';
+      document.getElementById('b4-rules').style.display='block';
+      document.getElementById('b4-etype').textContent=r.order_type||'---';
+      document.getElementById('b4-entry').textContent=r.entry||'---';
+      document.getElementById('b4-sl').textContent=r.sl||'---';
+      document.getElementById('b4-tp').textContent=r.tp||'---';
+      document.getElementById('b4-lot').textContent=r.lot||'---';
+      const rrEl=document.getElementById('b4-rr');
+      rrEl.textContent=r.rr||'---';
+      const rrNum=parseFloat((r.rr||'').replace('1:',''));
+      rrEl.className='e-val '+(rrNum>=3?'good-rr':'bad-rr');
+    } else {
+      document.getElementById('b4-entry-card').style.display='none';
+      document.getElementById('b4-rules').style.display='none';
+    }
+    // Fail reasons
+    const failEl=document.getElementById('b4-c-fail');
+    if(failEl&&r.fail_reasons){
+      if(Array.isArray(r.fail_reasons)){
+        failEl.innerHTML=r.fail_reasons.map((f,i)=>`<div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start"><span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--red);font-weight:700;min-width:20px">${i+1}.</span><span style="font-size:13px;color:#c5c9d6;line-height:1.6">${f}</span></div>`).join('');
+      } else { failEl.textContent=r.fail_reasons; }
+    }
+    document.getElementById('b4-sec-str').classList.add('open');
+    document.getElementById('b4-result').style.display='block';
+    if(navigator.vibrate) navigator.vibrate(isFire?[50,30,80,30,50]:[50,30,50]);
+    setTimeout(()=>document.getElementById('b4-result').scrollIntoView({behavior:'smooth',block:'start'}),200);
+
+  } catch(err){
+    document.getElementById('b4-error-msg').textContent=err.message;
+    document.getElementById('b4-error').classList.add('show');
+  } finally{
+    document.getElementById('b4-loading').classList.remove('show');
+    document.querySelector('#b4-loading .load-txt').textContent='PHÂN TÍCH ENTRY...';
+    document.querySelector('#b4-loading .load-sub').textContent='M5 Sniper Entry Analysis';
+    checkB4Ready();
+  }
+}
+
+async function runBo4(){
+  document.getElementById('b4-result').style.display='none';
+  document.getElementById('b4-loading').classList.add('show');
   document.getElementById('b4-analyze-btn').disabled=true;
   document.getElementById('b4-error').classList.remove('show');
   const loss=parseFloat(document.getElementById('b4-loss').value)||0;
