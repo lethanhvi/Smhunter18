@@ -1841,26 +1841,120 @@ async function runBo2(){
   document.getElementById('b2-analyze-btn').disabled=true;
   document.getElementById('b2-error').classList.remove('show');
   try{
-    const sys=`Bạn là Liquidity Analyst chuyên XAUUSD. Bias từ Bộ 1: ${STATE.bias}. Chỉ tìm setup theo bias, không phân tích ngược.\nQUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt, không dùng tiếng Anh.\nTrả về DUY NHẤT JSON:\n{"verdict":"GO"|"WAIT"|"STOP","verdict_reason":"...","liquidity":"...","sweep":"...","trap":"...","path":"..."}`;
+    const sys=`Bạn là Context Engine Analyst chuyên XAUUSD — H1 + M15.
+Macro bias từ Bộ 1: ${STATE.bias} (chỉ tham khảo định hướng TP, KHÔNG ép theo bias)
+
+NHIỆM VỤ: Xác định trạng thái thị trường THỰC TẾ trên chart — đọc những gì đang xảy ra, không anticipate.
+
+═══════════════════════════════
+ANTI-BIAS RULE (QUAN TRỌNG NHẤT):
+═══════════════════════════════
+❌ KHÔNG được ép theo bias D1
+✅ CHỈ đọc những gì đang xảy ra trên H1 + M15
+✅ Confirmation trước, bias sau
+
+═══════════════════════════════
+BƯỚC 1 — PHÂN LOẠI TRẠNG THÁI:
+═══════════════════════════════
+
+RANGE (NO TRADE):
+- Không có BOS rõ trên H1/M15
+- Nến thân nhỏ, râu nhiều
+- Giá dao động trong 1 vùng hẹp
+→ state = RANGE → NO TRADE
+
+MOMENTUM (Kích hoạt Mode 2A/2B):
+- Có displacement mạnh (nến thân lớn liên tiếp)
+- Break structure rõ (BOS)
+- Pullback nông (< 61.8% của impulse gần nhất)
+→ state = MOMENTUM → Mode Pullback/Breakout
+
+REVERSAL (Kích hoạt Mode 1 SMC):
+- Có liquidity sweep (high hoặc low bị quét)
+- CÓ MSS/CHoCH xác nhận đảo chiều
+- CÓ displacement ngược chiều sau sweep
+→ state = REVERSAL → Mode SMC
+
+═══════════════════════════════
+BƯỚC 2 — LOGIC LIQUIDITY ĐÚNG:
+═══════════════════════════════
+Sweep = điều kiện CẦN, KHÔNG phải tín hiệu
+
+3 case sau sweep:
+CASE 1 — SWEEP + DISPLACEMENT NGƯỢC → VALID REVERSAL → SMC
+CASE 2 — SWEEP + SIDEWAY → NO CONFIRMATION → RANGE → NO TRADE
+CASE 3 — SWEEP + TIẾP TỤC TREND → Liquidity grab → MOMENTUM continuation
+
+═══════════════════════════════
+BƯỚC 3 — XÁC NHẬN BẮT BUỘC:
+═══════════════════════════════
+Reversal hợp lệ cần ĐỦ 3:
+✔ Sweep (high hoặc low bị quét)
+✔ MSS hoặc BOS ngược chiều
+✔ Displacement xác nhận (nến thân lớn ngược chiều)
+
+Momentum hợp lệ cần ĐỦ 3:
+✔ Impulse mạnh (displacement rõ)
+✔ Pullback nông < 61.8%
+✔ Structure giữ (HL/LH không bị phá)
+
+═══════════════════════════════
+BƯỚC 4 — TRIGGER MODE:
+═══════════════════════════════
+IF state = REVERSAL → verdict = GO, mode_trigger = SMC
+IF state = MOMENTUM → verdict = GO, mode_trigger = MOMENTUM
+IF state = RANGE → verdict = STOP, mode_trigger = NO_TRADE
+IF chưa rõ → verdict = WAIT
+
+QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt, không dùng tiếng Anh.
+Trả về DUY NHẤT JSON:
+{"verdict":"GO"|"WAIT"|"STOP","state":"REVERSAL"|"MOMENTUM"|"RANGE","mode_trigger":"SMC"|"MOMENTUM"|"NO_TRADE","verdict_reason":"...","structure":"BOS/MSS tại đâu — giá cụ thể","liquidity":"BSL/SSL tại đâu — đã sweep chưa","sweep_case":"CASE 1/2/3 — mô tả phản ứng sau sweep","momentum":"impulse mạnh không, pullback bao nhiêu % — còn giữ structure không","path":"kịch bản giá tiếp theo cụ thể với vùng giá"}`;
+
     const h1b64=STATE.imgs.b2_h1.split(',')[1],m15b64=STATE.imgs.b2_m15.split(',')[1];
     const h1t=STATE.imgs.b2_h1.split(';')[0].split(':')[1],m15t=STATE.imgs.b2_m15.split(';')[0].split(':')[1];
-    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:h1t,data:h1b64}},{type:'text',text:'H1'},{type:'image',source:{type:'base64',media_type:m15t,data:m15b64}},{type:'text',text:'M15. Phân tích JSON.'}]}]});
+    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1200,system:sys,messages:[{role:'user',content:[
+      {type:'image',source:{type:'base64',media_type:h1t,data:h1b64}},
+      {type:'text',text:'Chart H1 — xác định structure và momentum'},
+      {type:'image',source:{type:'base64',media_type:m15t,data:m15b64}},
+      {type:'text',text:'Chart M15 — xác định liquidity và confirmation. Phân tích Context Engine JSON.'}
+    ]}]});
+
     // Save for Bo4
     STATE.b2Verdict=r.verdict;
-    STATE.b2Narrative=r.path||'';
+    STATE.b2Narrative=(r.path||'')+(r.mode_trigger?` | Mode: ${r.mode_trigger}`:'');
     saveState();
+
     // Render
     document.getElementById('b2-time').innerHTML=`TIME: <span>${vnTime()}</span>`;
     const vbox=document.getElementById('b2-verdict-box');
+
+    // State colors
+    const stateColors={REVERSAL:'stop',MOMENTUM:'go',RANGE:'wait'};
+    const stateEmoji={REVERSAL:'🔴',MOMENTUM:'🔵',RANGE:'⛔'};
+    const stateLabel={REVERSAL:'REVERSAL — KÍCH HOẠT SMC',MOMENTUM:'MOMENTUM — KÍCH HOẠT PULLBACK/BREAKOUT',RANGE:'RANGE — KHÔNG TRADE'};
+
     vbox.className='verdict-box '+(r.verdict==='GO'?'go':r.verdict==='STOP'?'stop':'wait');
-    document.getElementById('b2-emoji').textContent=r.verdict==='GO'?'✅':r.verdict==='STOP'?'🚫':'⏸';
-    const vtMap={GO:'✅ CÓ SETUP — TIẾN HÀNH BỘ 4',WAIT:'⏸ CHƯA RÕ — CHỜ THÊM',STOP:'🚫 KHÔNG CÓ SETUP — DỪNG'};
-    document.getElementById('b2-vtitle').textContent=vtMap[r.verdict]||r.verdict;
+    document.getElementById('b2-emoji').textContent=stateEmoji[r.state]||( r.verdict==='GO'?'✅':r.verdict==='STOP'?'🚫':'⏸');
+    document.getElementById('b2-vtitle').textContent=stateLabel[r.state]||(r.verdict==='GO'?'CÓ SETUP — TIẾN HÀNH BỘ 4':r.verdict==='STOP'?'KHÔNG CÓ SETUP — DỪNG':'CHƯA RÕ — CHỜ THÊM');
     document.getElementById('b2-vreason').textContent=r.verdict_reason||'';
+
+    // Report sections
     document.getElementById('b2-c-lq').textContent=r.liquidity||'';
-    document.getElementById('b2-c-sweep').textContent=r.sweep||'';
-    document.getElementById('b2-c-trap').textContent=r.trap||'';
+    document.getElementById('b2-c-sweep').textContent=r.sweep_case||r.sweep||'';
+    document.getElementById('b2-c-trap').textContent=r.momentum||r.trap||'';
     document.getElementById('b2-c-path').textContent=r.path||'';
+
+    // Mode trigger badge
+    const lqEl = document.getElementById('b2-c-lq');
+    if(r.mode_trigger && r.state){
+      const mtColors={SMC:'var(--blue)',MOMENTUM:'var(--green)',NO_TRADE:'var(--red)'};
+      const mtLabel={SMC:'🔴 → Kích hoạt MODE 1: SMC',MOMENTUM:'🔵 → Kích hoạt MODE 2: Pullback/Breakout',NO_TRADE:'⛔ → Không trade'};
+      const badge=`<div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${mtColors[r.mode_trigger]||'var(--muted)'};background:rgba(0,0,0,0.3);border:1px solid currentColor;border-radius:6px;padding:6px 10px;margin-bottom:8px">${mtLabel[r.mode_trigger]||r.mode_trigger}</div>`;
+      lqEl.innerHTML=badge+(r.liquidity||'');
+    } else {
+      lqEl.textContent=r.liquidity||'';
+    }
+
     document.getElementById('b2-sec-lq').classList.add('open');
     document.getElementById('b2-result').style.display='block';
     if(r.verdict==='GO') document.getElementById('b2-next').style.display='block';
