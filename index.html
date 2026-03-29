@@ -216,7 +216,7 @@ input[type="file"]{display:none}
 .rep-content{font-size:13px;line-height:1.75;color:#8a9ab8;font-weight:300;padding-top:12px;white-space:pre-wrap}
 .rep-content strong,.rep-content b{color:var(--text);font-weight:600}
 
-/* ENTRY CARD */
+/* VÀO LỆNH CARD */
 .entry-card{background:var(--surface2);border:1px solid rgba(201,168,76,0.25);border-radius:8px;padding:14px 16px;margin-bottom:12px}
 .entry-title{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:2px;margin-bottom:12px}
 .entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -248,7 +248,7 @@ input[type="file"]{display:none}
 .loss-status.warn{background:rgba(255,181,71,0.12);color:var(--amber);border:1px solid rgba(255,181,71,0.25);display:block}
 .loss-status.stop{background:rgba(232,65,90,0.12);color:var(--red);border:1px solid rgba(232,65,90,0.25);display:block}
 
-/* AUTO KZ ITEM */
+/* TỰ ĐỘNG KZ ITEM */
 .auto-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:13px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;transition:all 0.3s}
 .auto-item.in-kz{border-color:rgba(46,204,138,0.4);background:rgba(46,204,138,0.04)}
 .auto-item.out-kz{border-color:rgba(232,65,90,0.35);background:rgba(232,65,90,0.03)}
@@ -328,7 +328,7 @@ input[type="file"]{display:none}
       <div class="stage-icon">🥇</div>
       <div class="stage-info">
         <div class="stage-num">BỘ 1</div>
-        <div class="stage-name">Market Bias</div>
+        <div class="stage-name">Phân Tích Xu Hướng</div>
         <div class="stage-desc">Phân tích D1 + H4 · AI</div>
       </div>
       <div class="stage-status pending" id="ss-bo1">○</div>
@@ -355,8 +355,8 @@ input[type="file"]{display:none}
       <div class="stage-icon">🎯</div>
       <div class="stage-info">
         <div class="stage-num">BỘ 4</div>
-        <div class="stage-name">Sniper Entry</div>
-        <div class="stage-desc">Pending order M5 · AI</div>
+        <div class="stage-name">Điểm Vào Lệnh</div>
+        <div class="stage-desc">Điểm vào M5 · AI</div>
       </div>
       <div class="stage-status pending" id="ss-bo4">○</div>
     </div>
@@ -364,7 +364,7 @@ input[type="file"]{display:none}
       <div class="stage-icon">📋</div>
       <div class="stage-info">
         <div class="stage-num">BỘ 5</div>
-        <div class="stage-name">Post-Trade Review</div>
+        <div class="stage-name">Đánh Giá Sau Lệnh</div>
         <div class="stage-desc">Chấm điểm · Rút kinh nghiệm · AI Coach</div>
       </div>
       <div class="stage-status pending" id="ss-bo5">○</div>
@@ -422,13 +422,13 @@ input[type="file"]{display:none}
 <div class="screen" id="screen-psych">
 <div class="screen-inner">
   <div class="back-bar">
-    <button class="back-btn" onclick="goBack()">← BACK</button>
+    <button class="back-btn" onclick="goBack()">← QUAY LẠI</button>
     <span class="screen-badge">🧠 PSYCH CHECK</span>
     <span class="screen-step">0 / 5</span>
   </div>
   <div class="scr-header">
     <div class="scr-title">TRADING<br><span>PSYCH</span> CHECK</div>
-    <div class="scr-sub">The5%ers // Mandatory Pre-Session Gate</div>
+    <div class="scr-sub">The5%ers // Bắt buộc trước mỗi phiên</div>
   </div>
 
   <div class="prog-wrap">
@@ -452,13 +452,13 @@ input[type="file"]{display:none}
 <div class="screen" id="screen-bo1">
 <div class="screen-inner">
   <div class="back-bar">
-    <button class="back-btn" onclick="goBack()">← BACK</button>
-    <span class="screen-badge">🥇 BỘ 1 — MARKET BIAS</span>
+    <button class="back-btn" onclick="goBack()">← QUAY LẠI</button>
+    <span class="screen-badge">🥇 BỘ 1 — PHÂN TÍCH XU HƯỚNG</span>
     <span class="screen-step">1 / 5</span>
   </div>
   <div class="scr-header">
     <div class="scr-title">XAU<span>/USD</span></div>
-    <div class="scr-sub">D1 + H4 · Institutional Structure Analysis</div>
+    <div class="scr-sub">D1 + H4 · Phân tích cấu trúc tổng thể</div>
   </div>
 
   <div class="panel blue">
@@ -479,7 +479,7 @@ input[type="file"]{display:none}
       </div>
       <div class="upload-box" id="b1-box-h4" onclick="document.getElementById('b1-f-h4').click()">
         <input type="file" id="b1-f-h4" accept="image/*" onchange="handleImg('b1','h4',this)">
-        <div class="upload-inner"><span class="upload-tf">H4</span><div class="upload-hint">4-HOUR</div></div>
+        <div class="upload-inner"><span class="upload-tf">H4</span><div class="upload-hint">4 TIẾNG</div></div>
       </div>
     </div>
   </div>
@@ -489,14 +489,14 @@ input[type="file"]{display:none}
   <div class="error-box" id="b1-error"><div class="error-title">⚠ LỖI</div><div class="error-msg" id="b1-error-msg"></div></div>
 
   <div id="b1-result" style="display:none">
-    <div class="result-meta"><div class="meta-item">ASSET: <span>XAUUSD</span></div><div class="meta-item">TF: <span>D1+H4</span></div><div class="meta-item" id="b1-time">TIME: <span>--:--</span></div></div>
+    <div class="result-meta"><div class="meta-item">TÀI SẢN: <span>XAUUSD</span></div><div class="meta-item">TF: <span>D1+H4</span></div><div class="meta-item" id="b1-time">TIME: <span>--:--</span></div></div>
     <div class="verdict-box" id="b1-verdict-box"><div class="v-emoji" id="b1-emoji">--</div><div class="v-label">DAILY BIAS — VALID ALL DAY</div><div class="v-title" id="b1-vtitle">---</div><div class="v-sub" id="b1-vreason"></div></div>
     <div class="report-sec" id="b1-sec-str"><div class="rep-hdr" onclick="toggleRep('b1-sec-str')"><div class="rep-icon">🏗</div><div class="rep-title">CẤU TRÚC THỊ TRƯỜNG</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b1-c-str"></div></div></div>
     <div class="report-sec" id="b1-sec-lq"><div class="rep-hdr" onclick="toggleRep('b1-sec-lq')"><div class="rep-icon">💧</div><div class="rep-title">LIQUIDITY MAP</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b1-c-lq"></div></div></div>
     <div class="report-sec" id="b1-sec-zones"><div class="rep-hdr" onclick="toggleRep('b1-sec-zones')"><div class="rep-icon">🎯</div><div class="rep-title">SMART MONEY ZONES</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b1-c-zones"></div></div></div>
     <div class="report-sec" id="b1-sec-dxy"><div class="rep-hdr" onclick="toggleRep('b1-sec-dxy')"><div class="rep-icon">💵</div><div class="rep-title">DXY CORRELATION</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b1-c-dxy"></div></div></div>
     <div class="report-sec" id="b1-sec-intent"><div class="rep-hdr" onclick="toggleRep('b1-sec-intent')"><div class="rep-icon">🧠</div><div class="rep-title">Ý ĐỒ THỊ TRƯỜNG</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b1-c-intent"></div></div></div>
-    <button class="next-btn" id="b1-next" onclick="completeStage('bo1')">→ TIẾN HÀNH BỘ 3 (KILLZONE)</button>
+    <button class="next-btn" id="b1-next" onclick="completeStage('bo1')">→ TIẾN HÀNH BỘ 3</button>
   </div>
 </div>
 </div>
@@ -507,16 +507,16 @@ input[type="file"]{display:none}
 <div class="screen" id="screen-bo3">
 <div class="screen-inner">
   <div class="back-bar">
-    <button class="back-btn" onclick="goBack()">← BACK</button>
-    <span class="screen-badge">⚡ BỘ 3 — PRIORITY ENGINE</span>
+    <button class="back-btn" onclick="goBack()">← QUAY LẠI</button>
+    <span class="screen-badge">⚡ BỘ 3 — ƯU TIÊN</span>
     <span class="screen-step">2 / 5</span>
   </div>
   <div class="scr-header">
     <div class="scr-title">PRIORITY<br><span>ENGINE</span></div>
-    <div class="scr-sub">Time + M15 Context → Priority Level</div>
+    <div class="scr-sub">Thời gian + M15 → Mức Ưu Tiên</div>
   </div>
 
-  <!-- Clock + Kill Zone AUTO -->
+  <!-- Clock + Kill Zone TỰ ĐỘNG -->
   <div class="panel" style="margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div><div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:2px">GIỜ VIỆT NAM</div>
@@ -595,8 +595,8 @@ input[type="file"]{display:none}
 <div class="screen" id="screen-bo2">
 <div class="screen-inner">
   <div class="back-bar">
-    <button class="back-btn" onclick="goBack()">← BACK</button>
-    <span class="screen-badge">💧 BỘ 2 — LIQUIDITY</span>
+    <button class="back-btn" onclick="goBack()">← QUAY LẠI</button>
+    <span class="screen-badge">💧 BỘ 2 — NGỮ CẢNH THỊ TRƯỜNG</span>
     <span class="screen-step">3 / 5</span>
   </div>
   <div class="scr-header">
@@ -606,7 +606,7 @@ input[type="file"]{display:none}
 
   <!-- Auto bias -->
   <div class="panel">
-    <div class="sec-label"><span>AUTO</span> BIAS TỪ BỘ 1</div>
+    <div class="sec-label"><span>TỰ ĐỘNG</span> XU HƯỚNG TỪ BỘ 1</div>
     <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;font-family:'Share Tech Mono',monospace;font-size:12px;font-weight:700;letter-spacing:1px" id="b2-bias-display">--</div>
   </div>
 
@@ -629,13 +629,13 @@ input[type="file"]{display:none}
   <div class="error-box" id="b2-error"><div class="error-title">⚠ LỖI</div><div class="error-msg" id="b2-error-msg"></div></div>
 
   <div id="b2-result" style="display:none">
-    <div class="result-meta"><div class="meta-item">ASSET: <span>XAUUSD</span></div><div class="meta-item">TF: <span>H1+M15</span></div><div class="meta-item" id="b2-time">TIME: <span>--:--</span></div></div>
+    <div class="result-meta"><div class="meta-item">TÀI SẢN: <span>XAUUSD</span></div><div class="meta-item">TF: <span>H1+M15</span></div><div class="meta-item" id="b2-time">TIME: <span>--:--</span></div></div>
     <div class="verdict-box" id="b2-verdict-box"><div class="v-emoji" id="b2-emoji">--</div><div class="v-label">LIQUIDITY VERDICT</div><div class="v-title" id="b2-vtitle">---</div><div class="v-sub" id="b2-vreason"></div></div>
     <div class="report-sec" id="b2-sec-lq"><div class="rep-hdr" onclick="toggleRep('b2-sec-lq')"><div class="rep-icon">💧</div><div class="rep-title">LIQUIDITY LỚN</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b2-c-lq"></div></div></div>
     <div class="report-sec" id="b2-sec-sweep"><div class="rep-hdr" onclick="toggleRep('b2-sec-sweep')"><div class="rep-icon">🌊</div><div class="rep-title">KHẢ NĂNG SWEEP</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b2-c-sweep"></div></div></div>
     <div class="report-sec" id="b2-sec-trap"><div class="rep-hdr" onclick="toggleRep('b2-sec-trap')"><div class="rep-icon">⚠️</div><div class="rep-title">BẪY 90% TRADER</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b2-c-trap"></div></div></div>
     <div class="report-sec" id="b2-sec-path"><div class="rep-hdr" onclick="toggleRep('b2-sec-path')"><div class="rep-icon">🗺️</div><div class="rep-title">DỰ ĐOÁN ĐƯỜNG ĐI</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b2-c-path"></div></div></div>
-    <button class="next-btn" id="b2-next" onclick="completeStage('bo2')">→ TIẾN HÀNH BỘ 4 (ENTRY)</button>
+    <button class="next-btn" id="b2-next" onclick="completeStage('bo2')">→ TIẾN HÀNH BỘ 4</button>
   </div>
 </div>
 </div>
@@ -646,18 +646,18 @@ input[type="file"]{display:none}
 <div class="screen" id="screen-bo4">
 <div class="screen-inner">
   <div class="back-bar">
-    <button class="back-btn" onclick="goBack()">← BACK</button>
-    <span class="screen-badge">🎯 BỘ 4 — ENTRY</span>
+    <button class="back-btn" onclick="goBack()">← QUAY LẠI</button>
+    <span class="screen-badge">🎯 BỘ 4 — VÀO LỆNH</span>
     <span class="screen-step">4 / 5</span>
   </div>
   <div class="scr-header">
-    <div class="scr-title">SNIPER<span>/ENTRY</span></div>
+    <div class="scr-title">SNIPER<span>/VÀO LỆNH</span></div>
     <div class="scr-sub">M5 · Pending Order · The5%ers $2,500</div>
   </div>
 
   <!-- Auto context -->
   <div class="panel">
-    <div class="sec-label"><span>AUTO</span> CONTEXT TỪ BỘ TRƯỚC</div>
+    <div class="sec-label"><span>TỰ ĐỘNG</span> CONTEXT TỪ BỘ TRƯỚC</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px">
         <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">BIAS</div>
@@ -669,7 +669,7 @@ input[type="file"]{display:none}
       </div>
     </div>
     <div style="margin-top:8px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px">
-      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">NARRATIVE (từ Bộ 2)</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">NHẬN ĐỊNH (từ Bộ 2)</div>
       <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text);line-height:1.5" id="b4-narrative">--</div>
     </div>
   </div>
@@ -678,7 +678,7 @@ input[type="file"]{display:none}
   <div class="panel">
     <div class="sec-label"><span>STEP 01</span> THE5%ERS COMPLIANCE</div>
     <div class="loss-row">
-      <div><div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">DAILY LOSS ($)</div><input type="number" class="loss-input" id="b4-loss" placeholder="0" min="0" max="125" oninput="checkLoss()" step="1"></div>
+      <div><div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">LỖ TRONG NGÀY ($)</div><input type="number" class="loss-input" id="b4-loss" placeholder="0" min="0" max="125" oninput="checkLoss()" step="1"></div>
       <div class="loss-lbl">/ $125</div>
       <div class="loss-status" id="b4-loss-status"></div>
     </div>
@@ -689,19 +689,19 @@ input[type="file"]{display:none}
     <div class="sec-label"><span>STEP 02</span> TẢI CHART M5</div>
     <div class="upload-box single" id="b4-box-m5" onclick="document.getElementById('b4-f-m5').click()">
       <input type="file" id="b4-f-m5" accept="image/*" onchange="handleImg('b4','m5',this)">
-      <div class="upload-inner"><span class="upload-tf" style="font-size:22px">M5</span><div class="upload-hint">TAP ĐỂ CHỌN ẢNH</div></div>
+      <div class="upload-inner"><span class="upload-tf" style="font-size:22px">M5</span><div class="upload-hint">NHẤN ĐỂ CHỌN ẢNH</div></div>
     </div>
   </div>
 
   <button class="analyze-btn" id="b4-analyze-btn" onclick="runBo4()" disabled>🎯 CHẠY PHÂN TÍCH BỘ 4</button>
   <button class="analyze-btn" id="b4-truy-kich-btn" onclick="runBo4TruyKich()" disabled style="background:linear-gradient(135deg,rgba(255,181,71,0.15),rgba(255,181,71,0.08));border-color:rgba(255,181,71,0.4);color:var(--amber);margin-top:8px">⚡ CHẠY MODE TRUY KÍCH</button>
-  <div class="loading-wrap" id="b4-loading"><div class="spinner"></div><div class="load-txt">CALCULATING SNIPER ENTRY...</div><div class="load-sub">M5 Pending Order Analysis</div></div>
+  <div class="loading-wrap" id="b4-loading"><div class="spinner"></div><div class="load-txt">CALCULATING SNIPER VÀO LỆNH...</div><div class="load-sub">M5 Pending Order Analysis</div></div>
   <div class="error-box" id="b4-error"><div class="error-title">⚠ LỖI</div><div class="error-msg" id="b4-error-msg"></div></div>
 
   <div id="b4-result" style="display:none">
     <div class="verdict-box" id="b4-verdict-box">
       <div class="v-emoji" id="b4-emoji">--</div>
-      <div class="v-label">ENTRY DECISION</div>
+      <div class="v-label">QUYẾT ĐỊNH VÀO LỆNH</div>
       <div class="v-title" id="b4-vtitle">---</div>
       <!-- SMC Checklist inside verdict -->
       <div id="b4-smc-checklist" style="margin:12px 0;text-align:left"></div>
@@ -711,17 +711,17 @@ input[type="file"]{display:none}
       <div class="entry-title">📋 THIẾT LẬP LỆNH</div>
       <div class="entry-grid">
         <div class="e-item"><div class="e-key">LOẠI LỆNH</div><div class="e-val gold" id="b4-etype">---</div></div>
-        <div class="e-item"><div class="e-key">ENTRY</div><div class="e-val" id="b4-entry">---</div></div>
+        <div class="e-item"><div class="e-key">VÀO LỆNH</div><div class="e-val" id="b4-entry">---</div></div>
         <div class="e-item"><div class="e-key">STOP LOSS</div><div class="e-val red" id="b4-sl">---</div></div>
         <div class="e-item"><div class="e-key">TAKE PROFIT</div><div class="e-val green" id="b4-tp">---</div></div>
-        <div class="e-item"><div class="e-key">LOT SIZE</div><div class="e-val gold" id="b4-lot">---</div></div>
+        <div class="e-item"><div class="e-key">KHỐI LƯỢNG</div><div class="e-val gold" id="b4-lot">---</div></div>
         <div class="e-item"><div class="e-key">R:R RATIO</div><div class="e-val" id="b4-rr">---</div></div>
       </div>
     </div>
-    <div class="report-sec open" id="b4-sec-smc"><div class="rep-hdr" onclick="toggleRep('b4-sec-smc')"><div class="rep-icon">📋</div><div class="rep-title">SMC CHECKLIST</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b4-c-smc"></div></div></div>
+    <div class="report-sec open" id="b4-sec-smc"><div class="rep-hdr" onclick="toggleRep('b4-sec-smc')"><div class="rep-icon">📋</div><div class="rep-title">KIỂM TRA SMC</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b4-c-smc"></div></div></div>
     <div class="report-sec" id="b4-sec-str"><div class="rep-hdr" onclick="toggleRep('b4-sec-str')"><div class="rep-icon">🏗</div><div class="rep-title">CẤU TRÚC M5</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b4-c-str"></div></div></div>
-    <div class="report-sec" id="b4-sec-zone"><div class="rep-hdr" onclick="toggleRep('b4-sec-zone')"><div class="rep-icon">🎯</div><div class="rep-title">VÙNG PENDING ORDER</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b4-c-zone"></div></div></div>
-    <div class="report-sec" id="b4-sec-risk"><div class="rep-hdr" onclick="toggleRep('b4-sec-risk')"><div class="rep-icon">⚖️</div><div class="rep-title">RISK MANAGEMENT</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b4-c-risk"></div></div></div>
+    <div class="report-sec" id="b4-sec-zone"><div class="rep-hdr" onclick="toggleRep('b4-sec-zone')"><div class="rep-icon">🎯</div><div class="rep-title">VÙNG ĐẶT LỆNH</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b4-c-zone"></div></div></div>
+    <div class="report-sec" id="b4-sec-risk"><div class="rep-hdr" onclick="toggleRep('b4-sec-risk')"><div class="rep-icon">⚖️</div><div class="rep-title">QUẢN LÝ RỦI RO</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b4-c-risk"></div></div></div>
     <div class="report-sec" id="b4-sec-fail"><div class="rep-hdr" onclick="toggleRep('b4-sec-fail')"><div class="rep-icon">⚠️</div><div class="rep-title">3 LÝ DO CÓ THỂ THẤT BẠI</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b4-c-fail"></div></div></div>
     <div class="rules-box" id="b4-rules" style="display:none">
       <div class="rules-title">🚫 QUY TẮC SAU KHI ĐẶT LỆNH</div>
@@ -741,7 +741,7 @@ input[type="file"]{display:none}
 <div class="screen" id="screen-bo5">
 <div class="screen-inner">
   <div class="back-bar">
-    <button class="back-btn" onclick="goBack()">← BACK</button>
+    <button class="back-btn" onclick="goBack()">← QUAY LẠI</button>
     <span class="screen-badge">📋 BỘ 5 — POST-TRADE</span>
     <span class="screen-step">5 / 5</span>
   </div>
@@ -751,7 +751,7 @@ input[type="file"]{display:none}
   </div>
 
   <div class="panel gold">
-    <div class="sec-label"><span>AUTO</span> SESSION CONTEXT</div>
+    <div class="sec-label"><span>TỰ ĐỘNG</span> SESSION CONTEXT</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px">
         <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">BIAS BỘ 1</div>
@@ -762,7 +762,7 @@ input[type="file"]{display:none}
         <div style="font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700" id="b5-b2v">--</div>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px">
-        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">ENTRY</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">VÀO LỆNH</div>
         <div style="font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;color:var(--gold)" id="b5-entry">--</div>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px">
@@ -1111,34 +1111,29 @@ function tick() {
     else{dkz.className='cb-kz';dkz.textContent='NGOÀI KZ'}
   }
 
-  // Bo3 KZ
+  // Bo3 KZ bar
   const b3bar=document.getElementById('b3-kz-bar');
   const b3dot=document.getElementById('b3-kz-dot');
   const b3txt=document.getElementById('b3-kz-txt');
   const b3pill=document.getElementById('b3-kz-pill');
-  const b3auto=document.getElementById('b3-auto-kz');
-  const b3val=document.getElementById('b3-kz-val');
-  if(b3bar){
+  if(b3bar && b3dot && b3txt && b3pill){
     if(london){
       b3bar.style.cssText='background:rgba(46,204,138,0.07);border-color:rgba(46,204,138,0.35)';
       b3dot.style.cssText='width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);flex-shrink:0;animation:blink 1.5s infinite';
-      b3txt.style.color='var(--green)';b3txt.textContent='LONDON KILLZONE — 13:00–16:00 VN';
-      b3pill.style.cssText='font-family:Share Tech Mono,monospace;font-size:9px;padding:3px 8px;border-radius:10px;background:rgba(46,204,138,0.12);border:1px solid rgba(46,204,138,0.3);color:var(--green);letter-spacing:1px';b3pill.textContent='ACTIVE';
-      b3auto.className='auto-item in-kz';b3val.className='auto-val ok';b3val.textContent='✓ TRONG KZ';
+      b3txt.style.color='var(--green)';b3txt.textContent='LONDON KILLZONE — 14:00–17:00 VN';
+      b3pill.style.cssText='font-family:Share Tech Mono,monospace;font-size:9px;padding:3px 8px;border-radius:10px;background:rgba(46,204,138,0.12);border:1px solid rgba(46,204,138,0.3);color:var(--green);letter-spacing:1px';b3pill.textContent='ĐANG HOẠT ĐỘNG';
     } else if(ny){
       b3bar.style.cssText='background:rgba(77,159,255,0.07);border-color:rgba(77,159,255,0.35)';
       b3dot.style.cssText='width:7px;height:7px;border-radius:50%;background:var(--blue);box-shadow:0 0 8px var(--blue);flex-shrink:0;animation:blink 1.5s infinite';
-      b3txt.style.color='var(--blue)';b3txt.textContent='NEW YORK KILLZONE — 20:00–23:00 VN';
-      b3pill.style.cssText='font-family:Share Tech Mono,monospace;font-size:9px;padding:3px 8px;border-radius:10px;background:rgba(77,159,255,0.12);border:1px solid rgba(77,159,255,0.3);color:var(--blue);letter-spacing:1px';b3pill.textContent='ACTIVE';
-      b3auto.className='auto-item in-kz';b3val.className='auto-val ok';b3val.textContent='✓ TRONG KZ';
+      b3txt.style.color='var(--blue)';b3txt.textContent='NEW YORK KILLZONE — 19:00–22:00 VN';
+      b3pill.style.cssText='font-family:Share Tech Mono,monospace;font-size:9px;padding:3px 8px;border-radius:10px;background:rgba(77,159,255,0.12);border:1px solid rgba(77,159,255,0.3);color:var(--blue);letter-spacing:1px';b3pill.textContent='ĐANG HOẠT ĐỘNG';
     } else {
       b3bar.style.cssText='background:var(--surface2);border-color:var(--border2)';
       b3dot.style.cssText='width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0';
       b3txt.style.color='var(--muted)';
-      let next=t<13*60?`London lúc 13:00`:t<20*60?`New York lúc 20:00`:`London ngày mai`;
-      b3txt.textContent=`Ngoài Killzone — ${next}`;
+      let next=t<14*60?`London lúc 14:00`:t<19*60?`New York lúc 19:00`:`London ngày mai`;
+      b3txt.textContent=`Ngoài Kill Zone — ${next}`;
       b3pill.style.cssText='font-family:Share Tech Mono,monospace;font-size:9px;padding:3px 8px;border-radius:10px;background:rgba(232,65,90,0.1);border:1px solid rgba(232,65,90,0.2);color:var(--red);letter-spacing:1px';b3pill.textContent='NGOÀI KZ';
-      b3auto.className='auto-item out-kz';b3val.className='auto-val fail';b3val.textContent='✗ NGOÀI KZ';
     }
     checkB3Verdict();
   }
@@ -1932,7 +1927,7 @@ async function runBo2(){
   document.getElementById('b2-analyze-btn').disabled=true;
   document.getElementById('b2-error').classList.remove('show');
   try{
-    const sys=`Bạn là Context Engine Analyst chuyên XAUUSD — H1 + M15.
+    const sys=`Bạn là Ngữ Cảnh Analyst chuyên XAUUSD — H1 + M15.
 Macro bias từ Bộ 1: ${STATE.bias} (chỉ tham khảo định hướng TP, KHÔNG ép theo bias)
 PRIORITY từ Bộ 3: ${STATE.b3Priority||'MEDIUM'}
 
@@ -2011,7 +2006,7 @@ Trả về DUY NHẤT JSON:
       {type:'image',source:{type:'base64',media_type:h1t,data:h1b64}},
       {type:'text',text:'Chart H1 — xác định structure và momentum'},
       {type:'image',source:{type:'base64',media_type:m15t,data:m15b64}},
-      {type:'text',text:'Chart M15 — xác định liquidity và confirmation. Phân tích Context Engine JSON.'}
+      {type:'text',text:'Chart M15 — xác định liquidity và confirmation. Phân tích Ngữ Cảnh JSON.'}
     ]}]});
 
     // Save for Bo4
@@ -2116,7 +2111,7 @@ NGUYÊN TẮC TRUY KÍCH:
 5. Ưu tiên micro structure M5 hơn là chờ cấu trúc lớn
 
 ═══════════════════════════════
-3 MODEL ENTRY — CHỌN TỰ ĐỘNG:
+3 MODEL VÀO LỆNH — CHỌN TỰ ĐỘNG:
 ═══════════════════════════════
 
 🔵 MODEL A — EARLY SHIFT (ƯU TIÊN CAO NHẤT):
@@ -2266,8 +2261,8 @@ Trả về DUY NHẤT JSON:
     document.getElementById('b4-error').classList.add('show');
   } finally{
     document.getElementById('b4-loading').classList.remove('show');
-    document.querySelector('#b4-loading .load-txt').textContent='PHÂN TÍCH ENTRY...';
-    document.querySelector('#b4-loading .load-sub').textContent='M5 Sniper Entry Analysis';
+    document.querySelector('#b4-loading .load-txt').textContent='PHÂN TÍCH VÀO LỆNH...';
+    document.querySelector('#b4-loading .load-sub').textContent='M5 Điểm Vào Lệnh Analysis';
     checkB4Ready();
   }
 }
@@ -2275,7 +2270,7 @@ Trả về DUY NHẤT JSON:
 async function runBo4(){
   document.getElementById('b4-result').style.display='none';
   document.getElementById('b4-loading').classList.add('show');
-  document.querySelector('#b4-loading .load-txt').textContent='PHÂN TÍCH ENTRY ENGINE...';
+  document.querySelector('#b4-loading .load-txt').textContent='PHÂN TÍCH VÀO LỆNH ENGINE...';
   document.querySelector('#b4-loading .load-sub').textContent='SMC · Pullback · Breakout';
   document.getElementById('b4-analyze-btn').disabled=true;
   document.getElementById('b4-error').classList.remove('show');
@@ -2642,8 +2637,8 @@ Trả về DUY NHẤT JSON:
     document.getElementById('b4-error').classList.add('show');
   } finally{
     document.getElementById('b4-loading').classList.remove('show');
-    document.querySelector('#b4-loading .load-txt').textContent='PHÂN TÍCH ENTRY...';
-    document.querySelector('#b4-loading .load-sub').textContent='M5 Sniper Entry Analysis';
+    document.querySelector('#b4-loading .load-txt').textContent='PHÂN TÍCH VÀO LỆNH...';
+    document.querySelector('#b4-loading .load-sub').textContent='M5 Điểm Vào Lệnh Analysis';
     checkB4Ready();
   }
 }
@@ -2657,7 +2652,7 @@ async function runBo4(){
   const buf=125-loss;
   const lotNote=buf<75?'Giảm lot 0.5% ($12.5)':'Risk 1% ($25) bình thường';
   try{
-    const sysStandard=`Bạn là Prop Firm Trader Sniper Entry XAUUSD — The5%ers $2,500.
+    const sysStandard=`Bạn là Prop Firm Trader Điểm Vào Lệnh XAUUSD — The5%ers $2,500.
 Bias: ${STATE.bias}
 Narrative: ${STATE.b2Narrative||'Không có'}
 Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
