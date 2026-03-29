@@ -1865,28 +1865,35 @@ async function runBo1(){
   document.getElementById('b1-analyze-btn').disabled=true;
   document.getElementById('b1-error').classList.remove('show');
   try{
-    const sys=`Bạn là Institutional Market Structure Analyst chuyên phân tích XAUUSD cho Prop Firm Trader. Account: The5%ers $2,500, GMT+3. Chỉ tìm setup A+.
+    const sys=`Bạn là Institutional Market Structure Analyst XAUUSD — The5%ers $2,500, GMT+3.
 
-QUY TẮC BIAS BẮT BUỘC:
-- Chỉ ra SELL khi D1 bearish rõ ràng (Lower High + Lower Low + nến đỏ dominant)
-- Chỉ ra BUY khi D1 bullish rõ ràng (Higher High + Higher Low + nến xanh dominant)
-- Nếu D1 và H4 mâu thuẫn → D1 LUÔN THẮNG → ưu tiên bias theo D1, không ngoại lệ
-- H4 chỉ dùng để xác nhận timing và tìm vùng entry — không dùng để xác định bias
-- Nếu D1 không rõ ràng → bias = NEUTRAL, không được đoán
+═══ HẰNG SỐ ĐỊNH LƯỢNG (BẮT BUỘC) ═══
+IMPULSE_MIN = 1.5 giá | IMPULSE_STRONG = 2.5 giá
+BOS_MIN = 0.5 giá | SWEEP_MIN = 0.5 giá
+RANGE: 20 nến không BOS + biên độ < 3.0 giá = CẤM TRADE
+Pullback nông: 20-50% | Pullback sâu: 50-80%
+FVG_MIN = 0.5 giá (gap nến 1 và 3)
+OB hợp lệ: nến cuối trước displacement ≥ 1.5 giá
 
-YÊU CẦU BẮT BUỘC — phải có vùng giá cụ thể:
-- structure: Mô tả cấu trúc D1+H4, xác định Higher High/Lower High gần nhất với GIÁ CỤ THỂ
-- liquidity: Liệt kê vùng Buy Side / Sell Side Liquidity với GIÁ CỤ THỂ (VD: BSL tại 4,420 / SSL tại 4,280)
-- zones: Liệt kê TỐI THIỂU 2-3 vùng quan trọng với GIÁ CỤ THỂ:
-  + Supply Zone / OB Bearish: vùng xxx-xxx (kháng cự để SELL)
-  + Demand Zone / OB Bullish: vùng xxx-xxx (hỗ trợ để BUY)
-  + Fair Value Gap nếu có: vùng xxx-xxx
-- dxy: Nhận định DXY tác động thế nào đến XAUUSD
-- intent: Accumulation / Distribution / Manipulation — Smart Money đang làm gì
+FORMAT BẮT BUỘC:
+❌ CẤM: "momentum yếu", "có vẻ", "có thể"
+✅ DÙNG: "Displacement=TRUE(body=X.X giá)", "BOS=TRUE(break=X.X giá)", "Range=FALSE"
 
-QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt, không dùng tiếng Anh.
-Trả về DUY NHẤT JSON, không markdown:
-{"bias":"BUY"|"SELL"|"NEUTRAL","bias_reason":"...","structure":"...có giá cụ thể...","liquidity":"...BSL tại X, SSL tại Y...","zones":"...Supply Zone X-X, Demand Zone Y-Y, FVG Z-Z...","dxy":"...","intent":"..."}`;
+BỘ 1 — BIAS (D1 + H4):
+
+RULE:
+SELL: H4 tạo LH+LL + BOS xuống ≥ 0.5 giá. D1 xác nhận bearish.
+BUY: H4 tạo HH+HL + BOS lên ≥ 0.5 giá. D1 xác nhận bullish.
+NEUTRAL: Range=TRUE hoặc D1 không rõ.
+
+D1 luôn thắng khi mâu thuẫn H4.
+Bias KHÔNG khóa entry — chỉ ảnh hưởng TP:
+- Cùng bias → TP 1:3–1:5 | Ngược bias → TP 1:1–1:2
+
+OUTPUT phải có giá cụ thể cho tất cả vùng.
+QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt.
+Trả về DUY NHẤT JSON:
+{"bias":"BUY"|"SELL"|"NEUTRAL","bias_reason":"Displacement=TRUE(Xgiá),BOS=TRUE(Xgiá)","structure":"LH/LL hoặc HH/HL tại giá cụ thể","liquidity":"BSL tại X, SSL tại Y","zones":"Supply X-X, Demand Y-Y, FVG Z-Z","dxy":"tác động DXY","intent":"Accumulation/Distribution/Manipulation"}`;
     const d1b64=STATE.imgs.b1_d1.split(',')[1],h4b64=STATE.imgs.b1_h4.split(',')[1];
     const d1t=STATE.imgs.b1_d1.split(';')[0].split(':')[1],h4t=STATE.imgs.b1_h4.split(';')[0].split(':')[1];
     const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:d1t,data:d1b64}},{type:'text',text:'Chart 1: D1'},{type:'image',source:{type:'base64',media_type:h4t,data:h4b64}},{type:'text',text:'Chart 2: H4. Phân tích JSON.'}]}]});
@@ -1927,78 +1934,69 @@ async function runBo2(){
   document.getElementById('b2-analyze-btn').disabled=true;
   document.getElementById('b2-error').classList.remove('show');
   try{
-    const sys=`Bạn là Ngữ Cảnh Analyst chuyên XAUUSD — H1 + M15.
-Macro bias từ Bộ 1: ${STATE.bias} (chỉ tham khảo định hướng TP, KHÔNG ép theo bias)
-PRIORITY từ Bộ 3: ${STATE.b3Priority||'MEDIUM'}
-
-QUY TẮC THEO PRIORITY:
-${STATE.b3Priority==='HIGH' ? '→ HIGH: Cho phép SMC + Pullback + Truy Kích. Nới điều kiện confirm — chấp nhận early shift M5.' : STATE.b3Priority==='LOW' ? '→ LOW: Chỉ setup A+ confirm đầy đủ. Cấm entry sớm và Truy Kích yếu.' : '→ MEDIUM: Cho phép SMC chuẩn + Pullback. Truy Kích phải rõ, M5 mạnh.'}
-
-NHIỆM VỤ: Xác định trạng thái thị trường THỰC TẾ trên chart — đọc những gì đang xảy ra, không anticipate.
+    const sys=`Bạn là Context Engine Analyst XAUUSD — H1 + M15.
+Macro bias Bộ 1: ${STATE.bias} (tham khảo TP, KHÔNG ép entry)
+Priority Bộ 3: ${STATE.b3Priority||'MEDIUM'}
+${STATE.b3Priority==='HIGH'?'→ HIGH: SMC + Pullback + Truy Kích, chấp nhận early shift':STATE.b3Priority==='LOW'?'→ LOW: Chỉ A+ confirm đầy đủ, cấm entry sớm':'→ MEDIUM: SMC + Pullback, Truy Kích phải rõ'}
 
 ═══════════════════════════════
-ANTI-BIAS RULE (QUAN TRỌNG NHẤT):
+HẰNG SỐ ĐỊNH LƯỢNG (BẮT BUỘC ÁP DỤNG):
 ═══════════════════════════════
-❌ KHÔNG được ép theo bias D1
-✅ CHỈ đọc những gì đang xảy ra trên H1 + M15
-✅ Confirmation trước, bias sau
+IMPULSE_MIN = 1.5 giá (body tối thiểu của nến impulse)
+IMPULSE_STRONG = 2.5 giá
+BOS_MIN = 0.5 giá (close phá swing high/low tối thiểu)
+SWEEP_MIN = 0.5 giá (wick phá đỉnh/đáy, close quay lại)
+RANGE_MAX = 3.0 giá (biên độ 20 nến — nếu < 3.0 = RANGE)
+FVG_MIN = 0.5 giá (gap giữa nến 1 và 3)
 
-═══════════════════════════════
-BƯỚC 1 — PHÂN LOẠI TRẠNG THÁI:
-═══════════════════════════════
+ĐỊNH NGHĨA ĐỊNH LƯỢNG:
+- Displacement = TRUE: |Close-Open| ≥ 1.5 giá VÀ ≥ 1.5× trung bình body 5 nến trước
+- BOS = TRUE: Close phá swing high/low ≥ 0.5 giá
+- Sweep = TRUE: Wick phá đỉnh/đáy ≥ 0.5 giá, Close quay lại trong range
+- Range = TRUE: 20 nến không có BOS + biên độ < 3.0 giá → CẤM TRADE
+- Pullback nông: 20–50% của impulse | Pullback sâu: 50–80%
+- FVG = TRUE: Gap nến 1 và 3 ≥ 0.5 giá
+- OB hợp lệ: Nến cuối trước displacement ≥ 1.5 giá
 
-RANGE (NO TRADE):
-- Không có BOS rõ trên H1/M15
-- Nến thân nhỏ, râu nhiều
-- Giá dao động trong 1 vùng hẹp
-→ state = RANGE → NO TRADE
+FORMAT OUTPUT BẮT BUỘC:
+❌ CẤM: "momentum yếu", "có vẻ", "có thể", "khá mạnh"
+✅ BẮT BUỘC: "Displacement = TRUE (body = X.X giá)", "BOS = TRUE (break = X.X giá)", "Range = FALSE"
 
-MOMENTUM (Kích hoạt Mode 2A/2B):
-- Có displacement mạnh (nến thân lớn liên tiếp)
-- Break structure rõ (BOS)
-- Pullback nông (< 61.8% của impulse gần nhất)
-→ state = MOMENTUM → Mode Pullback/Breakout
+BỘ 2 — PHÂN LOẠI TRẠNG THÁI (H1 + M15):
 
-REVERSAL (Kích hoạt Mode 1 SMC):
-- Có liquidity sweep (high hoặc low bị quét)
-- CÓ MSS/CHoCH xác nhận đảo chiều
-- CÓ displacement ngược chiều sau sweep
-→ state = REVERSAL → Mode SMC
+ANTI-BIAS: KHÔNG ép theo bias D1. Chỉ đọc chart thực tế.
 
-═══════════════════════════════
-BƯỚC 2 — LOGIC LIQUIDITY ĐÚNG:
-═══════════════════════════════
-Sweep = điều kiện CẦN, KHÔNG phải tín hiệu
+PHÂN LOẠI:
 
-3 case sau sweep:
-CASE 1 — SWEEP + DISPLACEMENT NGƯỢC → VALID REVERSAL → SMC
-CASE 2 — SWEEP + SIDEWAY → NO CONFIRMATION → RANGE → NO TRADE
-CASE 3 — SWEEP + TIẾP TỤC TREND → Liquidity grab → MOMENTUM continuation
+RANGE → NO TRADE:
+- Range = TRUE (20 nến, biên độ < 3.0 giá, không BOS)
+- Displacement = FALSE
 
-═══════════════════════════════
-BƯỚC 3 — XÁC NHẬN BẮT BUỘC:
-═══════════════════════════════
-Reversal hợp lệ cần ĐỦ 3:
-✔ Sweep (high hoặc low bị quét)
-✔ MSS hoặc BOS ngược chiều
-✔ Displacement xác nhận (nến thân lớn ngược chiều)
+MOMENTUM → Mode 2A/2B:
+- Displacement = TRUE (body ≥ 1.5 giá)
+- BOS = TRUE (break ≥ 0.5 giá)
+- Pullback 20–50% (nông)
+- Range = FALSE
 
-Momentum hợp lệ cần ĐỦ 3:
-✔ Impulse mạnh (displacement rõ)
-✔ Pullback nông < 61.8%
-✔ Structure giữ (HL/LH không bị phá)
+REVERSAL → Mode 1 SMC:
+- Sweep = TRUE (wick ≥ 0.5 giá, close quay lại)
+- MSS = TRUE (sweep + BOS ngược ≥ 0.5 giá)
+- Displacement ngược chiều = TRUE
 
-═══════════════════════════════
-BƯỚC 4 — TRIGGER MODE:
-═══════════════════════════════
-IF state = REVERSAL → verdict = GO, mode_trigger = SMC
-IF state = MOMENTUM → verdict = GO, mode_trigger = MOMENTUM
-IF state = RANGE → verdict = STOP, mode_trigger = NO_TRADE
-IF chưa rõ → verdict = WAIT
+3 CASE SAU SWEEP:
+CASE 1: Sweep + Displacement ngược → REVERSAL → SMC
+CASE 2: Sweep + sideway (Range=TRUE) → NO TRADE
+CASE 3: Sweep + tiếp tục trend → MOMENTUM
 
-QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt, không dùng tiếng Anh.
+TRIGGER:
+REVERSAL → verdict=GO, mode_trigger=SMC
+MOMENTUM → verdict=GO, mode_trigger=MOMENTUM
+RANGE → verdict=STOP
+
+QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt.
+Dùng format định lượng: "Displacement=TRUE(body=X.X giá)", "BOS=TRUE(break=X.X giá)", "Range=FALSE"
 Trả về DUY NHẤT JSON:
-{"verdict":"GO"|"WAIT"|"STOP","state":"REVERSAL"|"MOMENTUM"|"RANGE","mode_trigger":"SMC"|"MOMENTUM"|"NO_TRADE","verdict_reason":"...","structure":"BOS/MSS tại đâu — giá cụ thể","liquidity":"BSL/SSL tại đâu — đã sweep chưa","sweep_case":"CASE 1/2/3 — mô tả phản ứng sau sweep","momentum":"impulse mạnh không, pullback bao nhiêu % — còn giữ structure không","path":"kịch bản giá tiếp theo cụ thể với vùng giá"}`;
+{"verdict":"GO"|"WAIT"|"STOP","state":"REVERSAL"|"MOMENTUM"|"RANGE","mode_trigger":"SMC"|"MOMENTUM"|"NO_TRADE","verdict_reason":"dùng format định lượng","structure":"BOS/MSS tại X.X giá","liquidity":"BSL/SSL tại X","sweep_case":"CASE 1/2/3 — phản ứng sau sweep","momentum":"Displacement=X(Xgiá), Pullback=X%, Structure giữ=TRUE/FALSE","path":"kịch bản giá cụ thể"}`;
 
     const h1b64=STATE.imgs.b2_h1.split(',')[1],m15b64=STATE.imgs.b2_m15.split(',')[1];
     const h1t=STATE.imgs.b2_h1.split(';')[0].split(':')[1],m15t=STATE.imgs.b2_m15.split(';')[0].split(':')[1];
@@ -2291,66 +2289,76 @@ async function runBo4(){
     const hasHTF = STATE.imgs.b2_h1 && STATE.imgs.b2_m15;
 
     const sys=`Bạn là Entry Engine Trader XAUUSD — The5%ers $2,500.
-Bias từ Bộ 1: ${STATE.bias} (CHỈ định hướng TP, KHÔNG khóa lệnh)
-Context từ Bộ 2: ${STATE.b2Verdict||'Không có'} — ${STATE.b2Narrative||'Không có'}
+Bias Bộ 1: ${STATE.bias} (KHÔNG khóa lệnh — chỉ điều chỉnh TP)
+Context Bộ 2: ${STATE.b2Verdict||'Không có'} — ${STATE.b2Narrative||'Không có'}
 Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
 
-═══════════════════════════════
-KIẾN TRÚC 3 MODE — CHỌN TỰ ĐỘNG:
-═══════════════════════════════
+═══ HẰNG SỐ ĐỊNH LƯỢNG ═══
+IMPULSE: body ≥ 1.5 giá VÀ ≥ 1.5× avg body 5 nến trước
+BOS: close phá swing high/low ≥ 0.5 giá
+SWEEP: wick phá ≥ 0.5 giá, close quay lại
+RANGE: 20 nến không BOS + biên độ < 3.0 giá → NO TRADE
+Pullback nông: 20-50% | Pullback sâu: 50-80%
+FVG: gap nến 1 và 3 ≥ 0.5 giá
+OB: nến cuối trước displacement ≥ 1.5 giá
+SL Mode SMC: 15-20 giá | SL Mode Momentum: 10-15 giá
 
-🔴 MODE 1 — SMC (REVERSAL):
-Điều kiện: Giá ở premium/discount + có liquidity sweep + có MSS/CHoCH
-Entry: OB hoặc FVG
-SL: ngoài vùng sweep — range 12-25 pip
-  IF SL < 12 → sweep không rõ → bỏ
-  IF SL > 25 → RR xấu → bỏ
-TP: liquidity đối diện theo bias B1
-RR: ≥ 1:3 bắt buộc
+FORMAT: "Displacement=TRUE(body=X.Xgiá)", "BOS=TRUE(break=X.Xgiá)", KHÔNG dùng "có vẻ","có thể"
 
-🔵 MODE 2A — PULLBACK (MOMENTUM EARLY):
-Điều kiện: Có impulse mạnh + structure giữ HH-HL/LL-LH + pullback < 50%
-Entry: vùng pullback (OB/FVG nhỏ)
-SL: dưới Higher Low / trên Lower High gần nhất — range 6-15 pip
-  IF SL > 15 → pullback quá sâu → bỏ
-  IF SL < 6 → structure yếu → bỏ
-TP: đỉnh/đáy gần + liquidity gần
-RR: ≥ 1:2 (entry sớm nên RR tốt hơn)
+GLOBAL FILTER — NO TRADE nếu:
+Range = TRUE HOẶC Displacement = FALSE HOẶC không có BOS/MSS
 
-🔥 MODE 2B — BREAKOUT (MOMENTUM CONFIRM):
-Điều kiện: Có impulse trước + tích lũy nhẹ + break high/low gần nhất
-Entry: khi break (entry ngay hoặc retest nhỏ)
-SL: dưới/trên vùng tích lũy — range 5-12 pip
-  IF SL > 12 → base quá rộng → bỏ
-  IF SL < 5 → dễ bị quét → bỏ
-TP: liquidity kế tiếp
-RR: ≥ 1:2
+═══ 3 MODE — CHỌN TỰ ĐỘNG ═══
 
-BUFFER: +0.5-1 pip vào SL thực tế
+MODE 1 — SMC REVERSAL (Pullback sâu):
+Điều kiện:
+- Displacement = TRUE (body ≥ 1.5 giá)
+- Sweep = TRUE (wick ≥ 0.5 giá)
+- MSS = TRUE (sweep + BOS ngược ≥ 0.5 giá)
+- Pullback 50-80%
+- Có OB hoặc FVG (FVG ≥ 0.5 giá)
+Entry: tại OB hoặc FVG
+SL: 15-20 giá (đặt sau OB/swing)
+TP: ≥ 1:3
 
-═══════════════════════════════
-QUY TẮC BIAS — QUAN TRỌNG:
-═══════════════════════════════
-IF mode = SMC → ưu tiên theo bias B1, TP full
-IF mode = Momentum (2A/2B):
-  - IGNORE bias B1 (không khóa lệnh)
-  - Nếu thuận bias → TP full (liquidity xa)
-  - Nếu ngược bias → TP ngắn (liquidity gần nhất)
+MODE 2A — MOMENTUM BREAKOUT:
+Điều kiện:
+- Displacement = TRUE (≥ 1.5 giá)
+- BOS = TRUE (≥ 0.5 giá)
+- Range = FALSE
+Entry: ngay khi BOS hoặc retest nhỏ
+SL: 10-15 giá
+TP: ≥ 1:2.5
 
-═══════════════════════════════
-PRIORITY ENGINE:
-═══════════════════════════════
-1. Nếu có SMC setup đẹp → MODE 1
-2. Nếu không có SMC nhưng có momentum → MODE 2A (pullback trước)
-3. Nếu miss pullback → MODE 2B (breakout)
-4. Không có gì rõ → NO TRADE
+MODE 2B — MOMENTUM PULLBACK:
+Điều kiện:
+- Displacement = TRUE (≥ 1.5 giá)
+- Pullback 20-50% (nông)
+- Không có BOS ngược
+- Range = FALSE
+Entry: cuối pullback nông
+SL: 10-15 giá
+TP: ≥ 1:2.5
 
-KHÔNG CÓ TRADE = WAIT, không phải CANCEL
-CANCEL chỉ khi: SL ngoài range cho phép của mode đã chọn
+MODE 2C — MOMENTUM CONTINUATION:
+Điều kiện:
+- Sau BOS có 2-3 nến tiếp diễn
+- Không pullback sâu
+- Displacement = TRUE
+Entry: break tiếp theo
+SL: 10-12 giá
+TP: ≥ 1:2.5
+
+BIAS & TP:
+Cùng bias B1 → TP full (1:3-1:5)
+Ngược bias B1 → TP ngắn (1:1-1:2)
+
+CANCEL nếu: Range=TRUE hoặc SL ngoài range cho phép của mode
 
 QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt.
+Dùng format định lượng trong mọi mô tả.
 Trả về DUY NHẤT JSON:
-{"verdict":"FIRE"|"WAIT"|"CANCEL","mode":"MODE_1_SMC"|"MODE_2A_PULLBACK"|"MODE_2B_BREAKOUT"|"NO_TRADE","mode_reason":"tại sao chọn mode này","verdict_reason":"...","with_bias":"thuận bias/ngược bias — ảnh hưởng TP thế nào","sweep":"...","choch":"...","fvg_ob":"...","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"pip thực tế — phải trong range của mode","tp_pips":"...","lot":"...","rr":"X:Y","fail_reasons":["...","...","..."]}`;
+{"verdict":"FIRE"|"WAIT"|"CANCEL","mode":"MODE_1_SMC"|"MODE_2A_BREAKOUT"|"MODE_2B_PULLBACK"|"MODE_2C_CONTINUATION"|"NO_TRADE","mode_reason":"lý do chọn mode với số liệu cụ thể","verdict_reason":"Displacement=X,BOS=X,Range=X","with_bias":"thuận/ngược — TP thế nào","sweep":"sweep=TRUE/FALSE(Xgiá)","choch":"MSS=TRUE/FALSE","fvg_ob":"FVG=TRUE/FALSE(Xgiá) tại vùng X-X","order_type":"...","entry":"giá cụ thể","sl":"giá cụ thể","tp":"giá cụ thể","sl_pips":"X giá — trong range mode","tp_pips":"X giá","lot":"...","rr":"1:X","fail_reasons":["...","...","..."]}`;
 
     const b64m5=STATE.imgs.b4_m5.split(',')[1];
     const mtypem5=STATE.imgs.b4_m5.split(';')[0].split(':')[1];
