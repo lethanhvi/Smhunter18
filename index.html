@@ -508,19 +508,21 @@ input[type="file"]{display:none}
 <div class="screen-inner">
   <div class="back-bar">
     <button class="back-btn" onclick="goBack()">← BACK</button>
-    <span class="screen-badge">⏰ BỘ 3 — KILLZONE</span>
+    <span class="screen-badge">⚡ BỘ 3 — PRIORITY ENGINE</span>
     <span class="screen-step">2 / 5</span>
   </div>
   <div class="scr-header">
-    <div class="scr-title">KILLZONE<br><span>CHECK</span></div>
-    <div class="scr-sub">Session + News Filter</div>
+    <div class="scr-title">PRIORITY<br><span>ENGINE</span></div>
+    <div class="scr-sub">Time + M15 Context → Priority Level</div>
   </div>
 
-  <!-- Clock panel -->
+  <!-- Clock + Kill Zone AUTO -->
   <div class="panel" style="margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div><div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:2px">GIỜ VIỆT NAM</div><div style="font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;color:var(--text);letter-spacing:2px" id="b3-clock">--:--:--</div></div>
-      <div style="text-align:right"><div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:2px">MT5 SERVER GMT+3</div><div style="font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--muted);letter-spacing:1px" id="b3-mt5">--:--:--</div></div>
+      <div><div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:2px">GIỜ VIỆT NAM</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;color:var(--text);letter-spacing:2px" id="b3-clock">--:--:--</div></div>
+      <div style="text-align:right"><div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:2px">MT5 SERVER GMT+3</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--muted);letter-spacing:1px" id="b3-mt5">--:--:--</div></div>
     </div>
     <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;display:flex;align-items:center;gap:10px;transition:all 0.3s" id="b3-kz-bar">
       <div style="width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:all 0.3s" id="b3-kz-dot"></div>
@@ -529,48 +531,61 @@ input[type="file"]{display:none}
     </div>
   </div>
 
-  <!-- Bias từ Bộ 1 (auto) -->
-  <div class="panel">
-    <div class="sec-label"><span>AUTO</span> BIAS TỪ BỘ 1</div>
-    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;font-family:'Share Tech Mono',monospace;font-size:12px;font-weight:700;letter-spacing:1px" id="b3-bias-display">--</div>
+  <!-- M15 Upload -->
+  <div class="panel" style="margin-bottom:12px">
+    <div class="sec-label"><span>STEP 01</span> TẢI CHART M15</div>
+    <div class="img-upload-row">
+      <div class="img-box" id="b3-box-m15" onclick="document.getElementById('b3-inp-m15').click()">
+        <input type="file" id="b3-inp-m15" accept="image/*" style="display:none" onchange="handleImg('b3','m15',this)">
+        <div class="img-label">M15</div>
+        <div class="img-sub">15-MINUTE</div>
+      </div>
+    </div>
   </div>
 
+  <!-- M15 Context Questions -->
+  <div class="panel" style="margin-bottom:12px">
+    <div class="sec-label"><span>STEP 02</span> ĐÁNH GIÁ M15 CONTEXT</div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:10px;line-height:1.6">Mỗi câu YES = +1 điểm (tối đa 3 điểm)</div>
+
+    <div class="check-item" data-q="b3-sweep"><span class="item-num">01</span>
+      <div class="item-text">M15 có liquidity sweep rõ ràng?<span class="item-sub">Giá đã quét qua high/low quan trọng</span></div>
+      <div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer('sweep','yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer('sweep','no',event)">NO</button></div>
+    </div>
+
+    <div class="check-item" data-q="b3-displacement"><span class="item-num">02</span>
+      <div class="item-text">M15 có displacement mạnh?<span class="item-sub">Nến thân lớn liên tiếp, break structure</span></div>
+      <div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer('displacement','yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer('displacement','no',event)">NO</button></div>
+    </div>
+
+    <div class="check-item" data-q="b3-structure"><span class="item-num">03</span>
+      <div class="item-text">M15 có structure rõ (không phải range)?<span class="item-sub">Có LH+LL hoặc HH+HL rõ ràng</span></div>
+      <div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer('structure','yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer('structure','no',event)">NO</button></div>
+    </div>
+  </div>
+
+  <!-- News Filter -->
+  <div class="panel" style="margin-bottom:12px">
+    <div class="sec-label"><span>STEP 03</span> NEWS FILTER</div>
+    <div class="check-item" data-q="b3-news"><span class="item-num">04</span>
+      <div class="item-text">Có High Impact News trong 2 tiếng tới?<span class="item-sub">NFP / FOMC / CPI / PPI → YES = DỪNG NGAY</span></div>
+      <div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer('news','yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer('news','no',event)">NO</button></div>
+    </div>
+    <div class="check-item" data-q="b3-time"><span class="item-num">05</span>
+      <div class="item-text">Tôi có đủ thời gian theo dõi phiên?<span class="item-sub">Không bỏ máy giữa chừng → NO = DỪNG</span></div>
+      <div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer('time','yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer('time','no',event)">NO</button></div>
+    </div>
+  </div>
+
+  <!-- Progress -->
   <div class="prog-wrap">
-    <div class="prog-top"><span class="prog-lbl">TIẾN ĐỘ</span><span class="prog-cnt" id="p3-cnt">0 / 6</span></div>
+    <div class="prog-top"><span class="prog-lbl">TIẾN ĐỘ</span><span class="prog-cnt" id="p3-cnt">0 / 5</span></div>
     <div class="prog-bg"><div class="prog-fill" id="p3-fill"></div></div>
   </div>
 
-  <!-- Killzone section -->
-  <div style="margin-bottom:14px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-left:4px"><div style="width:26px;height:26px;border-radius:6px;background:rgba(46,204,138,0.12);display:flex;align-items:center;justify-content:center;font-size:13px">⏰</div><span style="font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--green);font-weight:700">KILLZONE</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
-    <div class="auto-item" id="b3-auto-kz">
-      <span class="item-num" style="position:relative;z-index:1">01</span>
-      <div class="item-text" style="position:relative;z-index:1">Đang trong Killzone?<span class="item-sub">London 13–16h · NY 20–23h (giờ VN)</span></div>
-      <span class="auto-tag">AUTO</span>
-      <span class="auto-val" id="b3-kz-val">--</span>
-    </div>
-    <div class="check-item" data-q="b3-2"><span class="item-num">02</span><div class="item-text">Tôi có đủ thời gian theo dõi cả phiên?<span class="item-sub">Không bỏ máy giữa chừng</span></div><div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer(2,'yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer(2,'no',event)">NO</button></div></div>
-  </div>
-
-  <!-- News section -->
-  <div style="margin-bottom:14px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-left:4px"><div style="width:26px;height:26px;border-radius:6px;background:rgba(232,65,90,0.12);display:flex;align-items:center;justify-content:center;font-size:13px">📰</div><span style="font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--red);font-weight:700">NEWS FILTER</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
-    <div class="check-item" data-q="b3-3"><span class="item-num">03</span><div class="item-text">Có NFP trong 2 tiếng tới?<span class="item-sub">→ YES = DỪNG NGAY</span></div><div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer(3,'yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer(3,'no',event)">NO</button></div></div>
-    <div class="check-item" data-q="b3-4"><span class="item-num">04</span><div class="item-text">Có FOMC / Fed Speech trong 2 tiếng tới?<span class="item-sub">→ YES = DỪNG NGAY</span></div><div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer(4,'yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer(4,'no',event)">NO</button></div></div>
-    <div class="check-item" data-q="b3-5"><span class="item-num">05</span><div class="item-text">Có CPI / PPI / High Impact USD?<span class="item-sub">→ YES = DỪNG NGAY</span></div><div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer(5,'yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer(5,'no',event)">NO</button></div></div>
-  </div>
-
-  <!-- Asian section -->
-  <div style="margin-bottom:14px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-left:4px"><div style="width:26px;height:26px;border-radius:6px;background:rgba(255,181,71,0.12);display:flex;align-items:center;justify-content:center;font-size:13px">🌏</div><span style="font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--amber);font-weight:700">ASIAN RANGE</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
-    <div class="check-item" data-q="b3-6"><span class="item-num">06</span><div class="item-text">Asian Range đã bị sweep chưa?<span class="item-sub">London thường sweep trước expansion</span></div><div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer(6,'yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer(6,'no',event)">NO</button></div></div>
-    <div class="check-item" data-q="b3-7"><span class="item-num">07</span><div class="item-text">Narrative rõ ràng theo Bias Bộ 1?<span class="item-sub">Liquidity → Manipulation → Expansion</span></div><div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer(7,'yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer(7,'no',event)">NO</button></div></div>
-  </div>
-
   <div id="b3-verdict" style="margin-top:8px"></div>
-  <button class="next-btn" id="b3-next" onclick="completeStage('bo3')">→ TIẾN HÀNH BỘ 2 (DÒ BẪY)</button>
-
-  <div class="screen-footer"><p>"Không có setup nào xứng đáng hơn việc <strong>chờ đúng Killzone</strong>."</p></div>
+  <button class="next-btn" id="b3-next" onclick="completeStage('bo3')">→ TIẾN HÀNH BỘ 2</button>
+  <div class="screen-footer"><p>"Kill zone + M15 = điều chỉnh độ <strong>khó của kèo</strong>, không phải quyết định có kèo hay không."</p></div>
 </div>
 </div>
 
@@ -847,10 +862,11 @@ const STATE = {
   bias:'',
   b2Verdict:'',
   b2Narrative:'',
+  b3Priority:'MEDIUM',
   b4Entry:'',
   b4RR:'',
   kzActive:false,
-  imgs:{ b1_d1:null, b1_h4:null, b2_h1:null, b2_m15:null, b4_m5:null },
+  imgs:{ b1_d1:null, b1_h4:null, b2_h1:null, b2_m15:null, b3_m15:null, b4_m5:null },
   psychAnswers:{},
   b3Answers:{},
   b5Result:null, b5TradeResult:'', b5Trail:''
@@ -1642,68 +1658,143 @@ function pAnswer(q,val,event){
 }
 
 // ══════════════════════════════════════════════
-// BỘ 3
+// BỘ 3 — PRIORITY ENGINE
 // ══════════════════════════════════════════════
-function b3Answer(q,val,event){
+function b3Answer(q, val, event){
   event.stopPropagation();
-  STATE.b3Answers[q]=val;
-  const item=document.querySelector(`[data-q="b3-${q}"]`);
-  item.classList.remove('answered-yes','answered-no');
-  item.classList.add(val==='yes'?'answered-yes':'answered-no');
-  item.querySelectorAll('.tog-btn').forEach(b=>b.classList.remove('active'));
-  event.target.classList.add('active');
-  if(navigator.vibrate)navigator.vibrate(25);
+  STATE.b3Answers[q] = val;
+  const item = document.querySelector(`[data-q="b3-${q}"]`);
+  if(item){
+    item.classList.remove('answered-yes','answered-no');
+    item.classList.add(val==='yes'?'answered-yes':'answered-no');
+    item.querySelectorAll('.tog-btn').forEach(b=>b.classList.remove('active'));
+    event.target.classList.add('active');
+  }
+  if(navigator.vibrate) navigator.vibrate(25);
 
-  const cnt=Object.keys(STATE.b3Answers).length;
-  document.getElementById('p3-cnt').textContent=`${cnt} / 6`;
-  document.getElementById('p3-fill').style.width=`${cnt/6*100}%`;
+  const total = 5;
+  const cnt = Object.keys(STATE.b3Answers).length;
+  document.getElementById('p3-cnt').textContent=`${cnt} / ${total}`;
+  document.getElementById('p3-fill').style.width=`${cnt/total*100}%`;
   saveState();
   checkB3Verdict();
 }
 
-let b3LastVerdict='';
+let b3LastVerdict = '';
+
+function isKillZone(){
+  const now = new Date();
+  const vnH = (now.getUTCHours() + 7) % 24;
+  // London: 14-17h VN, NY: 19-22h VN
+  return (vnH >= 14 && vnH <= 17) || (vnH >= 19 && vnH <= 22);
+}
+
+function getM15Score(){
+  const a = STATE.b3Answers;
+  let score = 0;
+  if(a['sweep']==='yes') score++;
+  if(a['displacement']==='yes') score++;
+  if(a['structure']==='yes') score++;
+  return score;
+}
+
+function getPriorityLevel(){
+  const inKZ = isKillZone() || STATE.kzActive;
+  const score = getM15Score();
+
+  if(inKZ){
+    if(score >= 2) return 'HIGH';
+    return 'MEDIUM';
+  } else {
+    if(score === 3) return 'MEDIUM';
+    return 'LOW';
+  }
+}
 
 function checkB3Verdict(){
-  if(Object.keys(STATE.b3Answers).length<6)return;
-  const stops=[];
-  if(!STATE.kzActive)stops.push('Đang ngoài Killzone');
-  if(STATE.b3Answers[3]==='yes')stops.push('Có NFP trong 2 tiếng tới');
-  if(STATE.b3Answers[4]==='yes')stops.push('Có FOMC / Fed Speech');
-  if(STATE.b3Answers[5]==='yes')stops.push('Có CPI / PPI / High Impact USD');
-  if(STATE.b3Answers[2]==='no')stops.push('Không đủ thời gian theo dõi');
-  const waits=[];
-  if(STATE.b3Answers[6]==='no')waits.push('Asian Range chưa bị sweep');
-  if(STATE.b3Answers[7]==='no')waits.push('Narrative chưa rõ ràng');
+  const a = STATE.b3Answers;
+  const answered = Object.keys(a).length;
+  if(answered < 5) return;
 
-  // Determine new verdict state
-  const newVerdict = stops.length>0 ? 'stop' : waits.length>0 ? 'wait' : 'go';
+  // Hard stops first
+  const stops = [];
+  if(a['news']==='yes') stops.push('Có High Impact News trong 2 tiếng tới');
+  if(a['time']==='no') stops.push('Không đủ thời gian theo dõi phiên');
 
-  // Only re-render + vibrate when verdict CHANGES
+  const priority = getPriorityLevel();
+  const inKZ = isKillZone() || STATE.kzActive;
+  const score = getM15Score();
+  const newVerdict = stops.length > 0 ? 'stop' : priority;
   const changed = newVerdict !== b3LastVerdict;
   b3LastVerdict = newVerdict;
 
-  const vEl=document.getElementById('b3-verdict');
-  const nxt=document.getElementById('b3-next');
+  const vEl = document.getElementById('b3-verdict');
+  const nxt = document.getElementById('b3-next');
 
-  if(stops.length>0){
+  if(stops.length > 0){
     if(changed){
-      const flagHtml=stops.map(s=>`<div class="flag-item"><span class="flag-dot"></span><span>${s}</span></div>`).join('');
-      vEl.innerHTML=`<div class="verdict-box stop" style="animation:pulse-in 0.5s ease both"><span class="v-emoji">🚫</span><div class="v-title">DỪNG PHIÊN NÀY</div><div class="v-rule">→ ${stops.length} LÝ DO — ĐÓNG MÁY NGAY</div><div class="flags-wrap">${flagHtml}</div></div>`;
+      const flagHtml = stops.map(s=>`<div class="flag-item"><span class="flag-dot"></span><span>${s}</span></div>`).join('');
+      vEl.innerHTML=`<div class="verdict-box stop" style="animation:pulse-in 0.5s ease both">
+        <span class="v-emoji">🚫</span>
+        <div class="v-title">DỪNG PHIÊN NÀY</div>
+        <div class="v-rule">→ ${stops.length} LÝ DO — ĐÓNG MÁY NGAY</div>
+        <div class="flags-wrap">${flagHtml}</div>
+      </div>`;
       nxt.style.display='none';
-      if(navigator.vibrate)navigator.vibrate([100,50,100,50,100]);
+      if(navigator.vibrate) navigator.vibrate([100,50,100,50,100]);
     }
-  } else if(waits.length>0){
-    if(changed){
-      vEl.innerHTML=`<div class="verdict-box wait" style="animation:pulse-in 0.5s ease both"><span class="v-emoji">⏸</span><div class="v-title">ÁN BINH BẤT ĐỘNG</div><div class="v-rule">→ ${waits.join(' · ')} — Chờ thêm</div></div>`;
-      nxt.style.display='none';
+    return;
+  }
+
+  // Priority display
+  const priorityConfig = {
+    HIGH: {
+      color:'var(--green)', bg:'rgba(46,204,138,0.08)', border:'rgba(46,204,138,0.3)',
+      emoji:'🟢', label:'PRIORITY: HIGH',
+      allow:'✔ SMC · Pullback · Truy Kích · Early Shift',
+      note:'Điều kiện confirm được nới — chấp nhận early shift M5'
+    },
+    MEDIUM: {
+      color:'var(--amber)', bg:'rgba(255,181,71,0.08)', border:'rgba(255,181,71,0.3)',
+      emoji:'🟡', label:'PRIORITY: MEDIUM',
+      allow:'✔ SMC chuẩn · Pullback',
+      note:'Truy Kích phải rõ (M5 mạnh) — không entry sớm'
+    },
+    LOW: {
+      color:'var(--red)', bg:'rgba(232,65,90,0.08)', border:'rgba(232,65,90,0.3)',
+      emoji:'🔴', label:'PRIORITY: LOW',
+      allow:'✔ Chỉ Setup A+ confirm đầy đủ',
+      note:'❌ Cấm entry sớm · ❌ Cấm Truy Kích yếu'
     }
-  } else {
-    if(changed){
-      vEl.innerHTML=`<div class="verdict-box go" style="animation:pulse-in 0.5s ease both"><span class="v-emoji">✅</span><div class="v-title">KÍCH HOẠT BỘ 2</div><div class="v-sub">Killzone hợp lệ. Không có news.</div><div class="v-rule">→ TIẾN HÀNH BỘ 2 — DÒ BẪY</div></div>`;
-      nxt.style.display='block';
-      if(navigator.vibrate)navigator.vibrate([50,30,80]);
-      setTimeout(()=>vEl.scrollIntoView({behavior:'smooth',block:'center'}),300);
-    }
+  };
+
+  const cfg = priorityConfig[priority];
+  const kzLabel = inKZ
+    ? `<span style="color:var(--green)">✅ Trong Kill Zone</span>`
+    : `<span style="color:var(--muted)">⏰ Ngoài Kill Zone</span>`;
+  const scoreClr = score>=2?'var(--green)':score===1?'var(--amber)':'var(--red)';
+  const scoreLabel = `M15 Score: <strong style="color:${scoreClr}">${score}/3</strong>`;
+
+  if(changed){
+    vEl.innerHTML=`<div style="background:${cfg.bg};border:1px solid ${cfg.border};border-radius:10px;padding:18px 16px;animation:pulse-in 0.5s ease both">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:20px;text-align:center;margin-bottom:8px">${cfg.emoji}</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:14px;color:${cfg.color};font-weight:700;text-align:center;letter-spacing:2px;margin-bottom:12px">${cfg.label}</div>
+      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:10px;margin-bottom:12px;padding:8px 10px;background:rgba(0,0,0,0.2);border-radius:6px">
+        <span>${kzLabel}</span>
+        <span style="color:var(--muted)">${scoreLabel}</span>
+      </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${cfg.color};margin-bottom:6px;letter-spacing:1px">CHO PHÉP:</div>
+      <div style="font-size:12px;color:var(--text);margin-bottom:10px;line-height:1.7">${cfg.allow}</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);line-height:1.6;border-top:1px solid ${cfg.border};padding-top:8px">→ ${cfg.note}</div>
+    </div>`;
+
+    // Save priority to STATE for Bo2/Bo4
+    STATE.b3Priority = priority;
+    saveState();
+
+    nxt.style.display='block';
+    if(navigator.vibrate) navigator.vibrate(priority==='HIGH'?[50,30,80,30,50]:[50,30,50]);
+    setTimeout(()=>vEl.scrollIntoView({behavior:'smooth',block:'center'}),300);
   }
 }
 
@@ -1843,6 +1934,10 @@ async function runBo2(){
   try{
     const sys=`Bạn là Context Engine Analyst chuyên XAUUSD — H1 + M15.
 Macro bias từ Bộ 1: ${STATE.bias} (chỉ tham khảo định hướng TP, KHÔNG ép theo bias)
+PRIORITY từ Bộ 3: ${STATE.b3Priority||'MEDIUM'}
+
+QUY TẮC THEO PRIORITY:
+${STATE.b3Priority==='HIGH' ? '→ HIGH: Cho phép SMC + Pullback + Truy Kích. Nới điều kiện confirm — chấp nhận early shift M5.' : STATE.b3Priority==='LOW' ? '→ LOW: Chỉ setup A+ confirm đầy đủ. Cấm entry sớm và Truy Kích yếu.' : '→ MEDIUM: Cho phép SMC chuẩn + Pullback. Truy Kích phải rõ, M5 mạnh.'}
 
 NHIỆM VỤ: Xác định trạng thái thị trường THỰC TẾ trên chart — đọc những gì đang xảy ra, không anticipate.
 
