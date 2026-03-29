@@ -2496,58 +2496,33 @@ async function runBo4TruyKich(){
   const lotNote=buf<75?'Giảm lot 0.5% ($12.5)':'Risk 1% ($25) bình thường';
 
   try{
-    const sysTK=`Bạn là Prop Firm Trader chuyên CHIẾN LƯỢC TRUY KÍCH (Continuation) XAUUSD — The5%ers $2,500.
-Bias: ${STATE.bias}
+    const sysTK=`Bạn là Momentum Trader XAUUSD — The5%ers $2,500. CHIẾN LƯỢC TRUY KÍCH.
+Bias từ Bộ 1: ${STATE.bias} (định hướng TP, KHÔNG khóa lệnh)
 Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
 
-MODE: TRUY KÍCH — Entry thuận chiều xu hướng chính. Đọc market theo DÒNG CHẢY, không phải trạng thái tĩnh.
+CỐT LÕI: MOMENTUM + BREAK STRUCTURE
+❌ KHÔNG yêu cầu FVG hoặc OB
+❌ KHÔNG áp điều kiện SMC chuẩn
+✅ Ưu tiên impulse mạnh và break structure
 
-NGUYÊN TẮC ĐỌC MARKET ĐỘNG:
-1. CONSOLIDATION SAU IMPULSE = TIẾP DIỄN (không phải sideways vô hướng)
-   → Impulse down + consolidate = setup SELL tiếp tục
-   → Impulse up + consolidate = setup BUY tiếp tục
+ĐIỀU KIỆN VÀO LỆNH:
+BƯỚC 1 — H1/M15: Impulse mạnh + trend rõ (LH+LL hoặc HH+HL). SIDEWAY = NO TRADE tuyệt đối
+BƯỚC 2 — M15 BOS: Phá structure rõ ràng. Không cần FVG — BOS là trigger chính
+BƯỚC 3 — M5 Pullback YẾU: Nến nhỏ, không có rejection mạnh, không phá đỉnh/đáy gần
+BƯỚC 4 — Trigger: Break qua low/high của pullback (micro BOS M5) → entry
 
-2. XÁC ĐỊNH TREND H1 ĐÚNG:
-   → LH + LL liên tiếp = DOWNTREND dù đang consolidate
-   → HH + HL liên tiếp = UPTREND dù đang consolidate
-   → KHÔNG gọi là sideways nếu structure tổng thể vẫn có hướng
+MODEL_A_EARLY: Impulse + BOS M15 + LH/HL M5 → break micro BOS | SL 6-15 pip
+MODEL_B_PULLBACK: Impulse + pullback < 61.8% + nến nhỏ dần | SL 6-15 pip
+MODEL_C_BREAKOUT: Tích lũy nhỏ + break high/low | SL 5-12 pip
 
-3. FVG có 3 trạng thái — phân biệt rõ:
-   → ĐÃ CÓ + ĐANG RETEST = entry ngay
-   → VỪA HÌNH THÀNH + CHƯA RETEST = đặt limit chờ (setup đang hình thành)
-   → KHÔNG CÓ = WAIT thực sự
+R:R: Model A/B ≥ 1:2 (TP ≥ 30 pip) | Model C ≥ 1:2 (TP ≥ 25 pip)
+Thuận bias → TP full | Ngược bias → TP ngắn
 
-4. SETUP IN-PROGRESS khác SETUP KHÔNG TỒN TẠI
-   → Điều kiện đang hình thành → verdict = FORMING với alert zone cụ thể
-
-CHECKLIST TRUY KÍCH:
-
-🏴 MẶT TRẬN 1 — H1 (THẦN HỘ MỆNH):
-[ ] Xác định trend H1: LH+LL = downtrend / HH+HL = uptrend (dù consolidate)
-[ ] Consolidation sau impulse = continuation, không phải reversal
-[ ] Còn space chạy: không bị Supply/Demand đối diện trong vòng 50 pip
-
-🏴 MẶT TRẬN 2 — M15 (CĂN CỨ TÁC CHIẾN):
-[ ] FVG trạng thái: ĐÃ CÓ+RETEST / VỪA HÌNH THÀNH+CHỜ / KHÔNG CÓ
-[ ] Đồng pha M15 với H1: cùng hướng, cùng màu
-[ ] Vị trí giá so với FVG: trong / sắp chạm / còn xa
-
-🏴 MẶT TRẬN 3 — M5 (TRINH SÁT):
-[ ] Pullback kiệt sức: nến nhỏ dần, râu nhiều, momentum giảm
-[ ] Không có nến thân lớn ngược chiều (nếu có → HỦY QUÂN)
-[ ] Điểm dừng chân tại FVG M15 hoặc OB M5
-
-QUY TẮC RISK: SL ≤ 15 pip, TP ≥ 45 pip, R:R ≥ 1:3, Lot ~0.17
-
-VERDICT 4 MỨC:
-- FIRE = đủ điều kiện, vào lệnh ngay
-- FORMING = setup đang hình thành, đặt alert chờ retest FVG
-- WAIT = chưa đủ điều kiện
-- CANCEL = tín hiệu ngược chiều mạnh, hủy hoàn toàn
+VERDICT: FIRE / FORMING / WAIT / CANCEL(sideway/rejection mạnh)
 
 QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt.
 Trả về DUY NHẤT JSON:
-{"verdict":"FIRE"|"FORMING"|"WAIT"|"CANCEL","mode":"TRUY_KICH","verdict_reason":"...","mat_tran_1":"trend H1 thực tế LH/LL hay HH/HL — mô tả cụ thể","mat_tran_2":"FVG: đã có+retest / vừa hình thành+chờ / không có — mô tả cụ thể","mat_tran_3":"pullback M5 kiệt sức chưa — mô tả cụ thể","alert_zone":"nếu FORMING — vùng giá cần alert VD: 4430-4435","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"≤ 15 pip","tp_pips":"≥ 45 pip","lot":"...","rr":"X:Y ≥ 1:3","fail_reasons":["...","...","..."]}`;
+{"verdict":"FIRE"|"FORMING"|"WAIT"|"CANCEL","model":"MODEL_A_EARLY"|"MODEL_B_PULLBACK"|"MODEL_C_BREAKOUT","model_reason":"lý do","verdict_reason":"...","h1_analysis":"trend rõ không, sideway không","m15_analysis":"impulse mạnh không, BOS có không","m5_analysis":"pullback yếu không, rejection mạnh không, trigger chưa","with_bias":"thuận/ngược bias","alert_zone":"nếu FORMING — vùng alert","order_type":"...","entry":"giá cụ thể","sl":"giá cụ thể","tp":"giá cụ thể","sl_pips":"pip","tp_pips":"pip","lot":"...","rr":"X:Y","fail_reasons":["...","...","..."]}`;
 
     const b64h1=STATE.imgs.b2_h1.split(',')[1];
     const mtypeh1=STATE.imgs.b2_h1.split(';')[0].split(':')[1];
@@ -2558,57 +2533,50 @@ Trả về DUY NHẤT JSON:
 
     const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1200,system:sysTK,messages:[{role:'user',content:[
       {type:'image',source:{type:'base64',media_type:mtypeh1,data:b64h1}},
-      {type:'text',text:'Chart H1 — Mặt trận 1'},
+      {type:'text',text:'Chart H1 — Bước 1: impulse và trend'},
       {type:'image',source:{type:'base64',media_type:mtypem15,data:b64m15}},
-      {type:'text',text:'Chart M15 — Mặt trận 2'},
+      {type:'text',text:'Chart M15 — Bước 2: BOS và momentum'},
       {type:'image',source:{type:'base64',media_type:mtypem5,data:b64m5}},
-      {type:'text',text:'Chart M5 — Mặt trận 3. Phân tích Truy Kích JSON.'}
+      {type:'text',text:'Chart M5 — Bước 3+4: pullback yếu và trigger. Phân tích JSON.'}
     ]}]});
 
-    // Render result
+    // Render
     const vbox=document.getElementById('b4-verdict-box');
     const isFire=r.verdict==='FIRE';
     const isCancel=r.verdict==='CANCEL';
     const isForming=r.verdict==='FORMING';
-    vbox.className='verdict-box '+(isFire?'fire':isCancel?'cancel':isForming?'wait':'wait');
+    vbox.className='verdict-box '+(isFire?'fire':isCancel?'cancel':'wait');
     document.getElementById('b4-emoji').textContent=isFire?'🎯':isCancel?'🚫':isForming?'⚡':'⏸';
-    const vtMap={FIRE:'ĐẶT LỆNH NGAY',FORMING:'SETUP ĐANG HÌNH THÀNH — ĐẶT ALERT',WAIT:'CHỜ THÊM XÁC NHẬN',CANCEL:'HỦY QUÂN — KHÔNG ĐỦ ĐIỀU KIỆN'};
+    const vtMap={FIRE:'ĐẶT LỆNH NGAY',FORMING:'SETUP ĐANG HÌNH THÀNH',WAIT:'CHỜ THÊM XÁC NHẬN',CANCEL:'HỦY — SIDEWAY HOẶC REJECTION MẠNH'};
     document.getElementById('b4-vtitle').textContent=vtMap[r.verdict]||r.verdict;
 
-    // Show alert zone if FORMING
-    const vrEl = document.getElementById('b4-vreason');
-    if(isForming && r.alert_zone){
-      vrEl.innerHTML=`${r.verdict_reason||''}<br><br><span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--amber)">🔔 ĐẶT ALERT TẠI: ${r.alert_zone}</span>`;
-    } else {
-      vrEl.textContent=r.verdict_reason||'';
-    }
+    const vrEl=document.getElementById('b4-vreason');
+    if(isForming&&r.alert_zone){
+      vrEl.innerHTML=`${r.verdict_reason||''}<br><br><span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--amber)">🔔 ĐẶT ALERT: ${r.alert_zone}</span>`;
+    } else { vrEl.textContent=r.verdict_reason||''; }
 
     const checklistEl=document.getElementById('b4-smc-checklist');
     if(checklistEl){
-      const badge='<div style="font-family:\'Share Tech Mono\',monospace;font-size:9px;background:rgba(255,181,71,0.2);border:1px solid rgba(255,181,71,0.4);color:var(--amber);padding:3px 10px;border-radius:10px;letter-spacing:1px;margin-bottom:8px;display:inline-block">⚡ MODE: TRUY KÍCH</div>';
-      const checks=[
-        {step:'1',label:'H1 — Thần Hộ Mệnh',value:r.mat_tran_1,icon:'🏴'},
-        {step:'2',label:'M15 — Căn Cứ Tác Chiến',value:r.mat_tran_2,icon:'🏴'},
-        {step:'3',label:'M5 — Trinh Sát',value:r.mat_tran_3,icon:'🏴'},
+      const mLabels={'MODEL_A_EARLY':'🔵 MODEL A: EARLY','MODEL_B_PULLBACK':'🔵 MODEL B: PULLBACK','MODEL_C_BREAKOUT':'🔵 MODEL C: BREAKOUT'};
+      let html=`<div style="font-family:'Share Tech Mono',monospace;font-size:9px;background:rgba(255,181,71,0.2);border:1px solid rgba(255,181,71,0.4);color:var(--amber);padding:3px 10px;border-radius:10px;letter-spacing:1px;margin-bottom:8px;display:inline-block">⚡ TRUY KÍCH</div>`;
+      if(r.model) html+=`<div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--blue);background:rgba(77,159,255,0.1);border:1px solid rgba(77,159,255,0.3);padding:3px 10px;border-radius:10px;margin-bottom:8px;display:inline-block;margin-left:6px">${mLabels[r.model]||r.model}</div>`;
+      if(r.model_reason) html+=`<div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5">${r.model_reason}</div>`;
+      if(r.with_bias){const fwd=r.with_bias.includes('thuận');html+=`<div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${fwd?'var(--green)':'var(--amber)'};margin-bottom:8px">${fwd?'✅':'⚡'} ${r.with_bias}</div>`;}
+      const steps=[
+        {label:'BƯỚC 1 — H1: Impulse + Trend',value:r.h1_analysis,icon:'📊'},
+        {label:'BƯỚC 2 — M15: BOS + Momentum',value:r.m15_analysis,icon:'📈'},
+        {label:'BƯỚC 3+4 — M5: Pullback + Trigger',value:r.m5_analysis,icon:'🎯'},
       ];
-      checklistEl.innerHTML=badge+checks.map(c=>{
+      html+=steps.map(c=>{
         const txt=c.value||'';
-        const passed=txt&&!txt.match(/không đạt|không có|chưa|Không đạt|Không có|Chưa/i);
-        return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:${passed?'rgba(46,204,138,0.08)':'rgba(232,65,90,0.08)'};border:1px solid ${passed?'rgba(46,204,138,0.2)':'rgba(232,65,90,0.2)'};border-radius:6px;margin-bottom:6px">
-          <span style="font-size:13px;min-width:24px;font-weight:700;color:${passed?'var(--green)':'var(--red)'}">${passed?'✅':'❌'}</span>
-          <div style="flex:1">
-            <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${passed?'var(--green)':'var(--red)'};letter-spacing:1px;font-weight:700;margin-bottom:3px">${c.icon} MẶT TRẬN ${c.step}: ${c.label}</div>
-            <div style="font-size:11px;color:#8a9ab8;line-height:1.5">${txt||'Chưa xác nhận'}</div>
-          </div>
-        </div>`;
+        const ok=txt&&!txt.match(/sideway|không có|chưa|Không|Chưa|thiếu/i);
+        return `<div style="display:flex;gap:8px;align-items:flex-start;padding:8px 10px;background:${ok?'rgba(46,204,138,0.06)':'rgba(100,100,100,0.06)'};border:1px solid ${ok?'rgba(46,204,138,0.15)':'rgba(100,100,100,0.15)'};border-radius:6px;margin-bottom:5px"><span style="font-size:12px;min-width:20px">${ok?'✅':'➖'}</span><div><div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${ok?'var(--green)':'var(--muted)'};letter-spacing:1px;margin-bottom:2px">${c.icon} ${c.label}</div><div style="font-size:11px;color:#8a9ab8;line-height:1.5">${txt||'--'}</div></div></div>`;
       }).join('');
+      checklistEl.innerHTML=html;
     }
 
     document.getElementById('b4-vreason').textContent=r.verdict_reason||'';
-
-    // Fill report sections for Truy Kich
-    document.getElementById('b4-c-str').textContent=
-      [r.mat_tran_1, r.mat_tran_2, r.mat_tran_3].filter(Boolean).join('\n\n') || r.structure || '';
+    document.getElementById('b4-c-str').textContent=[r.h1_analysis,r.m15_analysis,r.m5_analysis].filter(Boolean).join('\n\n')||''
     document.getElementById('b4-c-zone').textContent=r.entry ? `Entry: ${r.entry} | SL: ${r.sl} | TP: ${r.tp}` : r.zone || '';
     document.getElementById('b4-c-risk').textContent=r.lot ? `Lot: ${r.lot} | R:R: ${r.rr} | SL: ${r.sl_pips} | TP: ${r.tp_pips}` : r.risk || '';
 
