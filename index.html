@@ -2099,70 +2099,79 @@ Bias từ Bộ 1: ${STATE.bias} (định hướng TP, KHÔNG khóa lệnh)
 Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
 
 ═══════════════════════════════
-CỐT LÕI: ĐỌC MOMENTUM + MICRO STRUCTURE
-Không trade như SMC chuẩn — không yêu cầu BOS lớn hay FVG đầy đủ
+CỐT LÕI: MOMENTUM + BREAK STRUCTURE
+Không yêu cầu FVG hoặc OB — ưu tiên momentum và break structure
 ═══════════════════════════════
 
-NGUYÊN TẮC TRUY KÍCH:
-1. FVG = OPTIONAL — không bắt buộc
-2. Entry sớm được phép khi: Sweep + LH + momentum shift (không cần BOS lớn)
-3. Pullback không phá đỉnh = YẾU → bearish signal cho SELL, bullish signal cho BUY
-4. Micro BOS M5 = trigger đủ để entry — không cần confirm H1/M15 đầy đủ
-5. Ưu tiên micro structure M5 hơn là chờ cấu trúc lớn
+NGUYÊN TẮC BẮT BUỘC:
+1. FVG/OB = KHÔNG CẦN — hoàn toàn optional
+2. Sideway = NO TRADE tuyệt đối
+3. Impulse mạnh trước đó = điều kiện cần
+4. Break structure = trigger chính
+5. Pullback yếu (không có rejection mạnh) = xác nhận tiếp diễn
 
 ═══════════════════════════════
-3 MODEL VÀO LỆNH — CHỌN TỰ ĐỘNG:
+ĐIỀU KIỆN VÀO LỆNH (theo thứ tự):
 ═══════════════════════════════
 
-🔵 MODEL A — EARLY SHIFT (ƯU TIÊN CAO NHẤT):
-Trigger: Sweep + Lower High (LH) hình thành + momentum shift M5
-Entry: Ngay khi giá break low của pullback nhỏ (micro BOS M5)
-SL: Trên LH vừa hình thành (6-15 pip)
-KHÔNG cần FVG, KHÔNG cần BOS H1
+BƯỚC 1 — IMPULSE (H1/M15):
+✔ Có impulse mạnh trước đó (nến thân lớn liên tiếp cùng hướng)
+✔ LH+LL = downtrend rõ / HH+HL = uptrend rõ
+✔ KHÔNG phải sideway (nếu sideway → NO TRADE ngay)
 
-🔵 MODEL B — PULLBACK CONTINUATION:
-Trigger: Impulse mạnh + pullback < 61.8% + structure giữ
-Entry: Cuối pullback khi momentum giảm rõ (nến nhỏ dần)
-SL: Trên/dưới high/low của pullback (6-15 pip)
-FVG = optional, tốt hơn nếu có
+BƯỚC 2 — BOS M15:
+✔ M15 vừa phá structure (Break of Structure) rõ ràng
+✔ Giá đóng cửa bên kia swing high/low quan trọng
+✔ BOS = xác nhận hướng momentum
 
-🔵 MODEL C — BREAKOUT CONFIRM:
-Trigger: Tích lũy nhỏ sau impulse + break high/low vùng tích lũy
-Entry: Ngay khi break hoặc retest nhỏ
+BƯỚC 3 — PULLBACK M5 (YẾU):
+✔ M5 pullback ngược chiều nhưng YẾU
+✔ Pullback yếu = nến nhỏ, không có rejection mạnh, không phá đỉnh/đáy gần
+✔ Không có nến thân lớn ngược chiều (nếu có → HỦY QUÂN)
+
+BƯỚC 4 — ENTRY TRIGGER:
+✔ Break tiếp theo theo hướng trend sau pullback yếu
+✔ Entry khi giá break qua low/high của pullback (micro BOS M5)
+✔ Không cần chờ FVG hay OB — break structure là đủ
+
+═══════════════════════════════
+3 MODEL — CHỌN TỰ ĐỘNG:
+═══════════════════════════════
+
+MODEL A — EARLY (ưu tiên cao):
+Trigger: Impulse + BOS M15 + LH/HL hình thành M5
+Entry: Break low/high của pullback nhỏ
+SL: Trên LH / dưới HL vừa hình thành (6-15 pip)
+
+MODEL B — PULLBACK (tiêu chuẩn):
+Trigger: Impulse + pullback < 61.8% + structure giữ
+Entry: Cuối pullback khi nến nhỏ dần
+SL: Trên/dưới high/low pullback (6-15 pip)
+
+MODEL C — BREAKOUT (muộn):
+Trigger: Tích lũy nhỏ + break high/low vùng tích lũy
+Entry: Ngay khi break
 SL: Ngoài vùng tích lũy (5-12 pip)
-
-═══════════════════════════════
-PHÂN TÍCH THEO THỨ TỰ:
-═══════════════════════════════
-
-BƯỚC 1 — H1: Xác định trend (LH+LL hay HH+HL) + space còn chạy không
-BƯỚC 2 — M15: Impulse mạnh chưa? Pullback bao nhiêu %? Đồng pha H1 không?
-BƯỚC 3 — M5 (QUAN TRỌNG NHẤT):
-  → Có LH hình thành sau sweep không?
-  → Có micro BOS (break low nhỏ) không?
-  → Nến pullback nhỏ dần / râu nhiều không?
-  → Có nến thân lớn ngược chiều không? (nếu có → HỦY QUÂN ngay)
 
 ═══════════════════════════════
 QUY TẮC RISK:
 ═══════════════════════════════
-Model A: SL 6-15 pip | TP ≥ 30 pip | R:R ≥ 1:2
-Model B: SL 6-15 pip | TP ≥ 30 pip | R:R ≥ 1:2
+Model A/B: SL 6-15 pip | TP ≥ 30 pip | R:R ≥ 1:2
 Model C: SL 5-12 pip | TP ≥ 25 pip | R:R ≥ 1:2
-Buffer: +0.5-1 pip vào SL thực tế
+Buffer: +0.5-1 pip thực tế
 
-Nếu thuận bias B1 → TP full (liquidity xa)
-Nếu ngược bias B1 → TP ngắn (liquidity gần nhất)
+Thuận bias B1 → TP full (liquidity xa)
+Ngược bias B1 → TP ngắn (liquidity gần nhất)
 
 VERDICT:
-- FIRE = có trigger rõ, vào lệnh ngay
-- FORMING = setup gần hoàn thành, đặt alert
-- WAIT = chưa có trigger
-- CANCEL = có nến thân lớn ngược chiều → hủy ngay
+FIRE = đủ điều kiện, vào ngay
+FORMING = đang hình thành, đặt alert
+WAIT = chưa đủ (thiếu impulse hoặc BOS)
+CANCEL = sideway hoặc có rejection mạnh ngược chiều
 
 QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt.
 Trả về DUY NHẤT JSON:
-{"verdict":"FIRE"|"FORMING"|"WAIT"|"CANCEL","model":"MODEL_A_EARLY"|"MODEL_B_PULLBACK"|"MODEL_C_BREAKOUT","model_reason":"tại sao chọn model này","verdict_reason":"...","h1_analysis":"trend H1 LH/LL hay HH/HL, space còn không","m15_analysis":"impulse mạnh không, pullback %, đồng pha không","m5_analysis":"LH có không, micro BOS có không, nến pullback nhỏ dần chưa, có nến ngược chiều không","with_bias":"thuận/ngược bias — ảnh hưởng TP","alert_zone":"nếu FORMING — vùng giá cần alert","order_type":"...","entry":"...","sl":"...","tp":"...","sl_pips":"pip thực tế","tp_pips":"pip thực tế","lot":"...","rr":"X:Y","fail_reasons":["...","...","..."]}`;
+{"verdict":"FIRE"|"FORMING"|"WAIT"|"CANCEL","model":"MODEL_A_EARLY"|"MODEL_B_PULLBACK"|"MODEL_C_BREAKOUT","model_reason":"lý do chọn model","verdict_reason":"...","h1_analysis":"trend H1 rõ không — LH/LL hay HH/HL, có sideway không","m15_analysis":"impulse mạnh không, BOS có không, hướng momentum","m5_analysis":"pullback yếu không, có rejection mạnh không, break tiếp theo chưa","with_bias":"thuận/ngược bias — ảnh hưởng TP","alert_zone":"nếu FORMING — vùng giá cần alert (VD: 4430-4435)","order_type":"...","entry":"giá entry cụ thể","sl":"giá SL cụ thể","tp":"giá TP cụ thể","sl_pips":"pip thực tế","tp_pips":"pip thực tế","lot":"...","rr":"X:Y","fail_reasons":["...","...","..."]}`;
 
     const b64h1=STATE.imgs.b2_h1.split(',')[1];
     const mtypeh1=STATE.imgs.b2_h1.split(';')[0].split(':')[1];
