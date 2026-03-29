@@ -531,47 +531,32 @@ input[type="file"]{display:none}
     </div>
   </div>
 
-  <!-- M15 Upload -->
+  <!-- M15 Upload + AI Scan -->
   <div class="panel" style="margin-bottom:12px">
-    <div class="sec-label"><span>STEP 01</span> TẢI CHART M15</div>
+    <div class="sec-label"><span>BƯỚC 01</span> TẢI CHART M15 → AI TỰ QUÉT</div>
     <div class="img-upload-row">
       <div class="img-box" id="b3-box-m15" onclick="document.getElementById('b3-inp-m15').click()">
-        <input type="file" id="b3-inp-m15" accept="image/*" style="display:none" onchange="handleImg('b3','m15',this)">
+        <input type="file" id="b3-inp-m15" accept="image/*" style="display:none" onchange="handleImg('b3','m15',this);scanM15B3()">
         <div class="img-label">M15</div>
-        <div class="img-sub">15-MINUTE</div>
+        <div class="img-sub">NHẤN ĐỂ CHỌN ẢNH</div>
       </div>
     </div>
-  </div>
 
-  <!-- M15 Context Questions -->
-  <div class="panel" style="margin-bottom:12px">
-    <div class="sec-label"><span>STEP 02</span> ĐÁNH GIÁ M15 CONTEXT</div>
-    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:10px;line-height:1.6">Mỗi câu YES = +1 điểm (tối đa 3 điểm)</div>
-
-    <div class="check-item" data-q="b3-sweep"><span class="item-num">01</span>
-      <div class="item-text">M15 có liquidity sweep rõ ràng?<span class="item-sub">Giá đã quét qua high/low quan trọng</span></div>
-      <div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer('sweep','yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer('sweep','no',event)">NO</button></div>
+    <!-- AI Scan Result -->
+    <div id="b3-scan-loading" style="display:none;text-align:center;padding:14px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px">
+      ⏳ AI ĐANG QUÉT M15...
     </div>
-
-    <div class="check-item" data-q="b3-displacement"><span class="item-num">02</span>
-      <div class="item-text">M15 có displacement mạnh?<span class="item-sub">Nến thân lớn liên tiếp, break structure</span></div>
-      <div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer('displacement','yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer('displacement','no',event)">NO</button></div>
-    </div>
-
-    <div class="check-item" data-q="b3-structure"><span class="item-num">03</span>
-      <div class="item-text">M15 có structure rõ (không phải range)?<span class="item-sub">Có LH+LL hoặc HH+HL rõ ràng</span></div>
-      <div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer('structure','yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer('structure','no',event)">NO</button></div>
-    </div>
+    <div id="b3-scan-result" style="display:none;margin-top:10px"></div>
   </div>
 
   <!-- News Filter -->
   <div class="panel" style="margin-bottom:12px">
-    <div class="sec-label"><span>STEP 03</span> NEWS FILTER</div>
-    <div class="check-item" data-q="b3-news"><span class="item-num">04</span>
+    <div class="sec-label"><span>BƯỚC 02</span> LỌC TIN TỨC</div>
+    <div class="check-item" data-q="b3-news"><span class="item-num">01</span>
       <div class="item-text">Có High Impact News trong 2 tiếng tới?<span class="item-sub">NFP / FOMC / CPI / PPI → YES = DỪNG NGAY</span></div>
       <div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer('news','yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer('news','no',event)">NO</button></div>
     </div>
-    <div class="check-item" data-q="b3-time"><span class="item-num">05</span>
+    <div class="check-item" data-q="b3-time"><span class="item-num">02</span>
       <div class="item-text">Tôi có đủ thời gian theo dõi phiên?<span class="item-sub">Không bỏ máy giữa chừng → NO = DỪNG</span></div>
       <div class="tog-grp"><button class="tog-btn yes" onclick="b3Answer('time','yes',event)">YES</button><button class="tog-btn no" onclick="b3Answer('time','no',event)">NO</button></div>
     </div>
@@ -579,7 +564,7 @@ input[type="file"]{display:none}
 
   <!-- Progress -->
   <div class="prog-wrap">
-    <div class="prog-top"><span class="prog-lbl">TIẾN ĐỘ</span><span class="prog-cnt" id="p3-cnt">0 / 5</span></div>
+    <div class="prog-top"><span class="prog-lbl">TIẾN ĐỘ</span><span class="prog-cnt" id="p3-cnt">0 / 2</span></div>
     <div class="prog-bg"><div class="prog-fill" id="p3-fill"></div></div>
   </div>
 
@@ -1655,6 +1640,83 @@ function pAnswer(q,val,event){
 // ══════════════════════════════════════════════
 // BỘ 3 — PRIORITY ENGINE
 // ══════════════════════════════════════════════
+async function scanM15B3(){
+  if(!STATE.imgs.b3_m15 && !STATE.imgs.b2_m15) return;
+  const img = STATE.imgs.b3_m15 || STATE.imgs.b2_m15;
+  if(!STATE.apiKey){ return; }
+
+  document.getElementById('b3-scan-loading').style.display='block';
+  document.getElementById('b3-scan-result').style.display='none';
+
+  try{
+    const sys=`Bạn là Market Structure Scanner — phân tích nhanh chart M15 XAUUSD.
+
+HẰNG SỐ:
+- Displacement = TRUE: body nến ≥ 1.5 giá VÀ ≥ 1.5× avg body 5 nến trước
+- Sweep = TRUE: wick phá high/low ≥ 0.5 giá, close quay lại
+- Range = TRUE: 20 nến không BOS + biên độ < 3.0 giá
+- Structure rõ: LH+LL (downtrend) hoặc HH+HL (uptrend)
+
+Chỉ quét 3 yếu tố:
+1. SWEEP: có liquidity sweep rõ không? (wick phá high/low quan trọng)
+2. DISPLACEMENT: có nến thân lớn liên tiếp, break structure không?
+3. STRUCTURE: có LH+LL hoặc HH+HL rõ không (không phải range)?
+
+Mỗi yếu tố = 1 điểm. Tổng 0-3 điểm.
+Trả lời bằng tiếng Việt, DUY NHẤT JSON:
+{"sweep":true|false,"sweep_note":"mô tả ngắn","displacement":true|false,"displacement_note":"mô tả ngắn","structure":true|false,"structure_note":"mô tả ngắn","score":0-3,"summary":"1 câu tóm tắt"}`;
+
+    const b64=img.split(',')[1];
+    const mtype=img.split(';')[0].split(':')[1];
+    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:400,system:sys,messages:[{role:'user',content:[
+      {type:'image',source:{type:'base64',media_type:mtype,data:b64}},
+      {type:'text',text:'Quét M15 chart này. JSON.'}
+    ]}]});
+
+    // Save scores to STATE
+    STATE.b3Answers['sweep'] = r.sweep ? 'yes' : 'no';
+    STATE.b3Answers['displacement'] = r.displacement ? 'yes' : 'no';
+    STATE.b3Answers['structure'] = r.structure ? 'yes' : 'no';
+    saveState();
+
+    // Render scan result
+    const items = [
+      {label:'Liquidity Sweep', key:'sweep', note:r.sweep_note},
+      {label:'Displacement', key:'displacement', note:r.displacement_note},
+      {label:'Structure rõ', key:'structure', note:r.structure_note},
+    ];
+    const scoreClr = r.score>=2?'var(--green)':r.score===1?'var(--amber)':'var(--red)';
+    let html=`<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px">KẾT QUẢ QUÉT AI</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;color:${scoreClr}">${r.score}/3 điểm</span>
+      </div>`;
+    html += items.map(it=>{
+      const ok = STATE.b3Answers[it.key]==='yes';
+      return `<div style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:14px;min-width:22px">${ok?'✅':'❌'}</span>
+        <div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${ok?'var(--green)':'var(--red)'};letter-spacing:1px;margin-bottom:2px">${it.label}</div>
+          <div style="font-size:11px;color:#8a9ab8;line-height:1.5">${it.note||'--'}</div>
+        </div>
+      </div>`;
+    }).join('');
+    html+=`<div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;font-style:italic">${r.summary||''}</div></div>`;
+
+    document.getElementById('b3-scan-result').innerHTML=html;
+    document.getElementById('b3-scan-result').style.display='block';
+
+    if(navigator.vibrate) navigator.vibrate([30,20,30]);
+    checkB3Verdict();
+
+  } catch(e){
+    document.getElementById('b3-scan-result').innerHTML=`<div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--red);padding:8px">${e.message}</div>`;
+    document.getElementById('b3-scan-result').style.display='block';
+  } finally {
+    document.getElementById('b3-scan-loading').style.display='none';
+  }
+}
+
 function b3Answer(q, val, event){
   event.stopPropagation();
   STATE.b3Answers[q] = val;
@@ -1667,10 +1729,11 @@ function b3Answer(q, val, event){
   }
   if(navigator.vibrate) navigator.vibrate(25);
 
-  const total = 5;
-  const cnt = Object.keys(STATE.b3Answers).length;
-  document.getElementById('p3-cnt').textContent=`${cnt} / ${total}`;
-  document.getElementById('p3-fill').style.width=`${cnt/total*100}%`;
+  // Only count news + time for progress (2 questions)
+  const manualKeys = ['news','time'];
+  const cnt = manualKeys.filter(k=>STATE.b3Answers[k]).length;
+  document.getElementById('p3-cnt').textContent=`${cnt} / 2`;
+  document.getElementById('p3-fill').style.width=`${cnt/2*100}%`;
   saveState();
   checkB3Verdict();
 }
@@ -1708,10 +1771,12 @@ function getPriorityLevel(){
 
 function checkB3Verdict(){
   const a = STATE.b3Answers;
-  const answered = Object.keys(a).length;
-  if(answered < 5) return;
 
-  // Hard stops first
+  // Only require news + time answered (M15 scored by AI automatically)
+  const manualAnswered = a['news'] && a['time'];
+  if(!manualAnswered) return;
+
+  // Hard stops
   const stops = [];
   if(a['news']==='yes') stops.push('Có High Impact News trong 2 tiếng tới');
   if(a['time']==='no') stops.push('Không đủ thời gian theo dõi phiên');
