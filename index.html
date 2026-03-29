@@ -534,11 +534,13 @@ input[type="file"]{display:none}
   <!-- M15 Upload + AI Scan -->
   <div class="panel" style="margin-bottom:12px">
     <div class="sec-label"><span>BƯỚC 01</span> TẢI CHART M15 → AI TỰ QUÉT</div>
-    <div class="img-upload-row">
-      <div class="img-box" id="b3-box-m15" onclick="document.getElementById('b3-inp-m15').click()">
+    <div class="upload-grid" style="grid-template-columns:1fr">
+      <div class="upload-box single" id="b3-box-m15" onclick="document.getElementById('b3-inp-m15').click()">
         <input type="file" id="b3-inp-m15" accept="image/*" style="display:none" onchange="handleImg('b3','m15',this);scanM15B3()">
-        <div class="img-label">M15</div>
-        <div class="img-sub">NHẤN ĐỂ CHỌN ẢNH</div>
+        <div class="upload-inner">
+          <span class="upload-tf">M15</span>
+          <div class="upload-hint">NHẤN ĐỂ CHỌN ẢNH</div>
+        </div>
       </div>
     </div>
 
@@ -1875,6 +1877,7 @@ function handleImg(prefix,tf,input){
     if(navigator.vibrate)navigator.vibrate(30);
     if(prefix==='b1')checkB1Ready();
     if(prefix==='b2')checkB2Ready();
+    if(prefix==='b3'){ /* scanM15B3 called separately via onchange */ }
     if(prefix==='b4')checkB4Ready();
   };
   reader.readAsDataURL(file);
