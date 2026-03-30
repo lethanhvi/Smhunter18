@@ -536,7 +536,7 @@ input[type="file"]{display:none}
     <div class="sec-label"><span>BƯỚC 01</span> TẢI CHART M15 → AI TỰ QUÉT</div>
     <div class="upload-grid" style="grid-template-columns:1fr">
       <div class="upload-box single" id="b3-box-m15" onclick="document.getElementById('b3-inp-m15').click()">
-        <input type="file" id="b3-inp-m15" accept="image/*" style="display:none" onchange="handleImg('b3','m15',this);scanM15B3()">
+        <input type="file" id="b3-inp-m15" accept="image/*" style="display:none" onchange="handleImg('b3','m15',this)">
         <div class="upload-inner">
           <span class="upload-tf">M15</span>
           <div class="upload-hint">NHẤN ĐỂ CHỌN ẢNH</div>
@@ -544,11 +544,21 @@ input[type="file"]{display:none}
       </div>
     </div>
 
-    <!-- AI Scan Result -->
+    <!-- Scan button — hiện sau khi có ảnh -->
+    <button id="b3-scan-btn" onclick="scanM15B3()" style="display:none;width:100%;margin-top:10px;padding:12px;background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(201,168,76,0.08));border:1px solid rgba(201,168,76,0.4);border-radius:8px;color:var(--gold);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;touch-action:manipulation">
+      ⚡ QUÉT M15 BẰNG AI
+    </button>
+
+    <!-- AI Scan Loading -->
     <div id="b3-scan-loading" style="display:none;text-align:center;padding:14px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px">
       ⏳ AI ĐANG QUÉT M15...
     </div>
+
+    <!-- AI Scan Result -->
     <div id="b3-scan-result" style="display:none;margin-top:10px"></div>
+
+    <!-- Scan Error -->
+    <div id="b3-scan-error" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(232,65,90,0.1);border:1px solid rgba(232,65,90,0.25);border-radius:6px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--red)"></div>
   </div>
 
   <!-- News Filter -->
@@ -1643,12 +1653,23 @@ function pAnswer(q,val,event){
 // BỘ 3 — PRIORITY ENGINE
 // ══════════════════════════════════════════════
 async function scanM15B3(){
-  if(!STATE.imgs.b3_m15 && !STATE.imgs.b2_m15) return;
   const img = STATE.imgs.b3_m15 || STATE.imgs.b2_m15;
-  if(!STATE.apiKey){ return; }
+  if(!img){ 
+    const errEl=document.getElementById('b3-scan-error');
+    if(errEl){errEl.textContent='⚠ Chưa có ảnh M15';errEl.style.display='block';}
+    return; 
+  }
+  if(!STATE.apiKey){
+    const errEl=document.getElementById('b3-scan-error');
+    if(errEl){errEl.textContent='⚠ Chưa có API Key — vui lòng nhập API Key ở Bộ 1';errEl.style.display='block';}
+    return;
+  }
 
+  const btn=document.getElementById('b3-scan-btn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ ĐANG QUÉT...';}
   document.getElementById('b3-scan-loading').style.display='block';
   document.getElementById('b3-scan-result').style.display='none';
+  document.getElementById('b3-scan-error').style.display='none';
 
   try{
     const sys=`Bạn là Market Structure Scanner — phân tích nhanh chart M15 XAUUSD.
@@ -1712,10 +1733,12 @@ Trả lời bằng tiếng Việt, DUY NHẤT JSON:
     checkB3Verdict();
 
   } catch(e){
-    document.getElementById('b3-scan-result').innerHTML=`<div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--red);padding:8px">${e.message}</div>`;
-    document.getElementById('b3-scan-result').style.display='block';
+    document.getElementById('b3-scan-error').textContent=`⚠ ${e.message}`;
+    document.getElementById('b3-scan-error').style.display='block';
   } finally {
     document.getElementById('b3-scan-loading').style.display='none';
+    const btn=document.getElementById('b3-scan-btn');
+    if(btn){btn.disabled=false;btn.textContent='⚡ QUÉT LẠI M15';}
   }
 }
 
@@ -1877,7 +1900,10 @@ function handleImg(prefix,tf,input){
     if(navigator.vibrate)navigator.vibrate(30);
     if(prefix==='b1')checkB1Ready();
     if(prefix==='b2')checkB2Ready();
-    if(prefix==='b3'){ /* scanM15B3 called separately via onchange */ }
+    if(prefix==='b3'){
+      const btn=document.getElementById('b3-scan-btn');
+      if(btn) btn.style.display='block';
+    }
     if(prefix==='b4')checkB4Ready();
   };
   reader.readAsDataURL(file);
