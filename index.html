@@ -1966,50 +1966,99 @@ async function runBo1(){
 ═══ HẰNG SỐ ĐỊNH LƯỢNG (BẮT BUỘC) ═══
 IMPULSE_MIN = 1.5 giá | IMPULSE_STRONG = 2.5 giá
 BOS_MIN = 0.5 giá | SWEEP_MIN = 0.5 giá
-RANGE: 20 nến không BOS + biên độ < 3.0 giá = CẤM TRADE
-Pullback nông: 20-50% | Pullback sâu: 50-80%
-FVG_MIN = 0.5 giá (gap nến 1 và 3)
-OB hợp lệ: nến cuối trước displacement ≥ 1.5 giá
+RANGE H4: 2 swing không tạo LL/HH mới + giá dao động trong biên cố định = RANGE
+FVG_MIN = 0.5 giá | OB hợp lệ: nến cuối trước displacement ≥ 1.5 giá
 
 FORMAT BẮT BUỘC:
-❌ CẤM: "momentum yếu", "có vẻ", "có thể"
-✅ DÙNG: "Displacement=TRUE(body=X.X giá)", "BOS=TRUE(break=X.X giá)", "Range=FALSE"
+❌ CẤM: "có vẻ", "có thể", ngôn ngữ mơ hồ
+✅ DÙNG: "Displacement=TRUE(body=X giá)", "BOS=TRUE(break=X giá)", "Phase=RANGE"
 
-BỘ 1 — BIAS (D1 + H4):
+BỘ 1 — MACRO FRAMEWORK (D1 + H4):
 
-RULE:
-SELL: H4 tạo LH+LL + BOS xuống ≥ 0.5 giá. D1 xác nhận bearish.
-BUY: H4 tạo HH+HL + BOS lên ≥ 0.5 giá. D1 xác nhận bullish.
-NEUTRAL: Range=TRUE hoặc D1 không rõ.
+═══ BƯỚC 1: PHASE DETECTION H4 ═══
+TRENDING: H4 tạo HH+HL liên tiếp (BUY) hoặc LH+LL liên tiếp (SELL) + BOS ≥ 0.5 giá
+RANGE: 2 swing không tạo LL/HH mới + giá dao động trong biên cố định → market_phase = RANGE
+RE-ACCUMULATION/DISTRIBUTION: sau impulse mạnh + giá không tiếp tục tạo LL/HH + có equal highs/lows → market_phase = RANGE
+
+═══ BƯỚC 2: BIAS — PHÂN BIỆT BỐI CẢNH vs EXECUTION ═══
+SELL CONTEXT (bối cảnh giảm):
+  D1 bearish (LH+LL) + H4 phase = TRENDING bearish
+  → bias = SELL | execution = CHỜ SETUP | TP 1:3-1:5
+
+SELL CONTEXT + RANGE (nguy hiểm):
+  D1 bearish + H4 phase = RANGE
+  → bias = SELL CONTEXT | execution = NEUTRAL (chờ phá vỡ range mới bán)
+  → KHÔNG bán giữa range
+
+BUY CONTEXT + RANGE:
+  D1 bullish + H4 phase = RANGE
+  → bias = BUY CONTEXT | execution = NEUTRAL (chờ phá vỡ)
+
+NEUTRAL: D1 không rõ hoặc H4 range thuần túy → không trade
 
 D1 luôn thắng khi mâu thuẫn H4.
 Bias KHÔNG khóa entry — chỉ ảnh hưởng TP:
 - Cùng bias → TP 1:3–1:5 | Ngược bias → TP 1:1–1:2
 
-OUTPUT phải có giá cụ thể cho tất cả vùng.
-NGÔN NGỮ BẮT BUỘC: Toàn bộ kết quả phải bằng tiếng Việt — KHÔNG dùng tiếng Anh trong bất kỳ field nào của JSON. Các thuật ngữ kỹ thuật (BOS, MSS, FVG, OB, Displacement, Sweep, Pullback) giữ nguyên nhưng giải thích bằng tiếng Việt.
+═══ BƯỚC 3: LIQUIDITY — ƯU TIÊN GẦN TRƯỚC ═══
+Luôn xác định liquidity gần nhất trước (Equal High/Low, range high/low gần)
+Không target liquidity xa khi còn liquidity gần chưa bị quét
+IF tồn tại EQH/EQL gần → ưu tiên sweep gần trước khi target xa
 
-QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt.
+═══ BƯỚC 4: WAIT MODE ═══
+IF market_phase = RANGE → disable entry signals → enable breakout tracking
+Chỉ trade khi giá break khỏi range với displacement ≥ 1.5 giá
+
+OUTPUT phải có giá cụ thể. Trả lời HOÀN TOÀN bằng tiếng Việt.
 Trả về DUY NHẤT JSON:
-{"bias":"BUY"|"SELL"|"NEUTRAL","bias_reason":"Displacement=TRUE(Xgiá),BOS=TRUE(Xgiá)","structure":"LH/LL hoặc HH/HL tại giá cụ thể","liquidity":"BSL tại X, SSL tại Y","zones":"Supply X-X, Demand Y-Y, FVG Z-Z","dxy":"tác động DXY","intent":"Accumulation/Distribution/Manipulation"}`;
+{"bias":"SELL_CONTEXT"|"BUY_CONTEXT"|"NEUTRAL","market_phase":"TRENDING"|"RANGE","execution":"ACTIVE"|"WAIT_BREAKOUT"|"NEUTRAL","bias_reason":"Phase=X, D1=LH+LL/HH+HL tại giá X","execution_note":"tại sao active hay chờ breakout","structure":"mô tả H4+D1 với giá cụ thể","liquidity_near":"EQH/EQL gần nhất tại giá X — cần sweep trước","liquidity_far":"BSL/SSL xa tại X — target sau","zones":"Supply X-X, Demand Y-Y","range_box":"nếu RANGE — high=X low=Y breakout cần displacement ≥ 1.5 giá","dxy":"tác động DXY","intent":"Re-accumulation/Distribution/Trending"}`;
     const d1b64=STATE.imgs.b1_d1.split(',')[1],h4b64=STATE.imgs.b1_h4.split(',')[1];
     const d1t=STATE.imgs.b1_d1.split(';')[0].split(':')[1],h4t=STATE.imgs.b1_h4.split(';')[0].split(':')[1];
     const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:d1t,data:d1b64}},{type:'text',text:'Chart 1: D1'},{type:'image',source:{type:'base64',media_type:h4t,data:h4b64}},{type:'text',text:'Chart 2: H4. Phân tích JSON.'}]}]});
-    // Save bias
-    const biasMap={BUY:'CHỈ CANH BUY',SELL:'CHỈ CANH SELL',NEUTRAL:'ÁN BINH BẤT ĐỘNG'};
-    STATE.bias=biasMap[r.bias]||r.bias;
+    // Save bias + phase to STATE
+    const biasMap={
+      'SELL_CONTEXT':'BỐI CẢNH GIẢM',
+      'BUY_CONTEXT':'BỐI CẢNH TĂNG',
+      'NEUTRAL':'TRUNG LẬP',
+      // legacy fallback
+      'BUY':'BỐI CẢNH TĂNG',
+      'SELL':'BỐI CẢNH GIẢM'
+    };
+    const execMap={
+      'ACTIVE':'CHỜ SETUP — CÓ THỂ TRADE',
+      'WAIT_BREAKOUT':'CHỜ PHÁ VỠ RANGE',
+      'NEUTRAL':'ÁN BINH BẤT ĐỘNG'
+    };
+    STATE.bias = biasMap[r.bias]||r.bias;
+    STATE.b1Phase = r.market_phase||'';
+    STATE.b1Execution = r.execution||'';
     saveState();
+
     // Render
     document.getElementById('b1-time').innerHTML=`TIME: <span>${vnTime()}</span>`;
     const vbox=document.getElementById('b1-verdict-box');
-    vbox.className='verdict-box '+(r.bias==='BUY'?'go':r.bias==='SELL'?'stop':'wait');
-    document.getElementById('b1-emoji').textContent=r.bias==='BUY'?'✅':r.bias==='SELL'?'🚫':'⏸';
-    const vtMap={BUY:'CHỈ CANH BUY',SELL:'CHỈ CANH SELL',NEUTRAL:'ÁN BINH BẤT ĐỘNG'};
-    document.getElementById('b1-vtitle').textContent=vtMap[r.bias]||r.bias;
-    document.getElementById('b1-vreason').textContent=r.bias_reason||'';
+
+    const isRange = r.market_phase==='RANGE';
+    const isBuy = r.bias==='BUY_CONTEXT'||r.bias==='BUY';
+    const isSell = r.bias==='SELL_CONTEXT'||r.bias==='SELL';
+    vbox.className='verdict-box '+(isRange?'wait':isBuy?'go':isSell?'stop':'wait');
+
+    // Phase badge
+    const phaseBadge = r.market_phase==='RANGE'
+      ? `<div style="font-family:'Share Tech Mono',monospace;font-size:9px;background:rgba(255,181,71,0.2);border:1px solid rgba(255,181,71,0.4);color:var(--amber);padding:3px 10px;border-radius:10px;letter-spacing:1px;margin-bottom:8px;display:inline-block">📦 PHASE: RANGE — CHỜ PHÁ VỠ</div>`
+      : `<div style="font-family:'Share Tech Mono',monospace;font-size:9px;background:rgba(46,204,138,0.12);border:1px solid rgba(46,204,138,0.3);color:var(--green);padding:3px 10px;border-radius:10px;letter-spacing:1px;margin-bottom:8px;display:inline-block">📈 PHASE: TRENDING</div>`;
+
+    document.getElementById('b1-emoji').textContent=isRange?'📦':isBuy?'📈':isSell?'📉':'⏸';
+
+    const vtitle = isRange
+      ? (isSell?'BỐI CẢNH GIẢM — CHỜ PHÁ VỠ VÙNG PHÂN PHỐI':isBuy?'BỐI CẢNH TĂNG — CHỜ PHÁ VỠ VÙNG TÍCH LŨY':'RANGE — ÁN BINH BẤT ĐỘNG')
+      : (biasMap[r.bias]||r.bias);
+
+    document.getElementById('b1-vtitle').textContent=vtitle;
+    document.getElementById('b1-vreason').innerHTML=phaseBadge+(r.execution_note||r.bias_reason||'');
     document.getElementById('b1-c-str').textContent=r.structure||'';
-    document.getElementById('b1-c-lq').textContent=r.liquidity||'';
-    document.getElementById('b1-c-zones').textContent=r.zones||'';
+    document.getElementById('b1-c-lq').textContent=(r.liquidity_near?'Gần: '+r.liquidity_near+'\n':'')+( r.liquidity_far?'Xa: '+r.liquidity_far:'')|| r.liquidity||'';
+    document.getElementById('b1-c-zones').textContent=(r.range_box?'Range: '+r.range_box+'\n':'')+r.zones||'';
     document.getElementById('b1-c-dxy').textContent=r.dxy||'';
     document.getElementById('b1-c-intent').textContent=r.intent||'';
     document.getElementById('b1-sec-str').classList.add('open');
