@@ -3431,5 +3431,72 @@ if('serviceWorker'in navigator){
 })();
 </script>
 
+
+<script>
+(function () {
+  console.log("SMC A+ Upgrade Loaded");
+
+  class SMCPro {
+    constructor() {
+      this.candles = [];
+    }
+
+    setCandles(data){
+      this.candles = data;
+      this.run();
+    }
+
+    detectLiquiditySweep(candles) {
+      const lows = candles.map(c => c.low);
+      const min = Math.min(...lows.slice(0, -5));
+      const last = candles.at(-1).low;
+      return last < min;
+    }
+
+    isDiscountZone(candles) {
+      const high = Math.max(...candles.map(c => c.high));
+      const low = Math.min(...candles.map(c => c.low));
+      const current = candles.at(-1).close;
+      const mid = (high + low) / 2;
+      return current < mid;
+    }
+
+    detectFVG(candles) {
+      for (let i = 2; i < candles.length; i++) {
+        if (candles[i].low > candles[i - 2].high) return true;
+      }
+      return false;
+    }
+
+    run() {
+      const ok =
+        this.detectLiquiditySweep(this.candles) &&
+        this.isDiscountZone(this.candles) &&
+        this.detectFVG(this.candles);
+
+      console.log("A+ Filter:", ok ? "VALID A+" : "REJECTED");
+    }
+  }
+
+  window.addEventListener("load", () => {
+    const engine = new SMCPro();
+
+    // mock fallback (auto replace khi có data thật)
+    const mock = Array.from({ length: 50 }, () => {
+      const base = Math.random() * 100;
+      return {
+        open: base,
+        high: base + Math.random() * 5,
+        low: base - Math.random() * 5,
+        close: base + (Math.random() - 0.5) * 5
+      };
+    });
+
+    engine.setCandles(mock);
+    window.smcPro = engine;
+  });
+})();
+</script>
+
 </body>
 </html>
