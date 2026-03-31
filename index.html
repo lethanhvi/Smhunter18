@@ -3571,5 +3571,85 @@ if('serviceWorker'in navigator){
 })();
 </script>
 
+
+<script>
+(function(){
+  console.log("SMC FIXED Engine Loaded");
+
+  class SMCFix {
+    constructor(){
+      this.candles = [];
+    }
+
+    setCandles(data){
+      this.candles = data;
+      this.run();
+    }
+
+    // FIX 1: correct liquidity sweep logic
+    detectLiquidityType(candles){
+      const highs = candles.map(c=>c.high);
+      const last = candles.at(-1).high;
+      const prevMax = Math.max(...highs.slice(0, -1));
+
+      if(last > prevMax){
+        return "BSL SWEEP (breakout)";
+      }
+      return "NO SWEEP";
+    }
+
+    // FIX 2: momentum lifecycle
+    detectMomentumPhase(candles){
+      const recent = candles.slice(-5);
+
+      let big = recent.filter(c => Math.abs(c.close - c.open) > 5).length;
+      let small = recent.filter(c => Math.abs(c.close - c.open) < 3).length;
+
+      if(big >= 3) return "EXPANSION (EARLY)";
+      if(small >= 3) return "CONSOLIDATION (DEAD)";
+      return "LATE / WEAK";
+    }
+
+    run(){
+      const liq = this.detectLiquidityType(this.candles);
+      const phase = this.detectMomentumPhase(this.candles);
+
+      console.log("Liquidity:", liq);
+      console.log("Momentum Phase:", phase);
+
+      if(phase.includes("DEAD")){
+        console.log("FINAL: NO TRADE (momentum exhausted)");
+        return;
+      }
+
+      if(phase.includes("EARLY")){
+        console.log("FINAL: TRADE OK (expansion)");
+        return;
+      }
+
+      console.log("FINAL: WAIT");
+    }
+  }
+
+  window.addEventListener("load", ()=>{
+    const engine = new SMCFix();
+
+    const mock = Array.from({length:50}, ()=>{
+      const b = Math.random()*100;
+      return {
+        open:b,
+        high:b+Math.random()*5,
+        low:b-Math.random()*5,
+        close:b+(Math.random()-0.5)*5
+      };
+    });
+
+    engine.setCandles(mock);
+    window.smcFix = engine;
+  });
+
+})();
+</script>
+
 </body>
 </html>
