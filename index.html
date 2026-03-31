@@ -861,6 +861,8 @@ const STATE = {
   b2Narrative:'',
   b3Priority:'MEDIUM',
   b3MarketState:'',
+  b3NextAction:'',
+  b3EntryDirection:'',
   b4Entry:'',
   b4RR:'',
   kzActive:false,
@@ -1678,104 +1680,133 @@ async function scanM15B3(){
     const sys=`Bạn là Market State Classifier — phân tích TRẠNG THÁI HIỆN TẠI của M15 XAUUSD.
 
 QUAN TRỌNG NHẤT: Đánh giá CURRENT STATE, không phải lịch sử impulse.
-Impulse đã xảy ra ≠ setup hiện tại còn valid.
+HTF Bias từ Bộ 1: ${STATE.bias} | Phase HTF: ${STATE.b1Phase||'Không rõ'}
 
-═══ MARKET STATE CLASSIFIER — 4 TRẠNG THÁI ═══
+═══ BƯỚC 1: PHÂN LOẠI 4 TRẠNG THÁI ═══
 
-1. TREND (hợp lệ để trade):
-   - Đang tiếp tục tạo HH+HL (uptrend) hoặc LH+LL (downtrend)
-   - Nến mạnh liên tiếp cùng hướng sau impulse
-   - Không có LH (uptrend) hoặc HL (downtrend) mới hình thành
+TREND: tiếp tục HH+HL hoặc LH+LL + nến mạnh liên tiếp → có thể trade
+PULLBACK: hồi 1 chiều sạch + nến nhỏ dần + không overlap → chờ entry
+DISTRIBUTION/ACCUMULATION: sau impulse + overlap + wick 2 đầu + không tạo HH/LL mới
+CONSOLIDATION: sideway chop + ≥ 2 swing ngược chiều
 
-2. PULLBACK (chờ entry):
-   - Sau impulse mạnh, giá đang hồi lại 1 chiều
-   - Nến nhỏ dần, không overlap nhiều
-   - Chưa tạo swing ngược chiều mới
+═══ BƯỚC 2: PHÂN LOẠI DISTRIBUTION (QUAN TRỌNG) ═══
 
-3. DISTRIBUTION / ACCUMULATION (NO TRADE):
-   - Sau impulse: có ≥ 5 nến overlap
-   - Nhiều wick 2 đầu
-   - Không tạo HH mới (sau uptrend) hoặc LL mới (sau downtrend)
-   - Đây là cuối trend, KHÔNG phải đầu trend
-   - → NO TRADE tuyệt đối
+STRONG DISTRIBUTION (chuẩn bị dump):
+- LH rõ đã hình thành
+- Giá phá đáy gần nhất (BOS xuống ≥ 0.5 giá)
+- HTF bias = SELL
+→ state = STRONG_DISTRIBUTION → chuẩn bị SELL entry
 
-4. CONSOLIDATION (NO TRADE):
-   - Giá đi ngang trong range hẹp
-   - ≥ 2 swing lên-xuống chồng chéo
-   - → NO TRADE
+WEAK DISTRIBUTION (chờ xác nhận):
+- Overlap nhưng chưa có LH rõ
+- Chưa phá low gần nhất
+→ state = WEAK_DISTRIBUTION → NO TRADE, chờ thêm
 
-═══ POST-IMPULSE VALIDATION (bắt buộc) ═══
-Sau khi thấy displacement mạnh:
-1. Giá có tiếp tục tạo HH không? → TREND CONTINUE
-2. Hay tạo LH + fail + overlap? → DISTRIBUTION → NO TRADE
-3. Hay hồi lại 1 chiều sạch? → PULLBACK → chờ entry
+═══ BƯỚC 3: FAKE BREAK / LIQUIDITY SWEEP DETECTION ═══
+IF wick phá high/low ≥ 0.5 giá VÀ close quay lại bên trong range:
+→ = LIQUIDITY SWEEP (BSL/SSL grabbed)
+→ tăng xác suất đảo chiều
+→ KHÔNG gọi đơn giản là "rejection"
 
-═══ SWEEP RULE ═══
-Sweep = điều kiện cần, KHÔNG phải tín hiệu entry
-Phải có MSS/CHoCH sau sweep mới valid
+═══ BƯỚC 4: HTF ALIGNMENT ═══
+IF HTF bias = SELL AND M15 = DISTRIBUTION tại premium zone:
+→ ưu tiên tìm SELL, không đứng ngoài quá lâu
+IF HTF bias = BUY AND M15 = DISTRIBUTION tại discount zone:
+→ ưu tiên tìm BUY sau accumulation
+
+═══ BƯỚC 5: ENTRY ACTIVATION LAYER ═══
+IF STRONG_DISTRIBUTION + sweep high + HTF SELL:
+→ next_action = CHỜ CHoCH/MSS M5 → SELL entry
+IF WEAK_DISTRIBUTION:
+→ next_action = NO TRADE — chờ phá low xác nhận
+IF TREND + pullback sạch:
+→ next_action = CHỜ TRIGGER (micro BOS M5) → entry thuận trend
+IF CONSOLIDATION:
+→ next_action = NO TRADE tuyệt đối
+
+═══ BƯỚC 6: POST-IMPULSE VALIDATION ═══
+Sau impulse mạnh:
+1. Giá tiếp tục HH → TREND CONTINUE
+2. Tạo LH + fail + overlap → DISTRIBUTION
+3. Hồi 1 chiều sạch → PULLBACK → chờ entry
 
 ═══ LOCATION CHECK ═══
-Giá đang ở đâu trong range?
-- Gần high/low edge → có thể xét entry
-- Giữa range (mid) → BLOCKED
-
-═══ MOMENTUM CONTINUATION CHECK ═══
-Nếu sau impulse: body nến nhỏ dần + wick nhiều + không break high → momentum YẾU → downgrade
+Premium = gần vùng high — ưu tiên SELL
+Discount = gần vùng low — ưu tiên BUY
+Mid-range = giữa — BLOCKED
 
 Trả lời HOÀN TOÀN bằng tiếng Việt. DUY NHẤT JSON:
-{"market_state":"TREND"|"PULLBACK"|"DISTRIBUTION"|"CONSOLIDATION","state_note":"mô tả cụ thể tại sao state này","sweep":true|false,"sweep_note":"sweep có không, MSS/CHoCH sau sweep chưa","displacement":true|false,"displacement_note":"body=Xgiá, nhưng sau đó giá làm gì","structure":true|false,"structure_note":"HH/HL hay LH/LL hay đang tạo LH fail","post_impulse":"giá sau impulse đang TREND/DISTRIBUTION/PULLBACK","location":"premium/discount/mid-range — có trade được không","score":0-3,"tradeable":true|false,"summary":"1 câu kết luận rõ ràng"}`;
+{"market_state":"TREND"|"PULLBACK"|"STRONG_DISTRIBUTION"|"WEAK_DISTRIBUTION"|"CONSOLIDATION","state_note":"mô tả cụ thể","distribution_type":"STRONG/WEAK/N_A — lý do","sweep_detected":true|false,"sweep_note":"nếu có sweep — BSL/SSL tại giá X, close quay lại dưới/trên level","htf_alignment":"HTF bias + M15 state có aligned không","displacement":true|false,"displacement_note":"body=Xgiá, sau đó giá làm gì","structure":true|false,"structure_note":"HH/HL hay LH/LL hay fail","post_impulse":"TREND_CONTINUE/DISTRIBUTION/PULLBACK","location":"premium/discount/mid-range","next_action":"hành động tiếp theo — CHỜ CHoCH M5/CHỜ TRIGGER/NO TRADE/CHỜ PHÁ LOW","entry_direction":"SELL/BUY/NONE — dựa trên state + HTF","score":0-3,"tradeable":false,"summary":"1 câu kết luận + hành động cụ thể"}`;
 
     const b64=img.split(',')[1];
     const mtype=img.split(';')[0].split(':')[1];
-    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:600,system:sys,messages:[{role:'user',content:[
+    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:700,system:sys,messages:[{role:'user',content:[
       {type:'image',source:{type:'base64',media_type:mtype,data:b64}},
-      {type:'text',text:'Phân tích TRẠNG THÁI HIỆN TẠI của M15 chart này. JSON.'}
+      {type:'text',text:'Phân tích TRẠNG THÁI HIỆN TẠI M15 chart này. JSON.'}
     ]}]});
 
-    // Save scores to STATE
-    STATE.b3Answers['sweep'] = r.sweep ? 'yes' : 'no';
+    // Save to STATE
+    STATE.b3Answers['sweep'] = r.sweep_detected ? 'yes' : 'no';
     STATE.b3Answers['displacement'] = r.displacement ? 'yes' : 'no';
     STATE.b3Answers['structure'] = r.structure ? 'yes' : 'no';
     STATE.b3MarketState = r.market_state || '';
+    STATE.b3NextAction = r.next_action || '';
+    STATE.b3EntryDirection = r.entry_direction || '';
     saveState();
 
-    // Render scan result
+    // State config
     const stateColors = {
-      'TREND':         {bg:'rgba(46,204,138,0.1)', border:'rgba(46,204,138,0.3)', color:'var(--green)',  emoji:'📈'},
-      'PULLBACK':      {bg:'rgba(77,159,255,0.1)', border:'rgba(77,159,255,0.3)', color:'var(--blue)',   emoji:'↩️'},
-      'DISTRIBUTION':  {bg:'rgba(232,65,90,0.1)',  border:'rgba(232,65,90,0.3)',  color:'var(--red)',    emoji:'📦'},
-      'CONSOLIDATION': {bg:'rgba(255,181,71,0.1)', border:'rgba(255,181,71,0.3)', color:'var(--amber)', emoji:'⛔'},
+      'TREND':               {bg:'rgba(46,204,138,0.1)',  border:'rgba(46,204,138,0.3)',  color:'var(--green)',  emoji:'📈', label:'TREND'},
+      'PULLBACK':            {bg:'rgba(77,159,255,0.1)',  border:'rgba(77,159,255,0.3)',  color:'var(--blue)',   emoji:'↩️', label:'PULLBACK'},
+      'STRONG_DISTRIBUTION': {bg:'rgba(232,65,90,0.12)', border:'rgba(232,65,90,0.4)',   color:'var(--red)',    emoji:'🔴', label:'PHÂN PHỐI MẠNH'},
+      'WEAK_DISTRIBUTION':   {bg:'rgba(255,181,71,0.1)', border:'rgba(255,181,71,0.35)', color:'var(--amber)',  emoji:'⚠️', label:'PHÂN PHỐI YẾU'},
+      'CONSOLIDATION':       {bg:'rgba(100,100,100,0.1)',border:'rgba(100,100,100,0.3)', color:'var(--muted)',  emoji:'⛔', label:'SIDEWAY'},
     };
     const sc = stateColors[r.market_state] || stateColors['CONSOLIDATION'];
     const scoreClr = r.score>=2?'var(--green)':r.score===1?'var(--amber)':'var(--red)';
-    const tradeableLabel = r.tradeable
-      ? `<span style="color:var(--green);font-weight:700">✅ CÓ THỂ TRADE</span>`
-      : `<span style="color:var(--red);font-weight:700">🚫 KHÔNG TRADE</span>`;
+
+    const nextActionColor = r.next_action&&r.next_action.includes('CHỜ CHoCH')
+      ? 'var(--amber)' : r.next_action&&r.next_action.includes('NO TRADE')
+      ? 'var(--red)' : 'var(--green)';
 
     let html=`<div style="background:${sc.bg};border:1px solid ${sc.border};border-radius:8px;padding:12px 14px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${sc.color};letter-spacing:1px;font-weight:700">${sc.emoji} TRẠNG THÁI: ${r.market_state||'--'}</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:${sc.color};letter-spacing:1px;font-weight:700">${sc.emoji} ${sc.label}</span>
         <span style="font-family:'Share Tech Mono',monospace;font-size:12px;font-weight:700;color:${scoreClr}">${r.score}/3</span>
       </div>
-      <div style="font-size:11px;color:var(--text);margin-bottom:8px;line-height:1.5">${r.state_note||''}</div>
-      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:10px;margin-bottom:8px">
-        ${tradeableLabel}
-        <span style="color:var(--muted)">${r.location||''}</span>
-      </div>`;
+      <div style="font-size:12px;color:var(--text);margin-bottom:8px;line-height:1.5">${r.state_note||''}</div>`;
 
+    // Next action highlight
+    if(r.next_action){
+      html+=`<div style="background:rgba(0,0,0,0.3);border:1px solid ${nextActionColor};border-radius:6px;padding:8px 10px;margin-bottom:8px">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:3px">HÀNH ĐỘNG TIẾP THEO</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:${nextActionColor};font-weight:700">${r.next_action}</div>
+        ${r.entry_direction&&r.entry_direction!=='NONE'?`<div style="font-size:10px;color:${r.entry_direction==='SELL'?'var(--red)':'var(--green)'};margin-top:3px">→ Hướng entry: ${r.entry_direction}</div>`:''}
+      </div>`;
+    }
+
+    // HTF alignment
+    if(r.htf_alignment){
+      html+=`<div style="font-size:11px;color:var(--muted);margin-bottom:8px;padding:6px 8px;background:rgba(0,0,0,0.2);border-radius:4px">🔗 HTF: ${r.htf_alignment}</div>`;
+    }
+
+    // Sweep detection
+    if(r.sweep_detected){
+      html+=`<div style="font-size:11px;color:var(--amber);margin-bottom:8px;padding:6px 8px;background:rgba(255,181,71,0.08);border:1px solid rgba(255,181,71,0.2);border-radius:4px">⚡ LIQUIDITY SWEEP: ${r.sweep_note||''}</div>`;
+    }
+
+    // Detail items
     const items = [
-      {label:'Sweep', note:r.sweep_note, ok:r.sweep},
       {label:'Displacement', note:r.displacement_note, ok:r.displacement},
-      {label:'Structure rõ', note:r.structure_note, ok:r.structure},
+      {label:'Structure', note:r.structure_note, ok:r.structure},
     ];
-    html += items.map(it=>`<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--border)">
-      <span style="font-size:12px;min-width:20px">${it.ok?'✅':'➖'}</span>
-      <div><div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${it.ok?'var(--green)':'var(--muted)'};letter-spacing:1px;margin-bottom:1px">${it.label}</div>
+    html += items.map(it=>`<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid var(--border)">
+      <span style="font-size:11px;min-width:20px">${it.ok?'✅':'➖'}</span>
+      <div><div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${it.ok?'var(--green)':'var(--muted)'};letter-spacing:1px">${it.label}</div>
       <div style="font-size:11px;color:#8a9ab8;line-height:1.4">${it.note||'--'}</div></div>
     </div>`).join('');
 
-    if(r.post_impulse) html+=`<div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">POST-IMPULSE: ${r.post_impulse}</div>`;
-    html+=`<div style="font-size:11px;color:${sc.color};margin-top:8px;line-height:1.5;font-style:italic">${r.summary||''}</div></div>`;
+    html+=`<div style="font-size:11px;color:${sc.color};margin-top:8px;padding-top:6px;border-top:1px solid ${sc.border};line-height:1.5;font-style:italic">${r.summary||''}</div></div>`;
 
     document.getElementById('b3-scan-result').innerHTML=html;
     document.getElementById('b3-scan-result').style.display='block';
@@ -2132,7 +2163,9 @@ async function runBo2(){
   try{
     const sys=`Bạn là Context Engine Analyst XAUUSD — H1 + M15.
 Macro bias Bộ 1: ${STATE.bias} | Phase Bộ 1: ${STATE.b1Phase||'Không rõ'}
-Market State M15 từ Bộ 3: ${STATE.b3MarketState||'Chưa quét'} — IF DISTRIBUTION/CONSOLIDATION → ưu tiên STOP ngay
+Market State M15 từ Bộ 3: ${STATE.b3MarketState||'Chưa quét'} — IF STRONG_DISTRIBUTION/CONSOLIDATION → ưu tiên STOP
+Hành động tiếp theo từ Bộ 3: ${STATE.b3NextAction||'Không rõ'}
+Hướng entry gợi ý từ Bộ 3: ${STATE.b3EntryDirection||'NONE'}
 Priority Bộ 3: ${STATE.b3Priority||'MEDIUM'}
 ${STATE.b3Priority==='HIGH'?'→ HIGH: SMC + Pullback + Truy Kích, chấp nhận early shift':STATE.b3Priority==='LOW'?'→ LOW: Chỉ A+ confirm đầy đủ, cấm entry sớm':'→ MEDIUM: SMC + Pullback, Truy Kích phải rõ'}
 
