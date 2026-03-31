@@ -3350,5 +3350,86 @@ if('serviceWorker'in navigator){
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
 }
 </script>
+
+<script>
+(function () {
+  class SMCEngine {
+    constructor() {
+      this.candles = [];
+      this.swings = [];
+      this.structure = "none";
+    }
+
+    init() {
+      this.mockData();
+      this.process();
+      console.log("Signal:", this.getSignal());
+    }
+
+    mockData() {
+      this.candles = Array.from({ length: 100 }, () => {
+        const base = Math.random() * 100;
+        return {
+          open: base,
+          high: base + Math.random() * 5,
+          low: base - Math.random() * 5,
+          close: base + (Math.random() - 0.5) * 5
+        };
+      });
+    }
+
+    process() {
+      this.detectSwings();
+      this.detectStructure();
+      this.detectLiquidity();
+    }
+
+    detectSwings() {
+      const c = this.candles;
+      for (let i = 2; i < c.length - 2; i++) {
+        const isHigh = c[i].high > c[i-1].high && c[i].high > c[i-2].high &&
+                       c[i].high > c[i+1].high && c[i].high > c[i+2].high;
+
+        const isLow = c[i].low < c[i-1].low && c[i].low < c[i-2].low &&
+                      c[i].low < c[i+1].low && c[i].low < c[i+2].low;
+
+        if (isHigh) this.swings.push({ type: "high", index: i, price: c[i].high });
+        if (isLow) this.swings.push({ type: "low", index: i, price: c[i].low });
+      }
+    }
+
+    detectStructure() {
+      for (let i = 1; i < this.swings.length; i++) {
+        const prev = this.swings[i-1];
+        const curr = this.swings[i];
+
+        if (prev.type === "high" && curr.type === "high" && curr.price > prev.price) {
+          this.structure = "bullish";
+        }
+
+        if (prev.type === "low" && curr.type === "low" && curr.price < prev.price) {
+          this.structure = "bearish";
+        }
+      }
+    }
+
+    detectLiquidity() {
+      // simplified
+    }
+
+    getSignal() {
+      return this.structure === "bullish" ? "BUY" :
+             this.structure === "bearish" ? "SELL" : "NONE";
+    }
+  }
+
+  window.addEventListener("load", () => {
+    const engine = new SMCEngine();
+    engine.init();
+  });
+
+})();
+</script>
+
 </body>
 </html>
