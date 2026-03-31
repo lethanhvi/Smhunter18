@@ -3498,5 +3498,78 @@ if('serviceWorker'in navigator){
 })();
 </script>
 
+
+<script>
+(function(){
+  console.log("SMC PRO Phase Engine Loaded");
+
+  class SMCPhase {
+    constructor(){
+      this.candles = [];
+    }
+
+    setCandles(data){
+      this.candles = data;
+      this.run();
+    }
+
+    detectMomentumDecay(candles){
+      const recent = candles.slice(-5);
+      let small = recent.filter(c => Math.abs(c.close - c.open) < 3).length;
+      return small >= 3;
+    }
+
+    detectExpansion(candles){
+      const last = candles.at(-1);
+      const prev = candles.at(-2);
+      return Math.abs(last.close - last.open) > Math.abs(prev.close - prev.open);
+    }
+
+    detectRange(candles){
+      const highs = candles.slice(-10).map(c=>c.high);
+      const lows = candles.slice(-10).map(c=>c.low);
+      return (Math.max(...highs) - Math.min(...lows)) < 20;
+    }
+
+    run(){
+      if(this.detectMomentumDecay(this.candles)){
+        console.log("PHASE: CONSOLIDATION → NO TRADE");
+        return;
+      }
+
+      if(this.detectRange(this.candles)){
+        console.log("PHASE: RANGE → NO TRADE");
+        return;
+      }
+
+      if(this.detectExpansion(this.candles)){
+        console.log("PHASE: EXPANSION → TRADE OK");
+        return;
+      }
+
+      console.log("PHASE: UNCLEAR");
+    }
+  }
+
+  window.addEventListener("load", ()=>{
+    const engine = new SMCPhase();
+
+    const mock = Array.from({length:50}, ()=>{
+      const b = Math.random()*100;
+      return {
+        open:b,
+        high:b+Math.random()*5,
+        low:b-Math.random()*5,
+        close:b+(Math.random()-0.5)*5
+      };
+    });
+
+    engine.setCandles(mock);
+    window.smcPhase = engine;
+  });
+
+})();
+</script>
+
 </body>
 </html>
