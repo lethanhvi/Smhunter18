@@ -3676,5 +3676,46 @@ if('serviceWorker'in navigator){
 })();
 </script>
 
+
+<script>
+(function(){
+  console.log("FINAL STABLE FIX");
+
+  function buildScenario(high, low){
+    return `KỊCH BẢN TIẾP THEO:
+
+• Nếu phá xuống ${low} → giảm về ${low - 25}
+• Nếu phá lên ${high} → tăng lên ${high + 20}
+
+→ Hiện tại: KHÔNG GIAO DỊCH`;
+  }
+
+  function run(){
+    // ONLY target the liquidity verdict description block
+    const container = document.querySelector(".liquidity-verdict");
+
+    if(!container) return;
+
+    const p = container.querySelector("p");
+    if(!p) return;
+
+    if(!p.innerText.includes("Range=TRUE")) return;
+
+    const match = p.innerText.match(/(\d{4})-(\d{4})/);
+    if(!match) return;
+
+    let a = parseInt(match[1]);
+    let b = parseInt(match[2]);
+
+    const high = Math.max(a,b);
+    const low = Math.min(a,b);
+
+    p.innerText = buildScenario(high, low);
+  }
+
+  setInterval(run, 800);
+})();
+</script>
+
 </body>
 </html>
