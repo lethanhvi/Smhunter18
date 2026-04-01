@@ -3350,5 +3350,42 @@ if('serviceWorker'in navigator){
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
 }
 </script>
+
+<script>
+// REVERSAL ENGINE PATCH
+function detectReversal(data){
+    if(!data) return false;
+
+    let impulse = data.impulse || 0;
+    let wick = data.wick || 0;
+    let pullback = data.pullback || 0;
+
+    if(impulse > 30 && wick > 10 && pullback > 50){
+        return {
+            state: "REJECTION",
+            action: "CHO_XAC_NHAN_DAO_CHIEU"
+        };
+    }
+    return null;
+}
+
+// Override decision display (safe patch)
+function applyReversalUI(result){
+    if(!result) return;
+
+    let box = document.querySelector(".liquidity-verdict");
+    if(!box) return;
+
+    box.innerHTML = `
+        <div style="color:#facc15;font-weight:bold;font-size:18px">
+        ⚠️ PHẢN ỨNG SAU IMPULSE
+        </div>
+        <div style="margin-top:8px">
+        Chờ xác nhận đảo chiều (KHÔNG vào lệnh ngay)
+        </div>
+    `;
+}
+</script>
+
 </body>
 </html>
