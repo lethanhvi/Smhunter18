@@ -3387,5 +3387,81 @@ function applyReversalUI(result){
 }
 </script>
 
+
+<script>
+// ===== UPGRADE PRO LAYER =====
+
+// Safe render fix
+function renderScenarioSafe(text){
+  let el = document.getElementById("scenarioBox");
+  if(!el){
+    el = document.createElement("div");
+    el.id = "scenarioBox";
+    el.style.padding = "16px";
+    el.style.color = "#dde6f0";
+    document.body.appendChild(el);
+  }
+  el.innerHTML = "<div style='font-size:18px;font-weight:600;margin-bottom:10px'>KỊCH BẢN TIẾP THEO:</div>"+text;
+}
+
+// Anti-trap logic
+function antiTrapFilter(data){
+  let warnings = [];
+
+  if(data.impulse && data.impulse > 250){
+    warnings.push("⚠️ Impulse quá mạnh → có thể gần vùng đuối");
+  }
+
+  if(data.liquidityDistance && data.liquidityDistance < 10){
+    warnings.push("⚠️ Giá gần vùng liquidity → dễ bị quét");
+  }
+
+  if(data.htfSupply === true){
+    warnings.push("⚠️ Gần vùng supply HTF → giảm độ tin cậy");
+  }
+
+  return warnings;
+}
+
+// Enhance decision
+function enhanceDecision(decision, data){
+  const warnings = antiTrapFilter(data);
+
+  if(warnings.length > 0 && decision === "A+"){
+    decision = "A";
+  }
+
+  return {decision, warnings};
+}
+
+// Example hook (you can integrate real data later)
+window.applyUpgrade = function(){
+  try{
+    const fakeData = {
+      impulse: 280,
+      liquidityDistance: 8,
+      htfSupply: true
+    };
+
+    let result = enhanceDecision("A+", fakeData);
+
+    if(result.warnings.length){
+      renderScenarioSafe(
+        result.warnings.map(w=>"<div>"+w+"</div>").join("")
+      );
+    }
+  }catch(e){
+    console.log("Upgrade error:", e);
+  }
+}
+
+// Auto run after load
+window.addEventListener("load", ()=>{
+  setTimeout(()=>{
+    if(window.applyUpgrade) window.applyUpgrade();
+  }, 500);
+});
+</script>
+
 </body>
 </html>
