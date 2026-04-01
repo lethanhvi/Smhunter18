@@ -3635,5 +3635,46 @@ if('serviceWorker'in navigator){
 })();
 </script>
 
+
+<script>
+(function(){
+  console.log("SAFE SCENARIO FIX v2");
+
+  function buildScenario(high, low){
+    return `KỊCH BẢN TIẾP THEO:
+
+• Nếu phá xuống ${low} → khả năng giảm về ${low - 25}
+• Nếu phá lên ${high} → tiếp tục tăng lên ${high + 20}
+
+→ Hiện tại: KHÔNG GIAO DỊCH (đang trong vùng tích lũy)`;
+  }
+
+  setInterval(()=>{
+    // try multiple selectors safely
+    const candidates = document.querySelectorAll("p, div, span");
+
+    candidates.forEach(el=>{
+      if(!el.innerText) return;
+
+      if(el.innerText.includes("Range=TRUE")){
+        const match = el.innerText.match(/(\d{4})-(\d{4})/);
+        if(!match) return;
+
+        let a = parseInt(match[1]);
+        let b = parseInt(match[2]);
+
+        const high = Math.max(a, b);
+        const low = Math.min(a, b);
+
+        // only replace this element, not whole DOM
+        el.innerText = buildScenario(high, low);
+      }
+    });
+
+  }, 800);
+
+})();
+</script>
+
 </body>
 </html>
