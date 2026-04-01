@@ -3505,5 +3505,54 @@ if('serviceWorker'in navigator){
 })();
 </script>
 
+
+<script>
+(function(){
+  console.log("FULL VIETNAMESE MODE");
+
+  const VI = {
+    POTENTIAL_DISTRIBUTION: "PHÂN PHỐI TIỀM NĂNG",
+    CONFIRMED_DISTRIBUTION: "PHÂN PHỐI XÁC NHẬN",
+    ANTICIPATION: "CHƯA XÁC NHẬN",
+    CONFIRMED: "ĐÃ XÁC NHẬN",
+    NEUTRAL: "TRUNG LẬP",
+    SELL: "BÁN",
+    BUY: "MUA",
+    WAIT: "CHỜ",
+    WAIT_BOS: "CHỜ PHÁ CẤU TRÚC (BOS)",
+    LOOK_FOR_ENTRY: "TÌM ĐIỂM VÀO LỆNH",
+    NO_TRADE: "KHÔNG GIAO DỊCH",
+    EXPANSION: "MỞ RỘNG",
+    CONSOLIDATION: "TÍCH LŨY",
+    RANGE: "ĐI NGANG"
+  };
+
+  function t(key){
+    return VI[key] || key;
+  }
+
+  // override state box if exists
+  const interval = setInterval(()=>{
+    const box = document.getElementById("smc-state-box");
+    if(box){
+      let html = box.innerHTML;
+
+      Object.keys(VI).forEach(k=>{
+        const regex = new RegExp(k, "g");
+        html = html.replace(regex, VI[k]);
+      });
+
+      html = html
+        .replace("State:", "Trạng thái:")
+        .replace("Bias:", "Xu hướng:")
+        .replace("Action:", "Hành động:");
+
+      box.innerHTML = html;
+    }
+  }, 500);
+
+})();
+</script>
+
 </body>
 </html>
