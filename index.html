@@ -3600,5 +3600,40 @@ if('serviceWorker'in navigator){
 })();
 </script>
 
+
+<script>
+(function(){
+  console.log("SCENARIO UI INJECTED");
+
+  function buildScenario(text){
+    // extract numbers from range text if possible
+    const match = text.match(/(\d{4})-(\d{4})/);
+    if(match){
+      const high = match[1];
+      const low = match[2];
+      return `KỊCH BẢN TIẾP THEO:
+
+• Nếu phá xuống ${low} → khả năng giảm về ${parseInt(low)-25}
+• Nếu phá lên ${high} → tiếp tục tăng lên ${parseInt(high)+20}
+
+→ Hiện tại: KHÔNG GIAO DỊCH (đang trong vùng tích lũy)`;
+    }
+    return "KỊCH BẢN: CHỜ BREAK KHỎI RANGE";
+  }
+
+  function replaceScenario(){
+    const nodes = document.querySelectorAll("div, p, span");
+    nodes.forEach(el=>{
+      if(el.innerText && el.innerText.includes("Range=TRUE")){
+        const scenario = buildScenario(el.innerText);
+        el.innerText = scenario;
+      }
+    });
+  }
+
+  setInterval(replaceScenario, 500);
+})();
+</script>
+
 </body>
 </html>
