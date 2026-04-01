@@ -3554,5 +3554,51 @@ if('serviceWorker'in navigator){
 })();
 </script>
 
+
+<script>
+(function(){
+  console.log("VI CLEAN UI FIX");
+
+  const VI = {
+    "POTENTIAL DISTRIBUTION":"PHÂN PHỐI TIỀM NĂNG",
+    "CONFIRMED DISTRIBUTION":"PHÂN PHỐI XÁC NHẬN",
+    "ANTICIPATION":"CHƯA XÁC NHẬN",
+    "CONFIRMED":"ĐÃ XÁC NHẬN",
+    "NEUTRAL":"TRUNG LẬP",
+    "SELL":"BÁN",
+    "BUY":"MUA",
+    "WAIT BOS":"CHỜ PHÁ CẤU TRÚC (BOS)",
+    "WAIT":"CHỜ",
+    "NO TRADE":"KHÔNG GIAO DỊCH"
+  };
+
+  function replaceText(node){
+    if(node.nodeType === 3){
+      let text = node.nodeValue;
+      Object.keys(VI).forEach(k=>{
+        text = text.replace(new RegExp(k,"g"), VI[k]);
+      });
+      text = text.replace("State:", "Trạng thái:");
+      text = text.replace("Bias:", "Xu hướng:");
+      text = text.replace("Action:", "Hành động:");
+      node.nodeValue = text;
+    } else {
+      node.childNodes.forEach(replaceText);
+    }
+  }
+
+  // Remove popup box completely
+  const interval = setInterval(()=>{
+    const popup = document.getElementById("smc-state-box");
+    if(popup){
+      popup.remove(); // remove overlay
+    }
+
+    replaceText(document.body);
+  }, 500);
+
+})();
+</script>
+
 </body>
 </html>
