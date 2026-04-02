@@ -666,9 +666,16 @@ input[type="file"]{display:none}
       </div>
     </div>
     <div style="margin-top:8px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px">
-      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">NHẬN ĐỊNH (từ Bộ 2)</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px">NHẬN ĐỊNH (từ Bộ 2 + Bộ 3)</div>
       <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text);line-height:1.5" id="b4-narrative">--</div>
     </div>
+  </div>
+
+  <!-- MASTER GATE — B3 Permission -->
+  <div id="b4-master-gate" style="border-radius:8px;padding:14px 16px;margin-bottom:12px;display:none">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;margin-bottom:8px" id="b4-gate-title">🔒 MASTER GATE</div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px" id="b4-gate-phase">--</div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:10px;margin-top:6px;line-height:1.6" id="b4-gate-reason">--</div>
   </div>
 
   <!-- Daily loss -->
@@ -855,7 +862,7 @@ input[type="file"]{display:none}
 const STATE = {
   apiKey:'',
   currentScreen:'dashboard',
-  stages:{ psych:false, bo1:false, bo3:false, bo2:false, bo4:false, bo5:false },
+  stages:{ psych:false, bo1:false, bo2:false, bo3:false, bo4:false, bo5:false },
   bias:'',
   b2Verdict:'',
   b2Narrative:'',
@@ -868,6 +875,8 @@ const STATE = {
   b3RiskLevel:'FULL',
   b3Invalidation:'',
   b3EntryZone:'',
+  b3PullbackQuality:'N_A',
+  b3PullbackScore:0,
   b4Entry:'',
   b4RR:'',
   kzActive:false,
@@ -945,9 +954,9 @@ function syncBo2Context() {
 function syncBo4Context() {
   document.getElementById('b4-bias-display').textContent = STATE.bias || '--';
   document.getElementById('b4-b2-verdict').textContent = STATE.b2Verdict || '--';
-  // Thêm context từ B3 nếu có
-  const narrative = [STATE.b2Narrative, STATE.b3EntryDirection ? 'B3: ' + (STATE.b3EntryDirection === 'SELL' ? 'Bán' : 'Mua') : ''].filter(Boolean).join(' | ');
+  const narrative = [STATE.b2Narrative, STATE.b3EntryDirection ? 'B3: ' + (STATE.b3EntryDirection === 'SELL' ? 'Bán' : 'Mua') + ' | Phase: ' + (STATE.b3MarketState||'--') : ''].filter(Boolean).join(' | ');
   document.getElementById('b4-narrative').textContent = narrative || 'Không có';
+  renderMasterGate();
   checkB4Ready();
 }
 
@@ -1769,6 +1778,8 @@ Trả về DUY NHẤT JSON (không markdown, không backtick):
     STATE.b3RiskLevel   = r.risk_level || 'FULL';
     STATE.b3Invalidation = r.invalidation || '';
     STATE.b3EntryZone   = r.entry_zone || '';
+    STATE.b3PullbackQuality = r.pullback_quality || 'N_A';
+    STATE.b3PullbackScore   = parseInt((r.pullback_quality_score||'0').split('/')[0]) || 0;
     // Legacy compat for Bộ 2
     STATE.b3Answers['sweep'] = r.sweep_detected ? 'yes' : 'no';
     STATE.b3Answers['displacement'] = (r.phase==='IMPULSE'||r.phase==='CONTINUATION') ? 'yes' : 'no';
@@ -2505,20 +2516,125 @@ function checkLoss(){
   checkB4Ready();
 }
 
+// ══════════════════════════════════════════════
+// MASTER GATE — B3 → B4 PERMISSION SYSTEM
+// ══════════════════════════════════════════════
+function getTradePermission() {
+  const phase = STATE.b3MarketState || '';
+  const mode  = STATE.b3Mode || '';
+  const pq    = STATE.b3PullbackQuality || 'N_A';
+  const pqScore = parseInt(STATE.b3PullbackScore || '0');
+  const nextAction = STATE.b3NextAction || 'NO_TRADE';
+
+  // BLOCK hoàn toàn
+  const blockPhases = ['EXHAUSTION','RANGE','MICRO_RANGE','CHOP','WEAK_PULLBACK'];
+  if(blockPhases.includes(phase) || mode === 'NO_TRADE' || nextAction === 'NO_TRADE') {
+    return { allowed: false, risk: 'NONE', level: 'BLOCK',
+      reason: `Bộ 3 chặn entry — Phase: ${phase || 'NO_TRADE'} | Cần đợi hồi giá chất lượng` };
+  }
+
+  // Impulse — chờ pullback
+  if(phase === 'IMPULSE' || mode === 'IMPULSE_WAIT') {
+    return { allowed: false, risk: 'NONE', level: 'WAIT',
+      reason: `Đang trong sóng đẩy mạnh — chưa có hồi giá → KHÔNG entry | Chờ pullback hình thành` };
+  }
+
+  // Pullback chất lượng cao → Full risk
+  if(pqScore >= 5 || pq === 'STRONG' || pq === 'GOOD') {
+    return { allowed: true, risk: 'FULL',  level: 'FULL',
+      reason: `Hồi giá chất lượng cao (${pqScore}/6) — Cho phép entry full risk 1R` };
+  }
+
+  // Pullback chấp nhận được → Half risk
+  if(pqScore === 4 || pq === 'ACCEPTABLE') {
+    return { allowed: true, risk: 'REDUCED', level: 'REDUCED',
+      reason: `Hồi giá chấp nhận được (${pqScore}/6) — Cho phép entry nhưng HALF risk 0.5R` };
+  }
+
+  // CONTINUATION_BASE — có thể trade nhưng thận trọng
+  if(phase === 'CONTINUATION_BASE' || phase === 'CONTINUATION') {
+    return { allowed: true, risk: STATE.b3RiskLevel || 'REDUCED', level: 'REDUCED',
+      reason: `Tiếp diễn sau sóng đẩy — Cho phép entry risk ${STATE.b3RiskLevel || 'REDUCED'}` };
+  }
+
+  // Default block
+  return { allowed: false, risk: 'NONE', level: 'BLOCK',
+    reason: `Bộ 3 chưa xác nhận — phase=${phase} chưa đủ điều kiện entry` };
+}
+
+function renderMasterGate() {
+  const gate = getTradePermission();
+  const el = document.getElementById('b4-master-gate');
+  const titleEl = document.getElementById('b4-gate-title');
+  const phaseEl = document.getElementById('b4-gate-phase');
+  const reasonEl = document.getElementById('b4-gate-reason');
+  if(!el) return;
+
+  el.style.display = 'block';
+
+  if(!gate.allowed) {
+    el.style.background = 'rgba(232,65,90,0.08)';
+    el.style.border = '2px solid rgba(232,65,90,0.4)';
+    titleEl.style.color = 'var(--red)';
+    titleEl.textContent = gate.level === 'WAIT' ? '⏳ MASTER GATE — CHỜ PULLBACK' : '🔒 MASTER GATE — ENTRY BỊ CHẶN';
+    phaseEl.style.color = 'var(--red)';
+    phaseEl.textContent = `BỘ 4 BỊ KHÓA — BỘ 3 CHƯA CẤP PHÉP`;
+    reasonEl.style.color = '#e8a0a8';
+  } else if(gate.risk === 'FULL') {
+    el.style.background = 'rgba(46,204,138,0.08)';
+    el.style.border = '2px solid rgba(46,204,138,0.4)';
+    titleEl.style.color = 'var(--green)';
+    titleEl.textContent = '✅ MASTER GATE — ENTRY ĐƯỢC PHÉP';
+    phaseEl.style.color = 'var(--green)';
+    phaseEl.textContent = 'FULL RISK 1R — ĐỦ ĐIỀU KIỆN';
+    reasonEl.style.color = 'var(--green)';
+  } else {
+    el.style.background = 'rgba(255,181,71,0.08)';
+    el.style.border = '2px solid rgba(255,181,71,0.35)';
+    titleEl.style.color = 'var(--amber)';
+    titleEl.textContent = '⚠️ MASTER GATE — REDUCED RISK';
+    phaseEl.style.color = 'var(--amber)';
+    phaseEl.textContent = 'HALF RISK 0.5R — THẬN TRỌNG';
+    reasonEl.style.color = 'var(--amber)';
+  }
+  reasonEl.textContent = gate.reason;
+}
+
 function checkB4Ready(){
   const loss=parseFloat(document.getElementById('b4-loss').value)||0;
   const buf=125-loss;
-  const ok=STATE.apiKey&&STATE.imgs.b4_m5&&buf>=50;
+  const gate = getTradePermission();
+
+  // Master Gate check — B3 phải cấp phép trước
+  const gateOk = gate.allowed;
+  const baseOk = STATE.apiKey && STATE.imgs.b4_m5 && buf>=50;
+  const ok = baseOk && gateOk;
+
   document.getElementById('b4-analyze-btn').disabled=!ok;
-  // Truy Kich needs H1+M15 from Bo2 as well
+  if(!ok && !gateOk && baseOk) {
+    document.getElementById('b4-analyze-btn').title = 'Bộ 3 chưa cấp phép: ' + gate.reason;
+  }
+
   const okTK=ok&&STATE.imgs.b2_h1&&STATE.imgs.b2_m15;
   document.getElementById('b4-truy-kich-btn').disabled=!okTK;
-  if(!okTK){
+  if(!okTK && !gateOk) {
+    document.getElementById('b4-truy-kich-btn').title='Bộ 3 chưa cấp phép entry';
+  } else if(!okTK) {
     document.getElementById('b4-truy-kich-btn').title='Cần chạy Bộ 2 trước để có H1+M15';
   }
 }
 
 async function runBo4TruyKich(){
+  // ── MASTER GATE CHECK ──
+  const gate = getTradePermission();
+  if(!gate.allowed) {
+    const errEl = document.getElementById('b4-error-msg');
+    const errBox = document.getElementById('b4-error');
+    if(errEl) errEl.textContent = '🔒 MASTER GATE: ' + gate.reason;
+    if(errBox) errBox.classList.add('show');
+    return;
+  }
+
   document.getElementById('b4-result').style.display='none';
   document.getElementById('b4-loading').classList.add('show');
   document.querySelector('#b4-loading .load-txt').textContent='CHẠY MODE TRUY KÍCH...';
@@ -2530,10 +2646,6 @@ async function runBo4TruyKich(){
   const loss=parseFloat(document.getElementById('b4-loss').value)||0;
   const buf=125-loss;
   const lotNote=buf<75?'Giảm lot 0.5% ($12.5)':'Risk 1% ($25) bình thường';
-
-  try{
-    const sysTK=`Bạn là Momentum Trader chuyên CHIẾN LƯỢC TRUY KÍCH XAUUSD — The5%ers $2,500.
-Bias từ Bộ 1: ${STATE.bias} (định hướng TP, KHÔNG khóa lệnh)
 Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
 
 ═══════════════════════════════
@@ -2740,6 +2852,16 @@ Trả về DUY NHẤT JSON:
 }
 
 async function runBo4(){
+  // ── MASTER GATE CHECK ──
+  const gate = getTradePermission();
+  if(!gate.allowed) {
+    const errEl = document.getElementById('b4-error-msg');
+    const errBox = document.getElementById('b4-error');
+    if(errEl) errEl.textContent = '🔒 MASTER GATE: ' + gate.reason;
+    if(errBox) errBox.classList.add('show');
+    return;
+  }
+
   document.getElementById('b4-result').style.display='none';
   document.getElementById('b4-loading').classList.add('show');
   document.querySelector('#b4-loading .load-txt').textContent='PHÂN TÍCH VÀO LỆNH ENGINE...';
