@@ -1886,7 +1886,6 @@ Trả về DUY NHẤT JSON (không có markdown, không backtick):
     document.getElementById('b3-scan-result').innerHTML=html;
     document.getElementById('b3-scan-result').style.display='block';
 
-    if(navigator.vibrate) navigator.vibrate([30,20,30]);
     checkB3Verdict();
 
   } catch(e){
@@ -1946,7 +1945,6 @@ function checkB3Verdict(){
       <div class="v-sub">Có tin tức lớn trong 2 tiếng. Không giao dịch cho đến sau tin.</div>
     </div>`;
     nxt.style.display='none';
-    if(changed && navigator.vibrate) navigator.vibrate([100,50,100]);
     return;
   }
   if(a['time']==='no'){
@@ -1958,7 +1956,6 @@ function checkB3Verdict(){
       <div class="v-sub">Không đủ thời gian theo dõi lệnh. Bỏ phiên này.</div>
     </div>`;
     nxt.style.display='none';
-    if(changed && navigator.vibrate) navigator.vibrate([100,50,100]);
     return;
   }
 
@@ -1999,7 +1996,6 @@ function checkB3Verdict(){
     nxt.style.display='none';
     STATE.b3Priority=priority;
     saveState();
-    if(changed && navigator.vibrate) navigator.vibrate([100,50,100]);
     return;
   }
 
@@ -2020,7 +2016,6 @@ function checkB3Verdict(){
     b3LastVerdict='wait';
     STATE.b3Priority=priority;
     saveState();
-    if(navigator.vibrate) navigator.vibrate([50,30,50]);
     setTimeout(()=>vEl.scrollIntoView({behavior:'smooth',block:'center'}),300);
     return;
   }
@@ -2059,7 +2054,6 @@ function checkB3Verdict(){
     b3LastVerdict='continuation';
     STATE.b3Priority=priority;
     saveState();
-    if(navigator.vibrate) navigator.vibrate(priority==='HIGH'?[50,30,80,30,50]:[50,30,50]);
     setTimeout(()=>vEl.scrollIntoView({behavior:'smooth',block:'center'}),300);
     return;
   }
