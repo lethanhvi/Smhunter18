@@ -1701,29 +1701,49 @@ BOS_MIN = ${BOS_MIN} giá (close phá swing)
 RANGE_MAX = ${RANGE_MAX} giá (biên độ 20 nến)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BƯỚC 1 — DETECT EXHAUSTION (ưu tiên cao nhất)
+BƯỚC 1 — DETECT RECENT IMPULSE (context quan trọng nhất)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Nếu phát hiện: wick dài overlap nhiều + fail make new extreme + nến nhỏ dần + giảm biên độ
-→ exhaustion_check = "YES_EXHAUSTION" → mode = "NO_TRADE" ngay, không cần phân tích thêm
+Trước tiên phải xác định: trong 10–20 nến gần nhất có displacement mạnh không?
+recent_impulse = TRUE nếu: có nến body ≥ ${IMPULSE_MIN}× avg body + BOS ≥ ${BOS_MIN} giá trong 20 nến gần nhất
+→ recent_impulse = TRUE là context cực kỳ quan trọng cho toàn bộ phân tích tiếp theo
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BƯỚC 2 — CLASSIFY PHASE
+BƯỚC 2 — PHÂN BIỆT PAUSE vs EXHAUSTION (lỗi thường gặp nhất)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-IMPULSE: Body nến lớn (≥${IMPULSE_MIN}× avg body 10 nến) + push mạnh 1 chiều + BOS ≥${BOS_MIN} giá
-PULLBACK: Sau impulse, giá retrace về LH (sell) hoặc HL (buy) — ĐÂY LÀ ENTRY ZONE tốt nhất
-CONTINUATION: LH+LL đã confirm (sell) hoặc HL+HH đã confirm (buy), structure đang extend
-EXHAUSTION: Wick dài, fail new extreme, biên độ nến thu nhỏ dần
-RANGE: Swing ≤${RANGE_MAX} giá, không có BOS rõ, giá dao động ngang
+⚠️ OVERLAP + NẾN NHỎ + WICK NHIỀU ≠ EXHAUSTION
+Sau displacement mạnh, thị trường GẦN NHƯ LUÔN tạo "pause" dạng nến nhỏ + overlap + wick
+→ Đây là CONTINUATION BASE (tích lũy tiếp diễn), KHÔNG phải exhaustion
+
+PHÂN LOẠI CONSOLIDATION đúng:
+  • overlap + recent_impulse=TRUE + chưa có CHoCH → phase = "CONTINUATION_BASE" → mode = CONTINUATION
+  • overlap + recent_impulse=FALSE + trend dài trước đó → phase = "POTENTIAL_EXHAUSTION" → kiểm tra thêm
+
+EXHAUSTION chỉ được kết luận khi ĐỦ CẢ 3 điều kiện bắt buộc:
+  [1] fail_structure = TRUE: giá KHÔNG tạo được LL mới (sell) hoặc HH mới (buy) — cấu trúc bị phá vỡ
+  [2] has_choch = TRUE: đã có CHoCH rõ ràng (nến đảo chiều phá swing ngược)
+  [3] momentum_decrease = TRUE: body nến giảm dần, không còn displacement
+  → Thiếu BẤT KỲ điều kiện nào → exhaustion_check = "NO_EXHAUSTION"
+  → Nếu vẫn tạo LL/HH được → KHÔNG phải exhaustion dù wick dài hay overlap
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BƯỚC 3 — XÁC ĐỊNH MODE TRADING
+BƯỚC 3 — CLASSIFY PHASE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CONTINUATION (trade được): phase = CONTINUATION hoặc PULLBACK (sau impulse đã confirm direction)
-IMPULSE_WAIT (quan sát): phase = IMPULSE — đang trong sóng đẩy, chờ pullback hình thành
-NO_TRADE: phase = EXHAUSTION, RANGE, hoặc cấu trúc không rõ ràng
+IMPULSE: Body nến lớn (≥${IMPULSE_MIN}× avg) + BOS ≥${BOS_MIN} giá + push mạnh 1 chiều
+CONTINUATION_BASE: Sau impulse + overlap/nến nhỏ + chưa CHoCH + vẫn giữ structure → ĐÂY LÀ SETUP TỐT
+PULLBACK: Sau impulse, giá retrace về LH (sell) / HL (buy) — ENTRY ZONE tốt nhất
+CONTINUATION: LH+LL (sell) hoặc HL+HH (buy) đang extend, structure rõ
+EXHAUSTION: ĐỦ 3 điều kiện bước 2 — fail structure + CHoCH + giảm momentum
+RANGE: Swing ≤${RANGE_MAX} giá + không BOS + không recent_impulse
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BƯỚC 4 — HTF ALIGNMENT (KHÔNG ĐƯỢC BLOCK TRADE)
+BƯỚC 4 — XÁC ĐỊNH MODE TRADING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONTINUATION: phase = CONTINUATION, CONTINUATION_BASE, hoặc PULLBACK
+IMPULSE_WAIT: phase = IMPULSE (đang trong sóng đẩy, chờ pullback)
+NO_TRADE: phase = EXHAUSTION hoặc RANGE (và đủ điều kiện ở bước 2)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BƯỚC 5 — HTF ALIGNMENT (KHÔNG ĐƯỢC BLOCK TRADE)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ TUYỆT ĐỐI CẤM: Dùng HTF conflict để ra "NO_TRADE"
 ✅ HTF chỉ được dùng để điều chỉnh risk:
@@ -1733,25 +1753,24 @@ BƯỚC 4 — HTF ALIGNMENT (KHÔNG ĐƯỢC BLOCK TRADE)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 LUẬT QUAN TRỌNG — TRÁNH MÂU THUẪN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ mode=CONTINUATION + phase=PULLBACK → next_action = "WAIT_FOR_ENTRY"
-✅ mode=CONTINUATION + phase=CONTINUATION → next_action = "WAIT_FOR_ENTRY"  
+✅ mode=CONTINUATION + phase=PULLBACK/CONTINUATION/CONTINUATION_BASE → next_action = "WAIT_FOR_ENTRY"
 ✅ mode=IMPULSE_WAIT → next_action = "WAIT_PULLBACK"
 ✅ mode=NO_TRADE → next_action = "NO_TRADE"
 ❌ KHÔNG BAO GIỜ: mode=NO_TRADE + next_action=WAIT_FOR_ENTRY (mâu thuẫn)
-❌ KHÔNG BAO GIỜ: mode=NO_TRADE kèm hướng dẫn "chờ pullback rồi entry"
+❌ KHÔNG BAO GIỜ: gọi EXHAUSTION khi chưa có CHoCH hoặc vẫn tạo được LL/HH
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BƯỚC 5 — ENTRY DIRECTION
+BƯỚC 6 — ENTRY DIRECTION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Dựa vào cấu trúc M15 HIỆN TẠI (không phải HTF):
-SELL: LH+LL pattern đang active, displacement xuống, vùng resistance
-BUY: HL+HH pattern đang active, displacement lên, vùng support
+SELL: LH+LL pattern active, displacement xuống, vùng resistance, hoặc CONTINUATION_BASE bearish
+BUY: HL+HH pattern active, displacement lên, vùng support, hoặc CONTINUATION_BASE bullish
 NONE: mode=NO_TRADE hoặc chưa xác định được hướng
 
 Trả lời HOÀN TOÀN bằng tiếng Việt. Các thuật ngữ kỹ thuật: BOS="Phá Cấu Trúc", CHoCH="Đổi Hướng", MSS="Dịch Chuyển Cấu Trúc", Sweep="Quét Thanh Khoản", Displacement="Nến Đẩy Mạnh".
 
 Trả về DUY NHẤT JSON (không có markdown, không backtick):
-{"mode":"CONTINUATION"|"IMPULSE_WAIT"|"NO_TRADE","phase":"IMPULSE"|"PULLBACK"|"CONTINUATION"|"EXHAUSTION"|"RANGE","entry_direction":"SELL"|"BUY"|"NONE","entry_zone":"mô tả zone cụ thể VD: vùng LH 2748-2752","htf_alignment":"ALIGNED"|"CONFLICT"|"NEUTRAL","risk_level":"FULL"|"REDUCED","risk_reason":"lý do ngắn gọn","invalidation":"điều kiện mất hiệu lực setup","next_action":"WAIT_FOR_ENTRY"|"WAIT_PULLBACK"|"NO_TRADE","priority":"HIGH"|"MEDIUM"|"LOW","summary":"2-3 câu mô tả M15 hiện tại","structure_detail":"mô tả LH/LL hoặc HL/HH, displacement, BOS nếu có","exhaustion_check":"YES_EXHAUSTION"|"NO_EXHAUSTION","exhaustion_reason":"lý do detect exhaustion hoặc không","sweep_detected":true|false,"sweep_note":"nếu có sweep — mô tả"}`;
+{"mode":"CONTINUATION"|"IMPULSE_WAIT"|"NO_TRADE","phase":"IMPULSE"|"PULLBACK"|"CONTINUATION"|"CONTINUATION_BASE"|"EXHAUSTION"|"RANGE","entry_direction":"SELL"|"BUY"|"NONE","entry_zone":"mô tả zone cụ thể VD: vùng LH 2748-2752","htf_alignment":"ALIGNED"|"CONFLICT"|"NEUTRAL","risk_level":"FULL"|"REDUCED","risk_reason":"lý do ngắn gọn","invalidation":"điều kiện mất hiệu lực setup","next_action":"WAIT_FOR_ENTRY"|"WAIT_PULLBACK"|"NO_TRADE","priority":"HIGH"|"MEDIUM"|"LOW","summary":"2-3 câu mô tả M15 hiện tại","structure_detail":"mô tả LH/LL hoặc HL/HH, displacement, BOS nếu có","recent_impulse":true|false,"recent_impulse_note":"mô tả displacement gần nhất — body=X giá, hướng, cách bao nhiêu nến","has_choch":true|false,"choch_note":"có CHoCH chưa — nếu có mô tả cụ thể","fail_structure":true|false,"fail_structure_note":"giá còn tạo LL/HH được không","exhaustion_check":"YES_EXHAUSTION"|"NO_EXHAUSTION","exhaustion_reason":"lý do — phải nêu rõ 3 điều kiện có đủ không","sweep_detected":true|false,"sweep_note":"nếu có sweep — mô tả"}`;
 
     const b64=img.split(',')[1];
     const mtype=img.split(';')[0].split(':')[1];
@@ -1843,7 +1862,24 @@ Trả về DUY NHẤT JSON (không có markdown, không backtick):
       <div>${r.structure_detail||''}</div>
       ${r.exhaustion_check==='YES_EXHAUSTION'?`<div style="margin-top:8px;color:#e8a0a8">⚠ EXHAUSTION: ${r.exhaustion_reason||''}</div>`:''}
       ${r.htf_alignment?`<div style="margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted)">🔗 HTF: ${r.htf_alignment}</div>`:''}
-    </div>`;
+      <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+        <div style="background:var(--bg2);border-radius:4px;padding:6px 8px;text-align:center">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px;margin-bottom:2px">IMPULSE</div>
+          <div style="font-size:13px">${r.recent_impulse?'✅':'➖'}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${r.recent_impulse?'var(--green)':'var(--muted)'}">${r.recent_impulse?'CÓ':'KHÔNG'}</div>
+        </div>
+        <div style="background:var(--bg2);border-radius:4px;padding:6px 8px;text-align:center">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px;margin-bottom:2px">CHoCH</div>
+          <div style="font-size:13px">${r.has_choch?'🔴':'➖'}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${r.has_choch?'var(--red)':'var(--green)'}">${r.has_choch?'CÓ':'CHƯA'}</div>
+        </div>
+        <div style="background:var(--bg2);border-radius:4px;padding:6px 8px;text-align:center">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px;margin-bottom:2px">STRUCT</div>
+          <div style="font-size:13px">${r.fail_structure?'🔴':'✅'}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${r.fail_structure?'var(--red)':'var(--green)'}">${r.fail_structure?'FAIL':'GIỮ'}</div>
+        </div>
+      </div>
+      ${r.recent_impulse_note?`<div style="margin-top:6px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--amber);padding:4px 6px;background:rgba(255,181,71,0.06);border-radius:4px">⚡ ${r.recent_impulse_note}</div>`:''}
 
     document.getElementById('b3-scan-result').innerHTML=html;
     document.getElementById('b3-scan-result').style.display='block';
@@ -1947,8 +1983,8 @@ function checkB3Verdict(){
   // ── NO_TRADE ──
   if(mode === 'NO_TRADE'){
     const phase = STATE.b3MarketState || '';
-    const reason = phase==='EXHAUSTION' ? 'M15 đang EXHAUSTION — hết lực, không entry'
-      : phase==='RANGE' ? 'M15 đang RANGE/CHOP — không có cấu trúc rõ'
+    const reason = phase==='EXHAUSTION' ? 'M15 đang EXHAUSTION — đủ 3 điều kiện: fail structure + CHoCH + giảm momentum'
+      : phase==='RANGE' ? 'M15 đang RANGE/CHOP — không có BOS rõ, không recent impulse'
       : 'Cấu trúc M15 chưa đủ điều kiện entry';
     const changed = b3LastVerdict !== 'no_trade';
     b3LastVerdict = 'no_trade';
