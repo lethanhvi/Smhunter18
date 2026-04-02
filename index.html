@@ -1706,105 +1706,113 @@ EXHAUSTION_LEGS = 3 (số LL/HH liên tiếp để coi là trend đã đi xa)
 EXHAUSTION_PIPS = 80 (tổng move pips để coi là trend extended)
 MOMENTUM_DECAY = 0.5 (avg body recent < avg body impulse × 0.5 = momentum yếu)
 WICK_RATIO_MAX = 0.4 (wick/total_range > 0.4 = momentum suy giảm)
-PULLBACK_SCORE_MIN = 3 (tối thiểu 3/4 điểm mới là pullback hợp lệ)
+PULLBACK_QUALITY_MIN = 4 (tối thiểu 4/6 điểm quality mới được entry)
+MICRO_RANGE_PIPS = 15 (biên độ pullback < 15 pips + overlap cao = micro range)
+ZONE_TEST_MAX = 2 (zone bị test ≥ 2 lần = zone yếu, hạ priority)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STATE MACHINE — THỰC HIỆN ĐÚNG THỨ TỰ, KHÔNG NHẢY BƯỚC
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-══ BƯỚC 1: LOCK TREND DIRECTION (GỐC RỄ — KHÔNG THAY ĐỔI SAU NÀY) ══
+══ BƯỚC 1: LOCK TREND DIRECTION (GỐC RỄ) ══
 Xác định hướng impulse/displacement GẦN NHẤT trong 20 nến:
   DOWN = body đỏ lớn ≥ IMPULSE_MIN + BOS xuống ≥ BOS_MIN
   UP   = body xanh lớn ≥ IMPULSE_MIN + BOS lên ≥ BOS_MIN
   NONE = không có impulse rõ → FORCE NO_TRADE, dừng tại đây
-
 → KHÓA: trend_direction không thay đổi dù HL/HH nhỏ xuất hiện sau đó.
 
-══ BƯỚC 2: EXHAUSTION CHECK — CHẠY TRƯỚC KHI XÉT TIẾP ══
-⚡ ĐÂY LÀ FIX QUAN TRỌNG NHẤT — phải chạy trước mọi thứ khác
-
-KIỂM TRA 4 TIÊU CHÍ EXHAUSTION:
-  [E1] trend_extended: total_move ≥ EXHAUSTION_PIPS VÀ legs ≥ EXHAUSTION_LEGS (LL/HH liên tiếp)
+══ BƯỚC 2: EXHAUSTION CHECK ══
+KIỂM TRA 4 TIÊU CHÍ:
+  [E1] trend_extended: total_move ≥ EXHAUSTION_PIPS VÀ legs ≥ EXHAUSTION_LEGS
   [E2] momentum_decay: avg_body_recent < avg_body_impulse × MOMENTUM_DECAY
-  [E3] wick_overload: wick_ratio_recent > WICK_RATIO_MAX (nhiều wick, body nhỏ)
-  [E4] fail_structure: giá KHÔNG tạo được LL mới (down) hoặc HH mới (up) sau leg cuối
+  [E3] wick_overload: wick_ratio_recent > WICK_RATIO_MAX
+  [E4] fail_structure: giá KHÔNG tạo được LL/HH mới sau leg cuối
 
-SCORING EXHAUSTION:
-  Đủ [E1] + [E2] + bất kỳ [E3] hoặc [E4] = EXHAUSTION → NO_TRADE, dừng tại đây
-  Chỉ [E1] không thôi = TREND_EXTENDED → downgrade priority xuống LOW, tiếp tục
-  Chỉ [E2]/[E3] không thôi = MOMENTUM_WEAK → giảm risk, tiếp tục
-  Không đủ điều kiện = NO_EXHAUSTION → tiếp tục bình thường
+  Đủ [E1]+[E2]+([E3] hoặc [E4]) = EXHAUSTION → NO_TRADE tuyệt đối, dừng tại đây
+  Chỉ [E1] = TREND_EXTENDED → priority = LOW, tiếp tục
+  Chỉ [E2]/[E3] = MOMENTUM_WEAK → risk = REDUCED, tiếp tục
 
-❌ CẤM: Overlap + nến nhỏ + wick nhiều sau displacement ≠ EXHAUSTION tự động
-❌ CẤM: Chỉ vì trend đã đi xa mà ra NO_TRADE nếu chưa đủ scoring
+══ BƯỚC 3: PULLBACK QUALITY FILTER — ĐÂY LÀ FIX QUAN TRỌNG NHẤT ══
+⚡ Phân biệt PULLBACK CHẤT LƯỢNG vs PULLBACK YẾU/CHOP
 
-══ BƯỚC 3: PULLBACK VALIDATION — 4 ĐIỂM SCORING ══
-Chỉ tính khi có cấu trúc hồi giá sau impulse:
-  +1: retracement 20–50% của impulse gần nhất (pullback nông)
-  +1: nến pullback body nhỏ dần (momentum pullback yếu đi)
-  +1: không có wick ngược chiều > 1 giá (không có rejection mạnh)
-  +1: không có nến overlap liên tiếp ≥ 3 nến (có cấu trúc rõ)
+BƯỚC 3A — MICRO RANGE DETECTION (chặn trước):
+  micro_range = TRUE nếu ĐỦ CẢ 2:
+    [M1] biên độ vùng pullback < MICRO_RANGE_PIPS (giá dao động hẹp)
+    [M2] ≥ 4 nến liên tiếp overlap nhau (close nằm trong range nến trước)
+  → micro_range = TRUE → phase = MICRO_RANGE → NO_TRADE, dừng tại đây
+  ❌ CẤM: Micro range bị nhầm là pullback hợp lệ
 
-  score ≥ 3/4 = VALID_PULLBACK → phase = PULLBACK
-  score < 3/4 = CHOP / INVALID → phase = RANGE → NO_TRADE
-  ≥ 2 swing ngược trong pullback (up-down-up) = CONSOLIDATION → RANGE → NO_TRADE
+BƯỚC 3B — PULLBACK QUALITY SCORING (6 tiêu chí):
+  NHẬN DIỆN PULLBACK CHẤT LƯỢNG CAO (+1 mỗi điều kiện):
+  [Q1] +1: clean leg — có nhịp hồi rõ hướng một chiều, không đảo chiều lặp lại
+  [Q2] +1: overlap thấp — < 2 nến overlap liên tiếp trong pullback
+  [Q3] +1: có internal BOS nhỏ — pullback tự tạo HH/HL nhỏ theo chiều hồi (structure trong pullback)
+  [Q4] +1: retracement 20–60% của impulse gần nhất (không quá nông, không quá sâu)
+  [Q5] +1: tốc độ rõ — body nến pullback đồng đều, không choppy
+  [Q6] +1: không có nến rejection mạnh ngược hướng trend chính (wick < 1.5 giá theo hướng trend)
+
+  NHẬN DIỆN PULLBACK YẾU (trừ điểm / block thẳng):
+  [-BLOCK] ≥ 2 swing ngược trong pullback (up-down-up hoặc down-up-down) = CONSOLIDATION → NO_TRADE
+  [-BLOCK] overlap ≥ 4 nến liên tiếp → xem lại BƯỚC 3A micro range
+  [-2] body nến không đồng đều, lúc to lúc nhỏ = CHOPPY
+  [-1] retracement > 70% của impulse = pullback quá sâu, có thể reversal
+
+  PHÁN QUYẾT:
+  quality_score ≥ 4/6 = STRONG_PULLBACK → phase = PULLBACK → tiếp tục
+  quality_score 2–3/6 = WEAK_PULLBACK → phase = WEAK_PULLBACK → NO_TRADE
+  quality_score < 2/6 hoặc có [-BLOCK] = CHOP → phase = RANGE → NO_TRADE
+
+BƯỚC 3C — ZONE FRESHNESS CHECK:
+  zone_test_count = số lần giá đã chạm / test vùng entry zone hiện tại
+  zone_test_count = 0–1 = FRESH ZONE → priority giữ nguyên
+  zone_test_count ≥ 2 = WEAK ZONE → priority hạ 1 cấp (HIGH→MEDIUM, MEDIUM→LOW)
+  zone_test_count ≥ 3 = DEAD ZONE → priority = LOW, risk = REDUCED, ghi chú cảnh báo
 
 ══ BƯỚC 4: MOMENTUM DECAY CHECK — REAL-TIME ══
-Đo momentum hiện tại so với lúc bắt đầu impulse:
   momentum_weak = TRUE nếu:
     avg body 5 nến gần nhất < avg body impulse × MOMENTUM_DECAY
     HOẶC wick_ratio 5 nến gần nhất > WICK_RATIO_MAX
+  IF momentum_weak + fail_structure → thêm 1 điểm EXHAUSTION
 
-  IF momentum_weak = TRUE:
-    → Không downgrade mode, nhưng ghi nhận: risk_level = REDUCED
-    → Nếu đồng thời fail_structure = TRUE → thêm 1 điểm vào EXHAUSTION scoring
+══ BƯỚC 5: PHASE CLASSIFICATION ══
+  EXHAUSTION → NO_TRADE
+  MICRO_RANGE → NO_TRADE
+  RANGE/CHOP/WEAK_PULLBACK → NO_TRADE
+  IMPULSE → IMPULSE_WAIT
+  STRONG_PULLBACK (quality ≥ 4/6) → CONTINUATION (WAIT_FOR_ENTRY)
+  CONTINUATION_BASE → CONTINUATION (WAIT_FOR_ENTRY)
+  REVERSAL (đủ Bước 6) → CONTINUATION hướng ngược
 
-══ BƯỚC 5: PHASE CLASSIFICATION (từ kết quả Bước 1–4) ══
-STATE MACHINE CHÍNH THỨC:
+══ BƯỚC 6: REVERSAL GATE — ĐỦ CẢ 3 ══
+  [R1] has_choch = TRUE | [R2] BOS ngược ≥ BOS_MIN | [R3] displacement ngược ≥ IMPULSE_MIN
+  → Thiếu 1 → KHÔNG đổi hướng
 
-  EXHAUSTION: đủ scoring Bước 2 → mode = NO_TRADE (không phân tích tiếp)
-  RANGE: pullback score < 3 hoặc biên độ < RANGE_MAX + không BOS → mode = NO_TRADE
-  IMPULSE: displacement đang diễn ra, chưa pullback rõ → mode = IMPULSE_WAIT
-  PULLBACK: sau impulse, pullback score ≥ 3, structure giữ → mode = CONTINUATION
-  CONTINUATION_BASE: pause sau impulse, overlap nhỏ, chưa CHoCH, structure giữ → mode = CONTINUATION
-  CONTINUATION: LH+LL / HL+HH extend tiếp → mode = CONTINUATION
-  REVERSAL: đủ 3 điều kiện Bước 6 → mode = CONTINUATION (hướng ngược)
-
-══ BƯỚC 6: REVERSAL GATE — CHỈ MỞ KHI ĐỦ CẢ 3 ══
-Chỉ cho phép entry NGƯỢC trend_direction khi:
-  [R1] has_choch = TRUE: phá swing ngược chiều rõ ràng
-  [R2] BOS ngược chiều ≥ BOS_MIN: structure thực sự bị phá
-  [R3] displacement ngược chiều ≥ IMPULSE_MIN: có nến đẩy mạnh hướng mới
-  → Thiếu bất kỳ 1 điều kiện → KHÔNG đổi hướng → giữ trend_direction
-
-══ BƯỚC 7: FINAL DECISION + SIGNAL PRIORITY TREE ══
-Thực hiện ĐÚNG theo thứ tự — không nhảy cấp:
-
-  PRIORITY 1 (cao nhất): STATE = EXHAUSTION → action = NO_TRADE (tuyệt đối)
-  PRIORITY 2: STATE = RANGE/CHOP → action = NO_TRADE
-  PRIORITY 3: trend_direction = NONE → action = NO_TRADE
-  PRIORITY 4: STATE = IMPULSE → action = IMPULSE_WAIT (chờ pullback)
-  PRIORITY 5: STATE = PULLBACK/CONTINUATION + HTF aligned → action = WAIT_FOR_ENTRY (FULL risk)
-  PRIORITY 6: STATE = PULLBACK/CONTINUATION + HTF conflict → action = WAIT_FOR_ENTRY (REDUCED risk 0.5R)
-  PRIORITY 7: STATE = REVERSAL (đủ 3 điều kiện) → action = WAIT_FOR_ENTRY (hướng ngược)
-
-HTF RULE: HTF chỉ điều chỉnh RISK — KHÔNG ĐƯỢC block trade khi structure M15 rõ ràng.
+══ BƯỚC 7: FINAL DECISION — PRIORITY TREE ══
+  P1: EXHAUSTION / MICRO_RANGE → NO_TRADE (tuyệt đối)
+  P2: RANGE / CHOP / WEAK_PULLBACK → NO_TRADE
+  P3: trend_direction = NONE → NO_TRADE
+  P4: IMPULSE → IMPULSE_WAIT
+  P5: STRONG_PULLBACK + fresh zone + HTF aligned → WAIT_FOR_ENTRY (FULL)
+  P6: STRONG_PULLBACK + weak zone hoặc HTF conflict → WAIT_FOR_ENTRY (REDUCED)
+  P7: REVERSAL đủ điều kiện → WAIT_FOR_ENTRY
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 LUẬT CỨNG — TUYỆT ĐỐI KHÔNG VI PHẠM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ EXHAUSTION → NO_TRADE — không có ngoại lệ
-❌ CHOP/OVERLAP ≥ 3 nến → RANGE → NO_TRADE
-❌ HL trong downtrend = SELL zone (pullback) — KHÔNG phải BUY signal
-❌ KHÔNG BUY khi chưa đủ 3 điều kiện Reversal Gate
+❌ WEAK_PULLBACK → NO_TRADE — không ngoại lệ dù trend rõ
+❌ MICRO_RANGE → NO_TRADE — overlap hẹp không phải pullback
+❌ CHOP (lúc lên lúc xuống liên tục) → NO_TRADE tuyệt đối
+❌ EXHAUSTION → NO_TRADE tuyệt đối
+❌ HL trong downtrend = SELL zone — KHÔNG phải BUY
+❌ Zone bị test ≥ 2 lần → KHÔNG cho HIGH priority
 ❌ mode=CONTINUATION + next_action=NO_TRADE là mâu thuẫn
 ❌ mode=NO_TRADE + next_action=WAIT_FOR_ENTRY là mâu thuẫn
-❌ Trend extended (≥ 3 legs, ≥ 80 pips) + momentum_weak → KHÔNG cho FULL risk
+❌ Trend extended + momentum_weak → KHÔNG cho FULL risk
 
 Trả lời HOÀN TOÀN bằng tiếng Việt. Thuật ngữ giữ nguyên: BOS, CHoCH, MSS, FVG, OB, Displacement, Sweep, Pullback.
 
 Trả về DUY NHẤT JSON (không markdown, không backtick):
-{"trend_direction":"DOWN"|"UP"|"NONE","trend_direction_reason":"impulse gần nhất — hướng nào, body=X giá, tại giá nào","mode":"CONTINUATION"|"IMPULSE_WAIT"|"NO_TRADE","phase":"IMPULSE"|"PULLBACK"|"CONTINUATION"|"CONTINUATION_BASE"|"EXHAUSTION"|"RANGE","entry_direction":"SELL"|"BUY"|"NONE","entry_direction_reason":"lý do — consistent với trend_direction","entry_zone":"zone cụ thể","htf_alignment":"ALIGNED"|"CONFLICT"|"NEUTRAL","risk_level":"FULL"|"REDUCED","risk_reason":"lý do risk","invalidation":"điều kiện mất hiệu lực","next_action":"WAIT_FOR_ENTRY"|"WAIT_PULLBACK"|"NO_TRADE","priority":"HIGH"|"MEDIUM"|"LOW","summary":"2-3 câu — nêu rõ phase + trend_direction + entry_direction + lý do","structure_detail":"LH/LL hoặc HL/HH, displacement, BOS cụ thể","recent_impulse":true|false,"recent_impulse_note":"body=X giá, hướng UP/DOWN, cách X nến","has_choch":true|false,"choch_note":"mô tả CHoCH nếu có","fail_structure":true|false,"fail_structure_note":"còn tạo LL/HH được không","exhaustion_score":"X/4 — [E1]=có/không, [E2]=có/không, [E3]=có/không, [E4]=có/không","exhaustion_check":"YES_EXHAUSTION"|"NO_EXHAUSTION","exhaustion_reason":"giải thích scoring đầy đủ","trend_extended":true|false,"trend_extended_note":"tổng move=X pips, legs=X","momentum_weak":true|false,"momentum_weak_note":"avg body recent vs impulse","pullback_score":"X/4 — retracement=có/không, body_nhỏ_dần=có/không, không_wick_lớn=có/không, không_overlap=có/không","sweep_detected":true|false,"sweep_note":"mô tả sweep nếu có"}`;
+{"trend_direction":"DOWN"|"UP"|"NONE","trend_direction_reason":"impulse gần nhất — hướng nào, body=X giá","mode":"CONTINUATION"|"IMPULSE_WAIT"|"NO_TRADE","phase":"IMPULSE"|"PULLBACK"|"WEAK_PULLBACK"|"MICRO_RANGE"|"CONTINUATION"|"CONTINUATION_BASE"|"EXHAUSTION"|"RANGE","entry_direction":"SELL"|"BUY"|"NONE","entry_direction_reason":"lý do — consistent với trend_direction","entry_zone":"zone cụ thể","htf_alignment":"ALIGNED"|"CONFLICT"|"NEUTRAL","risk_level":"FULL"|"REDUCED","risk_reason":"lý do","invalidation":"điều kiện mất hiệu lực","next_action":"WAIT_FOR_ENTRY"|"WAIT_PULLBACK"|"NO_TRADE","priority":"HIGH"|"MEDIUM"|"LOW","summary":"2-3 câu — nêu rõ phase + pullback quality + lý do no trade hoặc entry","structure_detail":"LH/LL hoặc HL/HH, displacement, BOS cụ thể","recent_impulse":true|false,"recent_impulse_note":"body=X giá, hướng, cách X nến","has_choch":true|false,"choch_note":"mô tả nếu có","fail_structure":true|false,"fail_structure_note":"còn tạo LL/HH được không","exhaustion_score":"X/4 — [E1]/[E2]/[E3]/[E4]=có/không","exhaustion_check":"YES_EXHAUSTION"|"NO_EXHAUSTION","exhaustion_reason":"giải thích","trend_extended":true|false,"trend_extended_note":"tổng move=X pips, legs=X","momentum_weak":true|false,"momentum_weak_note":"avg body so sánh","micro_range":true|false,"micro_range_note":"biên độ=X pips, overlap=X nến","pullback_quality":"STRONG"|"WEAK"|"CHOP"|"N_A","pullback_quality_score":"X/6 — [Q1]/[Q2]/[Q3]/[Q4]/[Q5]/[Q6]=có/không","pullback_quality_reason":"mô tả chi tiết tại sao strong/weak/chop","zone_test_count":0,"zone_freshness":"FRESH"|"WEAK"|"DEAD","sweep_detected":true|false,"sweep_note":"mô tả nếu có"}`;
 
     const b64=img.split(',')[1];
     const mtype=img.split(';')[0].split(':')[1];
@@ -1889,7 +1897,7 @@ Trả về DUY NHẤT JSON (không markdown, không backtick):
       ? `<div style="font-size:11px;color:var(--amber);margin-bottom:8px;padding:6px 8px;background:rgba(255,181,71,0.08);border:1px solid rgba(255,181,71,0.2);border-radius:4px">⚡ QUÉT THANH KHOẢN: ${r.sweep_note||''}</div>`
       : '';
 
-    // ── DIAGNOSTIC BADGES v2 (7 rule fixes) ──
+    // ── DIAGNOSTIC BADGES v3 (pullback quality + micro range + zone freshness) ──
     const impulseIcon = r.recent_impulse ? '✅ CÓ' : '➖ KHÔNG';
     const chochIcon = r.has_choch ? '🔴 CÓ' : '➖ CHƯA';
     const structIcon = r.fail_structure ? '🔴 FAIL' : '✅ GIỮ';
@@ -1897,19 +1905,47 @@ Trả về DUY NHẤT JSON (không markdown, không backtick):
     const chochColor = r.has_choch ? 'var(--red)' : 'var(--green)';
     const structColor = r.fail_structure ? 'var(--red)' : 'var(--green)';
     const exhaustionScoreColor = r.exhaustion_check==='YES_EXHAUSTION' ? '#e8a0a8' : 'var(--green)';
+
+    // Exhaustion badge
     const exhaustionBadge = r.exhaustion_score
       ? '<div style="margin-top:8px;padding:6px 10px;background:rgba(232,65,90,0.08);border:1px solid rgba(232,65,90,0.2);border-radius:5px;font-family:Share Tech Mono,monospace;font-size:9px;color:'+exhaustionScoreColor+'">EXHAUSTION SCORE: '+(r.exhaustion_score||'--')+(r.exhaustion_reason?'<br>'+r.exhaustion_reason:'')+'</div>'
       : (r.exhaustion_check==='YES_EXHAUSTION' ? '<div style="margin-top:8px;color:#e8a0a8;font-family:Share Tech Mono,monospace;font-size:9px">EXHAUSTION: '+(r.exhaustion_reason||'')+'</div>' : '');
+
+    // Trend extended badge
     const trendExtBadge = r.trend_extended
       ? '<div style="margin-top:6px;padding:5px 8px;background:rgba(255,181,71,0.1);border:1px solid rgba(255,181,71,0.3);border-radius:5px;font-family:Share Tech Mono,monospace;font-size:9px;color:var(--amber)">⚠ TREND EXTENDED: '+(r.trend_extended_note||'')+'</div>'
       : '';
+
+    // Momentum weak badge
     const momentumBadge = r.momentum_weak
       ? '<div style="margin-top:6px;padding:5px 8px;background:rgba(255,181,71,0.08);border:1px solid rgba(255,181,71,0.2);border-radius:5px;font-family:Share Tech Mono,monospace;font-size:9px;color:var(--amber)">📉 MOMENTUM DECAY: '+(r.momentum_weak_note||'')+'</div>'
       : '';
-    const pbColor = (r.pullback_score||'').startsWith('4') ? 'var(--green)' : (r.pullback_score||'').startsWith('3') ? 'var(--amber)' : 'var(--red)';
-    const pullbackBadge = r.pullback_score
-      ? '<div style="margin-top:6px;padding:5px 8px;background:rgba(0,0,0,0.2);border-radius:5px;font-family:Share Tech Mono,monospace;font-size:9px;color:'+pbColor+'">PULLBACK SCORE: '+(r.pullback_score||'--')+'</div>'
+
+    // Micro range badge (NEW)
+    const microRangeBadge = r.micro_range
+      ? '<div style="margin-top:6px;padding:6px 10px;background:rgba(232,65,90,0.1);border:1px solid rgba(232,65,90,0.3);border-radius:5px;font-family:Share Tech Mono,monospace;font-size:9px;color:var(--red)">🚫 MICRO RANGE: '+(r.micro_range_note||'overlap hẹp không phải pullback')+'</div>'
       : '';
+
+    // Pullback quality badge (NEW — MOST IMPORTANT)
+    const pqColors = { STRONG:'var(--green)', WEAK:'var(--amber)', CHOP:'var(--red)', N_A:'var(--muted)' };
+    const pqIcons  = { STRONG:'✅', WEAK:'⚠️', CHOP:'🚫', N_A:'➖' };
+    const pqBg     = { STRONG:'rgba(46,204,138,0.08)', WEAK:'rgba(255,181,71,0.08)', CHOP:'rgba(232,65,90,0.08)', N_A:'rgba(0,0,0,0.1)' };
+    const pqBorder = { STRONG:'rgba(46,204,138,0.25)', WEAK:'rgba(255,181,71,0.25)', CHOP:'rgba(232,65,90,0.25)', N_A:'rgba(100,100,100,0.15)' };
+    const pqLabel  = { STRONG:'PULLBACK CHẤT LƯỢNG CAO', WEAK:'PULLBACK YẾU — NO TRADE', CHOP:'CHOP / SIDEWAY — NO TRADE', N_A:'CHƯA CÓ PULLBACK' };
+    const pq = r.pullback_quality || 'N_A';
+    const pullbackQualityBadge = '<div style="margin-top:8px;padding:8px 12px;background:'+pqBg[pq]+';border:1px solid '+pqBorder[pq]+';border-radius:6px;font-family:Share Tech Mono,monospace;font-size:9px;color:'+pqColors[pq]+'">'
+      + pqIcons[pq]+' '+(pqLabel[pq]||pq)
+      + (r.pullback_quality_score ? ' | SCORE: '+r.pullback_quality_score : '')
+      + (r.pullback_quality_reason ? '<br><span style="color:var(--muted)">'+r.pullback_quality_reason+'</span>' : '')
+      + '</div>';
+
+    // Zone freshness badge (NEW)
+    const zfColors = { FRESH:'var(--green)', WEAK:'var(--amber)', DEAD:'var(--red)' };
+    const zfIcons  = { FRESH:'🟢', WEAK:'🟡', DEAD:'🔴' };
+    const zoneFreshBadge = r.zone_freshness && r.zone_freshness !== 'FRESH'
+      ? '<div style="margin-top:6px;padding:5px 8px;background:rgba(255,181,71,0.08);border:1px solid rgba(255,181,71,0.2);border-radius:5px;font-family:Share Tech Mono,monospace;font-size:9px;color:'+(zfColors[r.zone_freshness]||'var(--muted)')+'">'+(zfIcons[r.zone_freshness]||'')+' ZONE: '+r.zone_freshness+' (test '+( r.zone_test_count||'?')+'x)</div>'
+      : '';
+
     const htfBadge = r.htf_alignment
       ? '<div style="margin-top:6px;font-family:Share Tech Mono,monospace;font-size:9px;color:var(--muted)">HTF: '+r.htf_alignment+'</div>' : '';
     const impulseBadge = r.recent_impulse_note
@@ -1931,7 +1967,7 @@ Trả về DUY NHẤT JSON (không markdown, không backtick):
       + sweepBlock
       + '<div>'+(r.structure_detail||'')+'</div>'
       + (r.entry_direction_reason ? '<div style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--muted);margin-top:4px;line-height:1.5">'+r.entry_direction_reason+'</div>' : '')
-      + exhaustionBadge + trendExtBadge + momentumBadge + pullbackBadge + htfBadge
+      + exhaustionBadge + trendExtBadge + momentumBadge + microRangeBadge + pullbackQualityBadge + zoneFreshBadge + htfBadge
       + '<div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px">'
       + '<div style="background:var(--bg2);border-radius:4px;padding:5px 4px;text-align:center"><div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--muted);margin-bottom:2px">IMPULSE</div><div style="font-family:Share Tech Mono,monospace;font-size:9px;color:'+impulseColor+'">'+impulseIcon+'</div></div>'
       + '<div style="background:var(--bg2);border-radius:4px;padding:5px 4px;text-align:center"><div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--muted);margin-bottom:2px">CHoCH</div><div style="font-family:Share Tech Mono,monospace;font-size:9px;color:'+chochColor+'">'+chochIcon+'</div></div>'
