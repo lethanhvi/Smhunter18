@@ -1833,67 +1833,21 @@ LUẬT CỨNG — TUYỆT ĐỐI KHÔNG VI PHẠM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 NGÔN NGỮ — BẮT BUỘC 100% TIẾNG VIỆT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TOÀN BỘ nội dung trong JSON phải bằng tiếng Việt — KHÔNG có từ tiếng Anh nào.
-Bao gồm cả các trường: summary, structure_detail, trend_direction_reason, entry_direction_reason,
-exhaustion_reason, pullback_quality_reason, no_trade_reason, momentum_weak_note, tất cả các _note.
-
-BẢNG DỊCH THUẬT NGỮ BẮT BUỘC:
-BOS = Phá Cấu Trúc
-CHoCH = Đổi Hướng Cấu Trúc
-MSS = Dịch Chuyển Cấu Trúc
-Displacement = Nến Đẩy Mạnh
-Sweep = Quét Thanh Khoản
-Pullback = Hồi Giá
-Impulse = Sóng Đẩy
-Momentum = Động Lực
-Structure = Cấu Trúc
-Overlap = Nến Chồng Nhau
-Continuation = Tiếp Diễn
-Exhaustion = Kiệt Sức
-Range = Đi Ngang
-Micro Range = Vùng Đi Ngang Hẹp
-Trend Extended = Xu Hướng Đi Quá Xa
-Momentum Decay = Động Lực Suy Giảm
-Pullback Quality = Chất Lượng Hồi Giá
-Clean Leg = Nhịp Hồi Rõ Ràng
-Internal BOS = Phá Cấu Trúc Nhỏ Bên Trong
-Rejection = Nến Từ Chối
-Stop Loss = Cắt Lỗ
-Take Profit = Chốt Lời
-Entry = Điểm Vào
-Kill Zone = Vùng Giờ Vàng
-High = Đỉnh
-Low = Đáy
-Higher High HH = Đỉnh Cao Hơn
-Lower Low LL = Đáy Thấp Hơn
-Higher Low HL = Đáy Cao Hơn
-Lower High LH = Đỉnh Thấp Hơn
-Body = Thân Nến
-Wick = Bóng Nến
-Breakout = Phá Vỡ
-Reversal = Đảo Chiều
-Bias = Xu Hướng Chính
-Support = Hỗ Trợ
-Resistance = Kháng Cự
-Liquidity = Thanh Khoản
-Fair Value Gap FVG = Vùng Chênh Lệch Giá
-Order Block OB = Khối Lệnh
-Chop = Giá Lộn Xộn
-Sideway = Đi Ngang
-
-❌ CẤM TUYỆT ĐỐI: Dùng từ tiếng Anh trong bất kỳ field nào của JSON
-❌ CẤM: BOS, CHoCH, Displacement, Sweep, Overlap, Impulse, Momentum xuất hiện trong _reason, _note, summary
-✅ PHẢI: Dùng bản dịch tiếng Việt tương ứng từ bảng trên
-✅ PHẢI: Viết số giá bằng số (VD: Sóng Đẩy xuống 199 điểm, Hồi Giá 12 điểm)
+Tất cả nội dung giải thích trong JSON phải bằng tiếng Việt.
+Dịch thuật ngữ: BOS=Phá Cấu Trúc, CHoCH=Đổi Hướng, Displacement=Nến Đẩy Mạnh,
+Sweep=Quét Thanh Khoản, Pullback=Hồi Giá, Impulse=Sóng Đẩy, Overlap=Nến Chồng,
+Exhaustion=Kiệt Sức, Momentum=Động Lực, Range=Đi Ngang, Breakout=Phá Vỡ,
+Reversal=Đảo Chiều, Structure=Cấu Trúc, Body=Thân Nến, Wick=Bóng Nến.
+❌ CẤM dùng từ tiếng Anh trong _reason, _note, summary.
 
 Trả về DUY NHẤT JSON (không markdown, không backtick):
 {"trend_direction":"DOWN|UP|NONE","trend_direction_reason":"...","mode":"CONTINUATION|IMPULSE_WAIT|NO_TRADE","phase":"IMPULSE|PULLBACK|WEAK_PULLBACK|MICRO_RANGE|CHOP|CONTINUATION|CONTINUATION_BASE|EXHAUSTION|RANGE","entry_direction":"SELL|BUY|NONE","entry_direction_reason":"...","entry_zone":"...","htf_alignment":"ALIGNED|CONFLICT|NEUTRAL","risk_level":"FULL|REDUCED|NONE","risk_reason":"...","invalidation":"...","next_action":"WAIT_FOR_ENTRY|WAIT_PULLBACK|NO_TRADE","priority":"HIGH|MEDIUM|LOW","summary":"...","structure_detail":"...","recent_impulse":true,"recent_impulse_note":"...","has_choch":false,"choch_note":"...","fail_structure":false,"fail_structure_note":"...","exhaustion_score":"X/4","exhaustion_check":"YES_EXHAUSTION|NO_EXHAUSTION","exhaustion_reason":"...","trend_extended":false,"trend_extended_note":"...","momentum_weak":false,"momentum_weak_note":"...","micro_range":false,"micro_range_note":"...","pullback_quality":"STRONG|GOOD|ACCEPTABLE|WEAK|CHOP|MICRO_RANGE|N_A","pullback_quality_score":"X/6","pullback_quality_reason":"...","no_trade_reason":"...","zone_test_count":0,"zone_freshness":"FRESH|WEAK|DEAD","sweep_detected":false,"sweep_note":"..."}`;
 
     const b64=img.split(',')[1];
     const mtype=img.split(';')[0].split(':')[1];
-    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1200,system:sys,messages:[{role:'user',content:[
+    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1500,system:sys,messages:[{role:'user',content:[
       {type:'image',source:{type:'base64',media_type:mtype,data:b64}},
-      {type:'text',text:`Phân tích chart M15 XAUUSD này. HTF Bias: ${HTF_BIAS}. Trả về JSON thuần túy. QUAN TRỌNG: 100% tiếng Việt, dịch toàn bộ thuật ngữ theo bảng dịch đã cho, không dùng bất kỳ từ tiếng Anh nào trong các trường giải thích.`}
+      {type:'text',text:`Phân tích chart M15 XAUUSD này. HTF Bias: ${HTF_BIAS}. Trả về JSON thuần túy, KHÔNG markdown, KHÔNG backtick. 100% tiếng Việt.`}
     ]}]});
 
     // ── LƯU STATE (pipeline variables) ──
@@ -2303,7 +2257,14 @@ async function callAPI(body, retries=3){
       }
       const data=await res.json();
       const text=data.content.map(c=>c.text||'').join('');
-      return JSON.parse(text.replace(/```json|```/g,'').trim());
+      let cleaned = text.replace(/```json|```/g,'').trim();
+      // Fix truncated JSON — nếu bị cắt giữa chừng, tự đóng lại
+      if(cleaned && !cleaned.endsWith('}')) {
+        const lastBrace = cleaned.lastIndexOf('"}');
+        if(lastBrace > 0) cleaned = cleaned.substring(0, lastBrace+2) + '}';
+        else cleaned = cleaned + '"}';
+      }
+      return JSON.parse(cleaned);
     } catch(e){
       if(i===retries-1) throw e;
       if(e.message==='Failed to fetch'||e.message?.includes('overload')||e.message?.includes('Overload')){
