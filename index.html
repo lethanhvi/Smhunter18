@@ -1653,7 +1653,7 @@ function pAnswer(q,val,event){
     const flagHtml=flags.map(q=>`<div class="flag-item"><span class="flag-dot"></span><span>Câu ${q<10?'0'+q:q}: Rủi ro phát hiện</span></div>`).join('');
     vEl.innerHTML=`<div class="verdict-box stop" style="animation:pulse-in 0.5s ease both"><span class="v-emoji">🚫</span><div class="v-title">ĐÓNG MÁY NGAY</div><div class="v-sub">Phát hiện ${flags.length} yếu tố rủi ro.</div><div class="v-rule">→ KHÔNG chạy Bộ 1 — Reset hoàn toàn</div><div class="flags-wrap">${flagHtml}</div></div>`;
     nxt.style.display='none';
-    if(navigator.vibrate)navigator.vibrate([100,50,100,50,100]);
+    if(navigator.vibrate)navigator.vibrate([100,50,100]);
     setTimeout(()=>vEl.scrollIntoView({behavior:'smooth',block:'center'}),300);
   }
 }
@@ -1900,23 +1900,27 @@ function checkB3Verdict(){
 
   // ── HARD STOPS (tin tức + thời gian) ──
   if(a['news']==='yes'){
+    const changed = b3LastVerdict !== 'news_stop';
+    b3LastVerdict = 'news_stop';
     vEl.innerHTML=`<div class="verdict-box stop" style="animation:pulse-in 0.5s ease both">
       <span class="v-emoji">🚫</span>
       <div class="v-title">DỪNG — HIGH IMPACT NEWS</div>
       <div class="v-sub">Có tin tức lớn trong 2 tiếng. Không giao dịch cho đến sau tin.</div>
     </div>`;
     nxt.style.display='none';
-    if(navigator.vibrate) navigator.vibrate([100,50,100,50,100]);
+    if(changed && navigator.vibrate) navigator.vibrate([100,50,100]);
     return;
   }
   if(a['time']==='no'){
+    const changed = b3LastVerdict !== 'time_stop';
+    b3LastVerdict = 'time_stop';
     vEl.innerHTML=`<div class="verdict-box stop" style="animation:pulse-in 0.5s ease both">
       <span class="v-emoji">🚫</span>
       <div class="v-title">DỪNG — KHÔNG ĐỦ THỜI GIAN</div>
       <div class="v-sub">Không đủ thời gian theo dõi lệnh. Bỏ phiên này.</div>
     </div>`;
     nxt.style.display='none';
-    if(navigator.vibrate) navigator.vibrate([100,50,100,50,100]);
+    if(changed && navigator.vibrate) navigator.vibrate([100,50,100]);
     return;
   }
 
@@ -1946,6 +1950,8 @@ function checkB3Verdict(){
     const reason = phase==='EXHAUSTION' ? 'M15 đang EXHAUSTION — hết lực, không entry'
       : phase==='RANGE' ? 'M15 đang RANGE/CHOP — không có cấu trúc rõ'
       : 'Cấu trúc M15 chưa đủ điều kiện entry';
+    const changed = b3LastVerdict !== 'no_trade';
+    b3LastVerdict = 'no_trade';
     vEl.innerHTML=`<div class="verdict-box stop" style="animation:pulse-in 0.5s ease both">
       <span class="v-emoji">🚫</span>
       <div class="v-title">NO TRADE</div>
@@ -1953,10 +1959,9 @@ function checkB3Verdict(){
       <div class="v-rule">→ Không vào Bộ 4 — Quan sát tiếp</div>
     </div>`;
     nxt.style.display='none';
-    b3LastVerdict='no_trade';
     STATE.b3Priority=priority;
     saveState();
-    if(navigator.vibrate) navigator.vibrate([100,50,100]);
+    if(changed && navigator.vibrate) navigator.vibrate([100,50,100]);
     return;
   }
 
