@@ -333,15 +333,6 @@ input[type="file"]{display:none}
       </div>
       <div class="stage-status pending" id="ss-bo1">○</div>
     </div>
-    <div class="stage-card locked" id="sc-bo3" onclick="goTo('bo3')">
-      <div class="stage-icon">⏰</div>
-      <div class="stage-info">
-        <div class="stage-num">BỘ 3</div>
-        <div class="stage-name">Lọc Ưu Tiên</div>
-        <div class="stage-desc">Kill Zone · Tin tức · Ưu tiên</div>
-      </div>
-      <div class="stage-status pending" id="ss-bo3">○</div>
-    </div>
     <div class="stage-card locked" id="sc-bo2" onclick="goTo('bo2')">
       <div class="stage-icon">💧</div>
       <div class="stage-info">
@@ -350,6 +341,15 @@ input[type="file"]{display:none}
         <div class="stage-desc">H1 + M15 · Trạng thái · AI</div>
       </div>
       <div class="stage-status pending" id="ss-bo2">○</div>
+    </div>
+    <div class="stage-card locked" id="sc-bo3" onclick="goTo('bo3')">
+      <div class="stage-icon">⏰</div>
+      <div class="stage-info">
+        <div class="stage-num">BỘ 3</div>
+        <div class="stage-name">Lọc Ưu Tiên</div>
+        <div class="stage-desc">Kill Zone · Tin tức · Ưu tiên</div>
+      </div>
+      <div class="stage-status pending" id="ss-bo3">○</div>
     </div>
     <div class="stage-card locked" id="sc-bo4" onclick="goTo('bo4')">
       <div class="stage-icon">🎯</div>
@@ -496,7 +496,7 @@ input[type="file"]{display:none}
     <div class="report-sec" id="b1-sec-zones"><div class="rep-hdr" onclick="toggleRep('b1-sec-zones')"><div class="rep-icon">🎯</div><div class="rep-title">SMART MONEY ZONES</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b1-c-zones"></div></div></div>
     <div class="report-sec" id="b1-sec-dxy"><div class="rep-hdr" onclick="toggleRep('b1-sec-dxy')"><div class="rep-icon">💵</div><div class="rep-title">DXY CORRELATION</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b1-c-dxy"></div></div></div>
     <div class="report-sec" id="b1-sec-intent"><div class="rep-hdr" onclick="toggleRep('b1-sec-intent')"><div class="rep-icon">🧠</div><div class="rep-title">Ý ĐỒ THỊ TRƯỜNG</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b1-c-intent"></div></div></div>
-    <button class="next-btn" id="b1-next" onclick="completeStage('bo1')">→ TIẾN HÀNH BỘ 3</button>
+    <button class="next-btn" id="b1-next" onclick="completeStage('bo1')">→ TIẾN HÀNH BỘ 2</button>
   </div>
 </div>
 </div>
@@ -509,7 +509,7 @@ input[type="file"]{display:none}
   <div class="back-bar">
     <button class="back-btn" onclick="goBack()">← QUAY LẠI</button>
     <span class="screen-badge">⚡ BỘ 3 — ƯU TIÊN</span>
-    <span class="screen-step">2 / 5</span>
+    <span class="screen-step">3 / 5</span>
   </div>
   <div class="scr-header">
     <div class="scr-title">PRIORITY<br><span>ENGINE</span></div>
@@ -581,7 +581,7 @@ input[type="file"]{display:none}
   </div>
 
   <div id="b3-verdict" style="margin-top:8px"></div>
-  <button class="next-btn" id="b3-next" onclick="completeStage('bo3')">→ TIẾN HÀNH BỘ 2</button>
+  <button class="next-btn" id="b3-next" onclick="completeStage('bo3')">→ TIẾN HÀNH BỘ 4</button>
   <div class="screen-footer"><p>"Kill zone + M15 = điều chỉnh độ <strong>khó của kèo</strong>, không phải quyết định có kèo hay không."</p></div>
 </div>
 </div>
@@ -594,7 +594,7 @@ input[type="file"]{display:none}
   <div class="back-bar">
     <button class="back-btn" onclick="goBack()">← QUAY LẠI</button>
     <span class="screen-badge">💧 BỘ 2 — NGỮ CẢNH THỊ TRƯỜNG</span>
-    <span class="screen-step">3 / 5</span>
+    <span class="screen-step">2 / 5</span>
   </div>
   <div class="scr-header">
     <div class="scr-title">TRAP<span>/HUNT</span></div>
@@ -632,7 +632,7 @@ input[type="file"]{display:none}
     <div class="report-sec" id="b2-sec-sweep"><div class="rep-hdr" onclick="toggleRep('b2-sec-sweep')"><div class="rep-icon">🌊</div><div class="rep-title">KHẢ NĂNG SWEEP</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b2-c-sweep"></div></div></div>
     <div class="report-sec" id="b2-sec-trap"><div class="rep-hdr" onclick="toggleRep('b2-sec-trap')"><div class="rep-icon">⚠️</div><div class="rep-title">BẪY 90% TRADER</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b2-c-trap"></div></div></div>
     <div class="report-sec" id="b2-sec-path"><div class="rep-hdr" onclick="toggleRep('b2-sec-path')"><div class="rep-icon">🗺️</div><div class="rep-title">DỰ ĐOÁN ĐƯỜNG ĐI</div><div class="rep-chev">▼</div></div><div class="rep-body"><div class="rep-content" id="b2-c-path"></div></div></div>
-    <button class="next-btn" id="b2-next" onclick="completeStage('bo2')">→ TIẾN HÀNH BỘ 4</button>
+    <button class="next-btn" id="b2-next" onclick="completeStage('bo2')">→ TIẾN HÀNH BỘ 3</button>
   </div>
 </div>
 </div>
@@ -923,9 +923,16 @@ function syncKeyToScreen(name) {
 }
 
 function syncBo3Context() {
+  // B2 đã chạy trước — hiển thị bias + verdict B2 cho B3
   const d = document.getElementById('b3-bias-display');
   d.textContent = STATE.bias || '--';
   d.style.color = STATE.bias.includes('BUY') ? 'var(--green)' : STATE.bias.includes('SELL') ? 'var(--red)' : 'var(--amber)';
+  // Hiển thị thêm verdict B2 nếu có
+  const b2el = document.getElementById('b3-b2-verdict-display');
+  if(b2el) {
+    b2el.textContent = STATE.b2Verdict ? 'Bộ 2: ' + STATE.b2Verdict : '';
+    b2el.style.color = STATE.b2Verdict === 'GO' ? 'var(--green)' : STATE.b2Verdict === 'STOP' ? 'var(--red)' : 'var(--amber)';
+  }
 }
 
 function syncBo2Context() {
@@ -938,7 +945,9 @@ function syncBo2Context() {
 function syncBo4Context() {
   document.getElementById('b4-bias-display').textContent = STATE.bias || '--';
   document.getElementById('b4-b2-verdict').textContent = STATE.b2Verdict || '--';
-  document.getElementById('b4-narrative').textContent = STATE.b2Narrative || 'Không có (từ Bộ 2)';
+  // Thêm context từ B3 nếu có
+  const narrative = [STATE.b2Narrative, STATE.b3EntryDirection ? 'B3: ' + (STATE.b3EntryDirection === 'SELL' ? 'Bán' : 'Mua') : ''].filter(Boolean).join(' | ');
+  document.getElementById('b4-narrative').textContent = narrative || 'Không có';
   checkB4Ready();
 }
 
@@ -1475,7 +1484,7 @@ function syncKey(prefix){
 // ══════════════════════════════════════════════
 // STAGE MANAGEMENT
 // ══════════════════════════════════════════════
-const stageOrder=['psych','bo1','bo3','bo2','bo4','bo5'];
+const stageOrder=['psych','bo1','bo2','bo3','bo4','bo5'];
 
 function completeStage(name){
   STATE.stages[name]=true;
@@ -1688,11 +1697,14 @@ async function scanM15B3(){
   const BOS_MIN = 0.5;
   const RANGE_MAX = 3.0;
   const HTF_BIAS = STATE.bias || 'NEUTRAL';
+  const B2_VERDICT = STATE.b2Verdict || 'Chưa có';
+  const B2_STATE = STATE.b2Narrative ? STATE.b2Narrative.split('|')[0].trim() : 'Chưa có';
 
   try{
     const sys=`Bạn là Market State Classifier v2 cho XAUUSD M15 — Smart Hunter System (The5%ers $2,500).
 
-HTF Bias từ Bộ 1: ${HTF_BIAS} | Phase HTF: ${STATE.b1Phase||'Không rõ'}
+HTF Bias từ Bộ 1: ${HTF_BIAS} | Kết quả Bộ 2: ${B2_VERDICT} | Trạng thái Bộ 2: ${B2_STATE}
+→ Bộ 2 đã phân tích H1+M15 trước. Bộ 3 bổ sung: Kill Zone + lọc tin tức + xác nhận M15 lần cuối.
 
 ════════════════════════════════════════
 NHIỆM VỤ: Chạy STATE MACHINE 7 bước để phân loại ĐÚNG phase thị trường.
@@ -2451,7 +2463,7 @@ Trả về DUY NHẤT JSON:
 
     vbox.className='verdict-box '+(r.verdict==='GO'?'go':r.verdict==='STOP'?'stop':'wait');
     document.getElementById('b2-emoji').textContent=stateEmoji[r.state]||( r.verdict==='GO'?'✅':r.verdict==='STOP'?'🚫':'⏸');
-    document.getElementById('b2-vtitle').textContent=stateLabel[r.state]||(r.verdict==='GO'?'CÓ SETUP — TIẾN HÀNH BỘ 4':r.verdict==='STOP'?'KHÔNG CÓ SETUP — DỪNG':'CHƯA RÕ — CHỜ THÊM');
+    document.getElementById('b2-vtitle').textContent=stateLabel[r.state]||(r.verdict==='GO'?'CÓ SETUP — TIẾN HÀNH BỘ 3':r.verdict==='STOP'?'KHÔNG CÓ SETUP — DỪNG':'CHƯA RÕ — CHỜ THÊM');
     document.getElementById('b2-vreason').textContent=r.verdict_reason||'';
 
     // Report sections
