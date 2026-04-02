@@ -2646,6 +2646,10 @@ async function runBo4TruyKich(){
   const loss=parseFloat(document.getElementById('b4-loss').value)||0;
   const buf=125-loss;
   const lotNote=buf<75?'Giảm lot 0.5% ($12.5)':'Risk 1% ($25) bình thường';
+
+  try{
+    const sysTK=`Bạn là Momentum Trader chuyên CHIẾN LƯỢC TRUY KÍCH XAUUSD — The5%ers $2,500.
+Bias từ Bộ 1: ${STATE.bias} (định hướng TP, KHÔNG khóa lệnh)
 Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
 
 ═══════════════════════════════
