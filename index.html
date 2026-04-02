@@ -1735,7 +1735,14 @@ Premium = gần vùng high — ưu tiên SELL
 Discount = gần vùng low — ưu tiên BUY
 Mid-range = giữa — BLOCKED
 
-Trả lời HOÀN TOÀN bằng tiếng Việt. DUY NHẤT JSON:
+Trả lời HOÀN TOÀN bằng tiếng Việt dễ hiểu. Các thuật ngữ kỹ thuật phải được giải thích:
+- CHoCH → "Đổi hướng cấu trúc (CHoCH)"
+- MSS → "Dịch chuyển cấu trúc (MSS)"
+- BOS → "Phá cấu trúc (BOS)"
+- Premium/Discount → "Vùng cao/vùng thấp"
+- Displacement → "Nến đẩy mạnh"
+- Sweep → "Quét thanh khoản"
+DUY NHẤT JSON:
 {"market_state":"TREND"|"PULLBACK"|"STRONG_DISTRIBUTION"|"WEAK_DISTRIBUTION"|"CONSOLIDATION","state_note":"mô tả cụ thể","distribution_type":"STRONG/WEAK/N_A — lý do","sweep_detected":true|false,"sweep_note":"nếu có sweep — BSL/SSL tại giá X, close quay lại dưới/trên level","htf_alignment":"HTF bias + M15 state có aligned không","displacement":true|false,"displacement_note":"body=Xgiá, sau đó giá làm gì","structure":true|false,"structure_note":"HH/HL hay LH/LL hay fail","post_impulse":"TREND_CONTINUE/DISTRIBUTION/PULLBACK","location":"premium/discount/mid-range","next_action":"hành động tiếp theo — CHỜ CHoCH M5/CHỜ TRIGGER/NO TRADE/CHỜ PHÁ LOW","entry_direction":"SELL/BUY/NONE — dựa trên state + HTF","score":0-3,"tradeable":false,"summary":"1 câu kết luận + hành động cụ thể"}`;
 
     const b64=img.split(',')[1];
@@ -1776,12 +1783,49 @@ Trả lời HOÀN TOÀN bằng tiếng Việt. DUY NHẤT JSON:
       </div>
       <div style="font-size:12px;color:var(--text);margin-bottom:8px;line-height:1.5">${r.state_note||''}</div>`;
 
-    // Next action highlight
+    // Next action highlight — nổi bật nhất
     if(r.next_action){
-      html+=`<div style="background:rgba(0,0,0,0.3);border:1px solid ${nextActionColor};border-radius:6px;padding:8px 10px;margin-bottom:8px">
-        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:3px">HÀNH ĐỘNG TIẾP THEO</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:${nextActionColor};font-weight:700">${r.next_action}</div>
-        ${r.entry_direction&&r.entry_direction!=='NONE'?`<div style="font-size:10px;color:${r.entry_direction==='SELL'?'var(--red)':'var(--green)'};margin-top:3px">→ Hướng entry: ${r.entry_direction}</div>`:''}
+      // Dịch thuật ngữ sang tiếng Việt dễ hiểu
+      const translateTerms = (text) => text
+        .replace(/CHoCH/g, 'Đổi Hướng (CHoCH)')
+        .replace(/MSS/g, 'Dịch Chuyển Cấu Trúc (MSS)')
+        .replace(/BOS/g, 'Phá Cấu Trúc (BOS)')
+        .replace(/micro BOS/g, 'Phá Cấu Trúc Nhỏ M5')
+        .replace(/pullback/gi, 'hồi giá')
+        .replace(/premium/g, 'vùng cao (premium)')
+        .replace(/discount/g, 'vùng thấp (discount)')
+        .replace(/HTF/g, 'khung lớn (HTF)')
+        .replace(/M15/g, 'khung 15 phút')
+        .replace(/M5/g, 'khung 5 phút')
+        .replace(/NO TRADE/g, 'KHÔNG VÀO LỆNH')
+        .replace(/SELL/g, 'BÁN')
+        .replace(/BUY/g, 'MUA')
+        .replace(/STRONG_DISTRIBUTION/g, 'Phân Phối Mạnh')
+        .replace(/WEAK_DISTRIBUTION/g, 'Phân Phối Yếu')
+        .replace(/CONSOLIDATION/g, 'Tích Lũy/Sideway')
+        .replace(/DISTRIBUTION/g, 'Phân Phối')
+        .replace(/TREND/g, 'Xu Hướng')
+        .replace(/PULLBACK/g, 'Hồi Giá')
+        .replace(/aligned/gi, 'đồng hướng')
+        .replace(/alignment/g, 'đồng hướng')
+        .replace(/displacement/gi, 'nến mạnh đột phá')
+        .replace(/impulse/gi, 'sóng đẩy')
+        .replace(/liquidity/gi, 'vùng thanh khoản')
+        .replace(/sweep/gi, 'quét thanh khoản')
+        .replace(/rejection/gi, 'từ chối giá')
+        .replace(/trigger/gi, 'tín hiệu kích hoạt');
+
+      const isNoTrade = r.next_action.includes('NO TRADE') || r.next_action.includes('KHÔNG');
+      const isWait = r.next_action.includes('CHỜ');
+      const actionBg = isNoTrade ? 'rgba(232,65,90,0.15)' : isWait ? 'rgba(255,181,71,0.15)' : 'rgba(46,204,138,0.15)';
+      const actionBorder = isNoTrade ? 'rgba(232,65,90,0.5)' : isWait ? 'rgba(255,181,71,0.5)' : 'rgba(46,204,138,0.5)';
+      const actionColor = isNoTrade ? 'var(--red)' : isWait ? 'var(--amber)' : 'var(--green)';
+      const actionIcon = isNoTrade ? '🚫' : isWait ? '⏳' : '✅';
+
+      html+=`<div style="background:${actionBg};border:2px solid ${actionBorder};border-radius:8px;padding:12px 14px;margin-bottom:10px;box-shadow:0 0 16px ${actionBorder}">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${actionColor};letter-spacing:2px;font-weight:700;margin-bottom:6px">${actionIcon} HÀNH ĐỘNG TIẾP THEO</div>
+        <div style="font-size:13px;color:var(--text);font-weight:600;line-height:1.7">${translateTerms(r.next_action)}</div>
+        ${r.entry_direction&&r.entry_direction!=='NONE'?`<div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:${r.entry_direction==='SELL'?'var(--red)':'var(--green)'};margin-top:6px;font-weight:700">→ Hướng vào lệnh: ${r.entry_direction==='SELL'?'BÁN (SELL)':'MUA (BUY)'}</div>`:''}
       </div>`;
     }
 
@@ -3392,75 +3436,7 @@ function applyReversalUI(result){
 // ===== UPGRADE PRO LAYER =====
 
 // Safe render fix
-function renderScenarioSafe(text){
-  let el = document.getElementById("scenarioBox");
-  if(!el){
-    el = document.createElement("div");
-    el.id = "scenarioBox";
-    el.style.padding = "16px";
-    el.style.color = "#dde6f0";
-    document.body.appendChild(el);
-  }
-  el.innerHTML = "<div style='font-size:18px;font-weight:600;margin-bottom:10px'>KỊCH BẢN TIẾP THEO:</div>"+text;
-}
 
-// Anti-trap logic
-function antiTrapFilter(data){
-  let warnings = [];
-
-  if(data.impulse && data.impulse > 250){
-    warnings.push("⚠️ Impulse quá mạnh → có thể gần vùng đuối");
-  }
-
-  if(data.liquidityDistance && data.liquidityDistance < 10){
-    warnings.push("⚠️ Giá gần vùng liquidity → dễ bị quét");
-  }
-
-  if(data.htfSupply === true){
-    warnings.push("⚠️ Gần vùng supply HTF → giảm độ tin cậy");
-  }
-
-  return warnings;
-}
-
-// Enhance decision
-function enhanceDecision(decision, data){
-  const warnings = antiTrapFilter(data);
-
-  if(warnings.length > 0 && decision === "A+"){
-    decision = "A";
-  }
-
-  return {decision, warnings};
-}
-
-// Example hook (you can integrate real data later)
-window.applyUpgrade = function(){
-  try{
-    const fakeData = {
-      impulse: 280,
-      liquidityDistance: 8,
-      htfSupply: true
-    };
-
-    let result = enhanceDecision("A+", fakeData);
-
-    if(result.warnings.length){
-      renderScenarioSafe(
-        result.warnings.map(w=>"<div>"+w+"</div>").join("")
-      );
-    }
-  }catch(e){
-    console.log("Upgrade error:", e);
-  }
-}
-
-// Auto run after load
-window.addEventListener("load", ()=>{
-  setTimeout(()=>{
-    if(window.applyUpgrade) window.applyUpgrade();
-  }, 500);
-});
 </script>
 
 </body>
