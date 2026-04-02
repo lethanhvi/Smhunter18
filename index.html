@@ -860,9 +860,13 @@ const STATE = {
   b2Verdict:'',
   b2Narrative:'',
   b3Priority:'MEDIUM',
+  b3Mode:'',
   b3MarketState:'',
   b3NextAction:'',
   b3EntryDirection:'',
+  b3RiskLevel:'FULL',
+  b3Invalidation:'',
+  b3EntryZone:'',
   b4Entry:'',
   b4RR:'',
   kzActive:false,
@@ -1655,7 +1659,7 @@ function pAnswer(q,val,event){
 }
 
 // ══════════════════════════════════════════════
-// BỘ 3 — PRIORITY ENGINE
+// BỘ 3 — PRIORITY ENGINE (v2 — Fixed Logic)
 // ══════════════════════════════════════════════
 async function scanM15B3(){
   const img = STATE.imgs.b3_m15 || STATE.imgs.b2_m15;
@@ -1676,181 +1680,170 @@ async function scanM15B3(){
   document.getElementById('b3-scan-result').style.display='none';
   document.getElementById('b3-scan-error').style.display='none';
 
+  // ── GLOBAL CONSTANTS ──
+  const IMPULSE_MIN = 1.5;
+  const BOS_MIN = 0.5;
+  const RANGE_MAX = 3.0;
+  const HTF_BIAS = STATE.bias || 'NEUTRAL';
+
   try{
-    const sys=`Bạn là Market State Classifier — phân tích TRẠNG THÁI HIỆN TẠI của M15 XAUUSD.
+    const sys=`Bạn là Market State Classifier cho XAUUSD M15 — Smart Hunter System (The5%ers $2,500).
 
-QUAN TRỌNG NHẤT: Đánh giá CURRENT STATE, không phải lịch sử impulse.
-HTF Bias từ Bộ 1: ${STATE.bias} | Phase HTF: ${STATE.b1Phase||'Không rõ'}
+HTF Bias từ Bộ 1: ${HTF_BIAS} | Phase HTF: ${STATE.b1Phase||'Không rõ'}
 
-═══ BƯỚC 1: PHÂN LOẠI 4 TRẠNG THÁI ═══
+════════════════════════════════════════
+NHIỆM VỤ: Phân tích M15 và phân loại MODE để quyết định có trade hay không.
+════════════════════════════════════════
 
-TREND: tiếp tục HH+HL hoặc LH+LL + nến mạnh liên tiếp → có thể trade
-PULLBACK: hồi 1 chiều sạch + nến nhỏ dần + không overlap → chờ entry
-DISTRIBUTION/ACCUMULATION: sau impulse + overlap + wick 2 đầu + không tạo HH/LL mới
-CONSOLIDATION: sideway chop + ≥ 2 swing ngược chiều
+HẰNG SỐ ĐỊNH LƯỢNG BẮT BUỘC:
+IMPULSE_MIN = ${IMPULSE_MIN} (body tối thiểu so với avg 10 nến)
+BOS_MIN = ${BOS_MIN} giá (close phá swing)
+RANGE_MAX = ${RANGE_MAX} giá (biên độ 20 nến)
 
-═══ BƯỚC 2: PHÂN LOẠI DISTRIBUTION (QUAN TRỌNG) ═══
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BƯỚC 1 — DETECT EXHAUSTION (ưu tiên cao nhất)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Nếu phát hiện: wick dài overlap nhiều + fail make new extreme + nến nhỏ dần + giảm biên độ
+→ exhaustion_check = "YES_EXHAUSTION" → mode = "NO_TRADE" ngay, không cần phân tích thêm
 
-STRONG DISTRIBUTION (chuẩn bị dump):
-- LH rõ đã hình thành
-- Giá phá đáy gần nhất (BOS xuống ≥ 0.5 giá)
-- HTF bias = SELL
-→ state = STRONG_DISTRIBUTION → chuẩn bị SELL entry
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BƯỚC 2 — CLASSIFY PHASE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPULSE: Body nến lớn (≥${IMPULSE_MIN}× avg body 10 nến) + push mạnh 1 chiều + BOS ≥${BOS_MIN} giá
+PULLBACK: Sau impulse, giá retrace về LH (sell) hoặc HL (buy) — ĐÂY LÀ ENTRY ZONE tốt nhất
+CONTINUATION: LH+LL đã confirm (sell) hoặc HL+HH đã confirm (buy), structure đang extend
+EXHAUSTION: Wick dài, fail new extreme, biên độ nến thu nhỏ dần
+RANGE: Swing ≤${RANGE_MAX} giá, không có BOS rõ, giá dao động ngang
 
-WEAK DISTRIBUTION (chờ xác nhận):
-- Overlap nhưng chưa có LH rõ
-- Chưa phá low gần nhất
-→ state = WEAK_DISTRIBUTION → NO TRADE, chờ thêm
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BƯỚC 3 — XÁC ĐỊNH MODE TRADING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONTINUATION (trade được): phase = CONTINUATION hoặc PULLBACK (sau impulse đã confirm direction)
+IMPULSE_WAIT (quan sát): phase = IMPULSE — đang trong sóng đẩy, chờ pullback hình thành
+NO_TRADE: phase = EXHAUSTION, RANGE, hoặc cấu trúc không rõ ràng
 
-═══ BƯỚC 3: FAKE BREAK / LIQUIDITY SWEEP DETECTION ═══
-IF wick phá high/low ≥ 0.5 giá VÀ close quay lại bên trong range:
-→ = LIQUIDITY SWEEP (BSL/SSL grabbed)
-→ tăng xác suất đảo chiều
-→ KHÔNG gọi đơn giản là "rejection"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BƯỚC 4 — HTF ALIGNMENT (KHÔNG ĐƯỢC BLOCK TRADE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ TUYỆT ĐỐI CẤM: Dùng HTF conflict để ra "NO_TRADE"
+✅ HTF chỉ được dùng để điều chỉnh risk:
+  → HTF aligned: risk_level = "FULL" (1R)
+  → HTF conflict: risk_level = "REDUCED" (0.5R) — nhưng vẫn TRADE
 
-═══ BƯỚC 4: HTF ALIGNMENT ═══
-IF HTF bias = SELL AND M15 = DISTRIBUTION tại premium zone:
-→ ưu tiên tìm SELL, không đứng ngoài quá lâu
-IF HTF bias = BUY AND M15 = DISTRIBUTION tại discount zone:
-→ ưu tiên tìm BUY sau accumulation
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LUẬT QUAN TRỌNG — TRÁNH MÂU THUẪN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ mode=CONTINUATION + phase=PULLBACK → next_action = "WAIT_FOR_ENTRY"
+✅ mode=CONTINUATION + phase=CONTINUATION → next_action = "WAIT_FOR_ENTRY"  
+✅ mode=IMPULSE_WAIT → next_action = "WAIT_PULLBACK"
+✅ mode=NO_TRADE → next_action = "NO_TRADE"
+❌ KHÔNG BAO GIỜ: mode=NO_TRADE + next_action=WAIT_FOR_ENTRY (mâu thuẫn)
+❌ KHÔNG BAO GIỜ: mode=NO_TRADE kèm hướng dẫn "chờ pullback rồi entry"
 
-═══ BƯỚC 5: ENTRY ACTIVATION LAYER ═══
-IF STRONG_DISTRIBUTION + sweep high + HTF SELL:
-→ next_action = CHỜ CHoCH/MSS M5 → SELL entry
-IF WEAK_DISTRIBUTION:
-→ next_action = NO TRADE — chờ phá low xác nhận
-IF TREND + pullback sạch:
-→ next_action = CHỜ TRIGGER (micro BOS M5) → entry thuận trend
-IF CONSOLIDATION:
-→ next_action = NO TRADE tuyệt đối
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BƯỚC 5 — ENTRY DIRECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Dựa vào cấu trúc M15 HIỆN TẠI (không phải HTF):
+SELL: LH+LL pattern đang active, displacement xuống, vùng resistance
+BUY: HL+HH pattern đang active, displacement lên, vùng support
+NONE: mode=NO_TRADE hoặc chưa xác định được hướng
 
-═══ BƯỚC 6: POST-IMPULSE VALIDATION ═══
-Sau impulse mạnh:
-1. Giá tiếp tục HH → TREND CONTINUE
-2. Tạo LH + fail + overlap → DISTRIBUTION
-3. Hồi 1 chiều sạch → PULLBACK → chờ entry
+Trả lời HOÀN TOÀN bằng tiếng Việt. Các thuật ngữ kỹ thuật: BOS="Phá Cấu Trúc", CHoCH="Đổi Hướng", MSS="Dịch Chuyển Cấu Trúc", Sweep="Quét Thanh Khoản", Displacement="Nến Đẩy Mạnh".
 
-═══ LOCATION CHECK ═══
-Premium = gần vùng high — ưu tiên SELL
-Discount = gần vùng low — ưu tiên BUY
-Mid-range = giữa — BLOCKED
-
-Trả lời HOÀN TOÀN bằng tiếng Việt dễ hiểu. Các thuật ngữ kỹ thuật phải được giải thích:
-- CHoCH → "Đổi hướng cấu trúc (CHoCH)"
-- MSS → "Dịch chuyển cấu trúc (MSS)"
-- BOS → "Phá cấu trúc (BOS)"
-- Premium/Discount → "Vùng cao/vùng thấp"
-- Displacement → "Nến đẩy mạnh"
-- Sweep → "Quét thanh khoản"
-DUY NHẤT JSON:
-{"market_state":"TREND"|"PULLBACK"|"STRONG_DISTRIBUTION"|"WEAK_DISTRIBUTION"|"CONSOLIDATION","state_note":"mô tả cụ thể","distribution_type":"STRONG/WEAK/N_A — lý do","sweep_detected":true|false,"sweep_note":"nếu có sweep — BSL/SSL tại giá X, close quay lại dưới/trên level","htf_alignment":"HTF bias + M15 state có aligned không","displacement":true|false,"displacement_note":"body=Xgiá, sau đó giá làm gì","structure":true|false,"structure_note":"HH/HL hay LH/LL hay fail","post_impulse":"TREND_CONTINUE/DISTRIBUTION/PULLBACK","location":"premium/discount/mid-range","next_action":"hành động tiếp theo — CHỜ CHoCH M5/CHỜ TRIGGER/NO TRADE/CHỜ PHÁ LOW","entry_direction":"SELL/BUY/NONE — dựa trên state + HTF","score":0-3,"tradeable":false,"summary":"1 câu kết luận + hành động cụ thể"}`;
+Trả về DUY NHẤT JSON (không có markdown, không backtick):
+{"mode":"CONTINUATION"|"IMPULSE_WAIT"|"NO_TRADE","phase":"IMPULSE"|"PULLBACK"|"CONTINUATION"|"EXHAUSTION"|"RANGE","entry_direction":"SELL"|"BUY"|"NONE","entry_zone":"mô tả zone cụ thể VD: vùng LH 2748-2752","htf_alignment":"ALIGNED"|"CONFLICT"|"NEUTRAL","risk_level":"FULL"|"REDUCED","risk_reason":"lý do ngắn gọn","invalidation":"điều kiện mất hiệu lực setup","next_action":"WAIT_FOR_ENTRY"|"WAIT_PULLBACK"|"NO_TRADE","priority":"HIGH"|"MEDIUM"|"LOW","summary":"2-3 câu mô tả M15 hiện tại","structure_detail":"mô tả LH/LL hoặc HL/HH, displacement, BOS nếu có","exhaustion_check":"YES_EXHAUSTION"|"NO_EXHAUSTION","exhaustion_reason":"lý do detect exhaustion hoặc không","sweep_detected":true|false,"sweep_note":"nếu có sweep — mô tả"}`;
 
     const b64=img.split(',')[1];
     const mtype=img.split(';')[0].split(':')[1];
-    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:700,system:sys,messages:[{role:'user',content:[
+    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:800,system:sys,messages:[{role:'user',content:[
       {type:'image',source:{type:'base64',media_type:mtype,data:b64}},
-      {type:'text',text:'Phân tích TRẠNG THÁI HIỆN TẠI M15 chart này. JSON.'}
+      {type:'text',text:`Phân tích chart M15 XAUUSD này. HTF Bias: ${HTF_BIAS}. Trả về JSON thuần túy.`}
     ]}]});
 
-    // Save to STATE
+    // ── LƯU STATE (pipeline variables) ──
+    STATE.b3Mode        = r.mode || 'NO_TRADE';
+    STATE.b3MarketState = r.phase || r.market_state || '';
+    STATE.b3NextAction  = r.next_action || 'NO_TRADE';
+    STATE.b3EntryDirection = r.entry_direction || 'NONE';
+    STATE.b3Priority    = r.priority || 'MEDIUM';
+    STATE.b3RiskLevel   = r.risk_level || 'FULL';
+    STATE.b3Invalidation = r.invalidation || '';
+    STATE.b3EntryZone   = r.entry_zone || '';
+    // Legacy compat for Bộ 2
     STATE.b3Answers['sweep'] = r.sweep_detected ? 'yes' : 'no';
-    STATE.b3Answers['displacement'] = r.displacement ? 'yes' : 'no';
-    STATE.b3Answers['structure'] = r.structure ? 'yes' : 'no';
-    STATE.b3MarketState = r.market_state || '';
-    STATE.b3NextAction = r.next_action || '';
-    STATE.b3EntryDirection = r.entry_direction || '';
+    STATE.b3Answers['displacement'] = (r.phase==='IMPULSE'||r.phase==='CONTINUATION') ? 'yes' : 'no';
+    STATE.b3Answers['structure'] = (r.mode==='CONTINUATION') ? 'yes' : 'no';
     saveState();
 
-    // State config
-    const stateColors = {
-      'TREND':               {bg:'rgba(46,204,138,0.1)',  border:'rgba(46,204,138,0.3)',  color:'var(--green)',  emoji:'📈', label:'TREND'},
-      'PULLBACK':            {bg:'rgba(77,159,255,0.1)',  border:'rgba(77,159,255,0.3)',  color:'var(--blue)',   emoji:'↩️', label:'PULLBACK'},
-      'STRONG_DISTRIBUTION': {bg:'rgba(232,65,90,0.12)', border:'rgba(232,65,90,0.4)',   color:'var(--red)',    emoji:'🔴', label:'PHÂN PHỐI MẠNH'},
-      'WEAK_DISTRIBUTION':   {bg:'rgba(255,181,71,0.1)', border:'rgba(255,181,71,0.35)', color:'var(--amber)',  emoji:'⚠️', label:'PHÂN PHỐI YẾU'},
-      'CONSOLIDATION':       {bg:'rgba(100,100,100,0.1)',border:'rgba(100,100,100,0.3)', color:'var(--muted)',  emoji:'⛔', label:'SIDEWAY'},
+    // ── RENDER KẾT QUẢ v2 ──
+    const modeColor = {
+      'CONTINUATION':'var(--green)',
+      'IMPULSE_WAIT':'var(--amber)',
+      'NO_TRADE':'var(--red)'
     };
-    const sc = stateColors[r.market_state] || stateColors['CONSOLIDATION'];
-    const scoreClr = r.score>=2?'var(--green)':r.score===1?'var(--amber)':'var(--red)';
+    const modeEmoji = {
+      'CONTINUATION':'✅',
+      'IMPULSE_WAIT':'⏳',
+      'NO_TRADE':'🚫'
+    };
+    const modeLabel = {
+      'CONTINUATION':'CONTINUATION — CÓ THỂ VÀO LỆNH',
+      'IMPULSE_WAIT':'IMPULSE — CHỜ PULLBACK',
+      'NO_TRADE':'KHÔNG TRADE'
+    };
+    const color = modeColor[r.mode] || 'var(--muted)';
+    const emoji = modeEmoji[r.mode] || '❓';
+    const label = modeLabel[r.mode] || r.mode || 'NO_TRADE';
 
-    const nextActionColor = r.next_action&&r.next_action.includes('CHỜ CHoCH')
-      ? 'var(--amber)' : r.next_action&&r.next_action.includes('NO TRADE')
-      ? 'var(--red)' : 'var(--green)';
+    const riskBadge = r.risk_level === 'REDUCED'
+      ? `<span style="background:rgba(255,181,71,0.15);border:1px solid rgba(255,181,71,0.35);border-radius:4px;padding:2px 8px;font-size:10px;color:var(--amber);font-family:'Share Tech Mono',monospace">⚠ RISK 0.5R — HTF CONFLICT</span>`
+      : `<span style="background:rgba(46,204,138,0.12);border:1px solid rgba(46,204,138,0.3);border-radius:4px;padding:2px 8px;font-size:10px;color:var(--green);font-family:'Share Tech Mono',monospace">✓ FULL RISK 1R</span>`;
 
-    let html=`<div style="background:${sc.bg};border:1px solid ${sc.border};border-radius:8px;padding:12px 14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:${sc.color};letter-spacing:1px;font-weight:700">${sc.emoji} ${sc.label}</span>
-        <span style="font-family:'Share Tech Mono',monospace;font-size:12px;font-weight:700;color:${scoreClr}">${r.score}/3</span>
-      </div>
-      <div style="font-size:12px;color:var(--text);margin-bottom:8px;line-height:1.5">${r.state_note||''}</div>`;
+    const invalidBlock = r.invalidation
+      ? `<div style="margin-top:10px;padding:8px 12px;background:rgba(232,65,90,0.08);border:1px solid rgba(232,65,90,0.2);border-radius:6px;font-family:'Share Tech Mono',monospace;font-size:10px;color:#e8a0a8;letter-spacing:0.5px">⚡ INVALID NẾU: ${r.invalidation}</div>`
+      : '';
 
-    // Next action highlight — nổi bật nhất
-    if(r.next_action){
-      // Dịch thuật ngữ sang tiếng Việt dễ hiểu
-      const translateTerms = (text) => text
-        .replace(/CHoCH/g, 'Đổi Hướng (CHoCH)')
-        .replace(/MSS/g, 'Dịch Chuyển Cấu Trúc (MSS)')
-        .replace(/BOS/g, 'Phá Cấu Trúc (BOS)')
-        .replace(/micro BOS/g, 'Phá Cấu Trúc Nhỏ M5')
-        .replace(/pullback/gi, 'hồi giá')
-        .replace(/premium/g, 'vùng cao (premium)')
-        .replace(/discount/g, 'vùng thấp (discount)')
-        .replace(/HTF/g, 'khung lớn (HTF)')
-        .replace(/M15/g, 'khung 15 phút')
-        .replace(/M5/g, 'khung 5 phút')
-        .replace(/NO TRADE/g, 'KHÔNG VÀO LỆNH')
-        .replace(/SELL/g, 'BÁN')
-        .replace(/BUY/g, 'MUA')
-        .replace(/STRONG_DISTRIBUTION/g, 'Phân Phối Mạnh')
-        .replace(/WEAK_DISTRIBUTION/g, 'Phân Phối Yếu')
-        .replace(/CONSOLIDATION/g, 'Tích Lũy/Sideway')
-        .replace(/DISTRIBUTION/g, 'Phân Phối')
-        .replace(/TREND/g, 'Xu Hướng')
-        .replace(/PULLBACK/g, 'Hồi Giá')
-        .replace(/aligned/gi, 'đồng hướng')
-        .replace(/alignment/g, 'đồng hướng')
-        .replace(/displacement/gi, 'nến mạnh đột phá')
-        .replace(/impulse/gi, 'sóng đẩy')
-        .replace(/liquidity/gi, 'vùng thanh khoản')
-        .replace(/sweep/gi, 'quét thanh khoản')
-        .replace(/rejection/gi, 'từ chối giá')
-        .replace(/trigger/gi, 'tín hiệu kích hoạt');
-
-      const isNoTrade = r.next_action.includes('NO TRADE') || r.next_action.includes('KHÔNG');
-      const isWait = r.next_action.includes('CHỜ');
-      const actionBg = isNoTrade ? 'rgba(232,65,90,0.15)' : isWait ? 'rgba(255,181,71,0.15)' : 'rgba(46,204,138,0.15)';
-      const actionBorder = isNoTrade ? 'rgba(232,65,90,0.5)' : isWait ? 'rgba(255,181,71,0.5)' : 'rgba(46,204,138,0.5)';
-      const actionColor = isNoTrade ? 'var(--red)' : isWait ? 'var(--amber)' : 'var(--green)';
-      const actionIcon = isNoTrade ? '🚫' : isWait ? '⏳' : '✅';
-
-      html+=`<div style="background:${actionBg};border:2px solid ${actionBorder};border-radius:8px;padding:12px 14px;margin-bottom:10px;box-shadow:0 0 16px ${actionBorder}">
-        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${actionColor};letter-spacing:2px;font-weight:700;margin-bottom:6px">${actionIcon} HÀNH ĐỘNG TIẾP THEO</div>
-        <div style="font-size:13px;color:var(--text);font-weight:600;line-height:1.7">${translateTerms(r.next_action)}</div>
-        ${r.entry_direction&&r.entry_direction!=='NONE'?`<div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:${r.entry_direction==='SELL'?'var(--red)':'var(--green)'};margin-top:6px;font-weight:700">→ Hướng vào lệnh: ${r.entry_direction==='SELL'?'BÁN (SELL)':'MUA (BUY)'}</div>`:''}
+    let entryBlock = '';
+    if(r.next_action==='WAIT_FOR_ENTRY'){
+      entryBlock=`<div style="margin-top:10px;padding:10px 12px;background:rgba(46,204,138,0.08);border:1px solid rgba(46,204,138,0.25);border-radius:6px">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--green);letter-spacing:1.5px;margin-bottom:4px">ENTRY ZONE</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text)">${r.entry_zone||'--'}</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);margin-top:4px">Hướng: <span style="color:${r.entry_direction==='SELL'?'var(--red)':'var(--green)'};font-weight:700">${r.entry_direction==='SELL'?'BÁN (SELL)':r.entry_direction==='BUY'?'MUA (BUY)':'--'}</span></div>
+      </div>`;
+    } else if(r.next_action==='WAIT_PULLBACK'){
+      entryBlock=`<div style="margin-top:10px;padding:10px 12px;background:rgba(255,181,71,0.08);border:1px solid rgba(255,181,71,0.2);border-radius:6px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--amber)">
+        ⏳ Đang trong IMPULSE — chờ pullback về LH/HL zone rồi vào Bộ 4
+      </div>`;
+    } else {
+      const noTradeReason = r.exhaustion_check==='YES_EXHAUSTION'
+        ? `Exhaustion: ${r.exhaustion_reason||'giảm lực'}`
+        : r.phase==='RANGE' ? 'Chop/Range — không có BOS rõ'
+        : 'Cấu trúc chưa đủ điều kiện';
+      entryBlock=`<div style="margin-top:10px;padding:10px 12px;background:rgba(232,65,90,0.08);border:1px solid rgba(232,65,90,0.2);border-radius:6px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--red)">
+        🚫 ${noTradeReason}
       </div>`;
     }
 
-    // HTF alignment
-    if(r.htf_alignment){
-      html+=`<div style="font-size:11px;color:var(--muted);margin-bottom:8px;padding:6px 8px;background:rgba(0,0,0,0.2);border-radius:4px">🔗 HTF: ${r.htf_alignment}</div>`;
-    }
+    const sweepBlock = r.sweep_detected
+      ? `<div style="font-size:11px;color:var(--amber);margin-bottom:8px;padding:6px 8px;background:rgba(255,181,71,0.08);border:1px solid rgba(255,181,71,0.2);border-radius:4px">⚡ QUÉT THANH KHOẢN: ${r.sweep_note||''}</div>`
+      : '';
 
-    // Sweep detection
-    if(r.sweep_detected){
-      html+=`<div style="font-size:11px;color:var(--amber);margin-bottom:8px;padding:6px 8px;background:rgba(255,181,71,0.08);border:1px solid rgba(255,181,71,0.2);border-radius:4px">⚡ LIQUIDITY SWEEP: ${r.sweep_note||''}</div>`;
-    }
-
-    // Detail items
-    const items = [
-      {label:'Displacement', note:r.displacement_note, ok:r.displacement},
-      {label:'Structure', note:r.structure_note, ok:r.structure},
-    ];
-    html += items.map(it=>`<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid var(--border)">
-      <span style="font-size:11px;min-width:20px">${it.ok?'✅':'➖'}</span>
-      <div><div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${it.ok?'var(--green)':'var(--muted)'};letter-spacing:1px">${it.label}</div>
-      <div style="font-size:11px;color:#8a9ab8;line-height:1.4">${it.note||'--'}</div></div>
-    </div>`).join('');
-
-    html+=`<div style="font-size:11px;color:${sc.color};margin-top:8px;padding-top:6px;border-top:1px solid ${sc.border};line-height:1.5;font-style:italic">${r.summary||''}</div></div>`;
+    let html=`<div style="background:var(--surface);border:2px solid ${color};border-radius:10px;padding:18px;text-align:center;margin-bottom:10px;animation:pulse-in 0.4s ease both">
+      <div style="font-size:32px;margin-bottom:8px">${emoji}</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:800;letter-spacing:2px;color:${color}">${label}</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);margin:6px 0">PHASE: ${r.phase||'--'}</div>
+      <div style="margin:8px 0">${riskBadge}</div>
+      <div style="font-size:12px;color:#8a9ab8;line-height:1.6;margin-top:10px;max-width:360px;margin-left:auto;margin-right:auto;text-align:left">${r.summary||''}</div>
+      ${entryBlock}
+      ${invalidBlock}
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:12px;color:#8a9ab8;line-height:1.7">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--gold);letter-spacing:2px;margin-bottom:8px">📊 CẤU TRÚC M15</div>
+      ${sweepBlock}
+      <div>${r.structure_detail||''}</div>
+      ${r.exhaustion_check==='YES_EXHAUSTION'?`<div style="margin-top:8px;color:#e8a0a8">⚠ EXHAUSTION: ${r.exhaustion_reason||''}</div>`:''}
+      ${r.htf_alignment?`<div style="margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted)">🔗 HTF: ${r.htf_alignment}</div>`:''}
+    </div>`;
 
     document.getElementById('b3-scan-result').innerHTML=html;
     document.getElementById('b3-scan-result').style.display='block';
@@ -1894,119 +1887,143 @@ let b3LastVerdict = '';
 function isKillZone(){
   const now = new Date();
   const vnH = (now.getUTCHours() + 7) % 24;
-  // London: 14-17h VN, NY: 19-22h VN
   return (vnH >= 14 && vnH <= 17) || (vnH >= 19 && vnH <= 22);
-}
-
-function getM15Score(){
-  const a = STATE.b3Answers;
-  let score = 0;
-  if(a['sweep']==='yes') score++;
-  if(a['displacement']==='yes') score++;
-  if(a['structure']==='yes') score++;
-  return score;
-}
-
-function getPriorityLevel(){
-  const inKZ = isKillZone() || STATE.kzActive;
-  const score = getM15Score();
-
-  if(inKZ){
-    if(score >= 2) return 'HIGH';
-    return 'MEDIUM';
-  } else {
-    if(score === 3) return 'MEDIUM';
-    return 'LOW';
-  }
 }
 
 function checkB3Verdict(){
   const a = STATE.b3Answers;
-
-  // Only require news + time answered (M15 scored by AI automatically)
   const manualAnswered = a['news'] && a['time'];
   if(!manualAnswered) return;
-
-  // Hard stops
-  const stops = [];
-  if(a['news']==='yes') stops.push('Có High Impact News trong 2 tiếng tới');
-  if(a['time']==='no') stops.push('Không đủ thời gian theo dõi phiên');
-
-  const priority = getPriorityLevel();
-  const inKZ = isKillZone() || STATE.kzActive;
-  const score = getM15Score();
-  const newVerdict = stops.length > 0 ? 'stop' : priority;
-  const changed = newVerdict !== b3LastVerdict;
-  b3LastVerdict = newVerdict;
 
   const vEl = document.getElementById('b3-verdict');
   const nxt = document.getElementById('b3-next');
 
-  if(stops.length > 0){
-    if(changed){
-      const flagHtml = stops.map(s=>`<div class="flag-item"><span class="flag-dot"></span><span>${s}</span></div>`).join('');
-      vEl.innerHTML=`<div class="verdict-box stop" style="animation:pulse-in 0.5s ease both">
-        <span class="v-emoji">🚫</span>
-        <div class="v-title">DỪNG PHIÊN NÀY</div>
-        <div class="v-rule">→ ${stops.length} LÝ DO — ĐÓNG MÁY NGAY</div>
-        <div class="flags-wrap">${flagHtml}</div>
-      </div>`;
-      nxt.style.display='none';
-      if(navigator.vibrate) navigator.vibrate([100,50,100,50,100]);
-    }
+  // ── HARD STOPS (tin tức + thời gian) ──
+  if(a['news']==='yes'){
+    vEl.innerHTML=`<div class="verdict-box stop" style="animation:pulse-in 0.5s ease both">
+      <span class="v-emoji">🚫</span>
+      <div class="v-title">DỪNG — HIGH IMPACT NEWS</div>
+      <div class="v-sub">Có tin tức lớn trong 2 tiếng. Không giao dịch cho đến sau tin.</div>
+    </div>`;
+    nxt.style.display='none';
+    if(navigator.vibrate) navigator.vibrate([100,50,100,50,100]);
+    return;
+  }
+  if(a['time']==='no'){
+    vEl.innerHTML=`<div class="verdict-box stop" style="animation:pulse-in 0.5s ease both">
+      <span class="v-emoji">🚫</span>
+      <div class="v-title">DỪNG — KHÔNG ĐỦ THỜI GIAN</div>
+      <div class="v-sub">Không đủ thời gian theo dõi lệnh. Bỏ phiên này.</div>
+    </div>`;
+    nxt.style.display='none';
+    if(navigator.vibrate) navigator.vibrate([100,50,100,50,100]);
     return;
   }
 
-  // Priority display
-  const priorityConfig = {
-    HIGH: {
-      color:'var(--green)', bg:'rgba(46,204,138,0.08)', border:'rgba(46,204,138,0.3)',
-      emoji:'🟢', label:'PRIORITY: HIGH',
-      allow:'✔ SMC · Pullback · Truy Kích · Early Shift',
-      note:'Điều kiện confirm được nới — chấp nhận early shift M5'
-    },
-    MEDIUM: {
-      color:'var(--amber)', bg:'rgba(255,181,71,0.08)', border:'rgba(255,181,71,0.3)',
-      emoji:'🟡', label:'PRIORITY: MEDIUM',
-      allow:'✔ SMC chuẩn · Pullback',
-      note:'Truy Kích phải rõ (M5 mạnh) — không entry sớm'
-    },
-    LOW: {
-      color:'var(--red)', bg:'rgba(232,65,90,0.08)', border:'rgba(232,65,90,0.3)',
-      emoji:'🔴', label:'PRIORITY: LOW',
-      allow:'✔ Chỉ Setup A+ confirm đầy đủ',
-      note:'❌ Cấm entry sớm · ❌ Cấm Truy Kích yếu'
-    }
-  };
+  // ── SCAN CHƯA CHẠY ──
+  const mode = STATE.b3Mode || '';
+  if(!mode){
+    vEl.innerHTML=`<div style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);padding:16px;background:var(--surface);border:1px dashed var(--border);border-radius:8px">📡 Câu hỏi OK — Hãy chạy quét M15 để AI đánh giá</div>`;
+    nxt.style.display='none';
+    return;
+  }
 
-  const cfg = priorityConfig[priority];
-  const kzLabel = inKZ
-    ? `<span style="color:var(--green)">✅ Trong Kill Zone</span>`
+  const inKZ = isKillZone() || STATE.kzActive;
+  const priority = STATE.b3Priority || 'MEDIUM';
+  const riskNote = STATE.b3RiskLevel === 'REDUCED'
+    ? ' | ⚠ HTF conflict → risk 0.5R'
+    : ' | ✅ HTF aligned → 1R';
+  const invalidNote = STATE.b3Invalidation
+    ? `<div style="font-family:'Share Tech Mono',monospace;font-size:10px;margin-top:8px;padding:6px 10px;background:rgba(232,65,90,0.08);border:1px solid rgba(232,65,90,0.2);border-radius:4px;color:#e8a0a8">⚡ INVALID NẾU: ${STATE.b3Invalidation}</div>`
+    : '';
+  const kzBadge = inKZ
+    ? `<span style="color:var(--green)">✅ Kill Zone Active</span>`
     : `<span style="color:var(--muted)">⏰ Ngoài Kill Zone</span>`;
-  const scoreClr = score>=2?'var(--green)':score===1?'var(--amber)':'var(--red)';
-  const scoreLabel = `M15 Score: <strong style="color:${scoreClr}">${score}/3</strong>`;
 
-  if(changed){
-    vEl.innerHTML=`<div style="background:${cfg.bg};border:1px solid ${cfg.border};border-radius:10px;padding:18px 16px;animation:pulse-in 0.5s ease both">
-      <div style="font-family:'Share Tech Mono',monospace;font-size:20px;text-align:center;margin-bottom:8px">${cfg.emoji}</div>
-      <div style="font-family:'Share Tech Mono',monospace;font-size:14px;color:${cfg.color};font-weight:700;text-align:center;letter-spacing:2px;margin-bottom:12px">${cfg.label}</div>
-      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:10px;margin-bottom:12px;padding:8px 10px;background:rgba(0,0,0,0.2);border-radius:6px">
-        <span>${kzLabel}</span>
-        <span style="color:var(--muted)">${scoreLabel}</span>
-      </div>
-      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${cfg.color};margin-bottom:6px;letter-spacing:1px">CHO PHÉP:</div>
-      <div style="font-size:12px;color:var(--text);margin-bottom:10px;line-height:1.7">${cfg.allow}</div>
-      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);line-height:1.6;border-top:1px solid ${cfg.border};padding-top:8px">→ ${cfg.note}</div>
+  // ── NO_TRADE ──
+  if(mode === 'NO_TRADE'){
+    const phase = STATE.b3MarketState || '';
+    const reason = phase==='EXHAUSTION' ? 'M15 đang EXHAUSTION — hết lực, không entry'
+      : phase==='RANGE' ? 'M15 đang RANGE/CHOP — không có cấu trúc rõ'
+      : 'Cấu trúc M15 chưa đủ điều kiện entry';
+    vEl.innerHTML=`<div class="verdict-box stop" style="animation:pulse-in 0.5s ease both">
+      <span class="v-emoji">🚫</span>
+      <div class="v-title">NO TRADE</div>
+      <div class="v-sub">${reason}</div>
+      <div class="v-rule">→ Không vào Bộ 4 — Quan sát tiếp</div>
     </div>`;
-
-    // Save priority to STATE for Bo2/Bo4
-    STATE.b3Priority = priority;
+    nxt.style.display='none';
+    b3LastVerdict='no_trade';
+    STATE.b3Priority=priority;
     saveState();
+    if(navigator.vibrate) navigator.vibrate([100,50,100]);
+    return;
+  }
 
+  // ── IMPULSE_WAIT ──
+  if(mode === 'IMPULSE_WAIT'){
+    vEl.innerHTML=`<div style="background:rgba(255,181,71,0.08);border:2px solid rgba(255,181,71,0.35);border-radius:10px;padding:18px 16px;animation:pulse-in 0.5s ease both">
+      <div style="font-size:32px;text-align:center;margin-bottom:8px">⏳</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--amber);font-weight:700;text-align:center;letter-spacing:2px;margin-bottom:10px">WAIT PULLBACK</div>
+      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:10px;margin-bottom:10px;padding:6px 8px;background:rgba(0,0,0,0.2);border-radius:4px">
+        <span>${kzBadge}</span>
+        <span style="color:var(--muted)">Phase: IMPULSE</span>
+      </div>
+      <div style="font-size:12px;color:#c5c9d6;line-height:1.6;margin-bottom:8px">M15 vừa có impulse mạnh. Chờ pullback về zone LH/HL rồi mới vào Bộ 4.${riskNote}</div>
+      ${invalidNote}
+    </div>`;
     nxt.style.display='block';
+    nxt.textContent='→ CHỜ PULLBACK → VÀO BỘ 4';
+    b3LastVerdict='wait';
+    STATE.b3Priority=priority;
+    saveState();
+    if(navigator.vibrate) navigator.vibrate([50,30,50]);
+    setTimeout(()=>vEl.scrollIntoView({behavior:'smooth',block:'center'}),300);
+    return;
+  }
+
+  // ── CONTINUATION — BEST SETUP ──
+  if(mode === 'CONTINUATION'){
+    const priorityConfig = {
+      HIGH:{color:'var(--green)',bg:'rgba(46,204,138,0.08)',border:'rgba(46,204,138,0.35)',emoji:'🟢',label:'HIGH PRIORITY'},
+      MEDIUM:{color:'var(--amber)',bg:'rgba(255,181,71,0.08)',border:'rgba(255,181,71,0.35)',emoji:'🟡',label:'MEDIUM PRIORITY'},
+      LOW:{color:'var(--red)',bg:'rgba(232,65,90,0.08)',border:'rgba(232,65,90,0.35)',emoji:'🔴',label:'LOW PRIORITY'},
+    };
+    const cfg = priorityConfig[priority] || priorityConfig.MEDIUM;
+    const dir = STATE.b3EntryDirection;
+    const dirBadge = dir && dir!=='NONE'
+      ? `<div style="font-family:'Share Tech Mono',monospace;font-size:12px;color:${dir==='SELL'?'var(--red)':'var(--green)'};font-weight:700;margin:8px 0">→ HƯỚNG: ${dir==='SELL'?'BÁN (SELL)':'MUA (BUY)'}</div>`
+      : '';
+    const entryZone = STATE.b3EntryZone
+      ? `<div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);margin-top:4px">Zone: ${STATE.b3EntryZone}</div>`
+      : '';
+
+    vEl.innerHTML=`<div style="background:${cfg.bg};border:2px solid ${cfg.border};border-radius:10px;padding:18px 16px;animation:pulse-in 0.5s ease both">
+      <div style="font-size:28px;text-align:center;margin-bottom:8px">${cfg.emoji}</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:14px;color:${cfg.color};font-weight:700;text-align:center;letter-spacing:2px;margin-bottom:10px">${cfg.label} — VÀO BỘ 4</div>
+      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:10px;margin-bottom:10px;padding:6px 8px;background:rgba(0,0,0,0.2);border-radius:4px">
+        <span>${kzBadge}</span>
+        <span style="color:var(--muted)">Mode: CONTINUATION</span>
+      </div>
+      ${dirBadge}
+      ${entryZone}
+      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${cfg.color};margin-top:10px;border-top:1px solid ${cfg.border};padding-top:8px">${riskNote.trim()}</div>
+      ${invalidNote}
+    </div>`;
+    nxt.style.display='block';
+    nxt.textContent='→ TIẾN HÀNH BỘ 4';
+    STATE.b3NextAction='WAIT_FOR_ENTRY';
+    b3LastVerdict='continuation';
+    STATE.b3Priority=priority;
+    saveState();
     if(navigator.vibrate) navigator.vibrate(priority==='HIGH'?[50,30,80,30,50]:[50,30,50]);
     setTimeout(()=>vEl.scrollIntoView({behavior:'smooth',block:'center'}),300);
+    return;
   }
+
+  // Fallback
+  vEl.innerHTML=`<div style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);padding:16px">⏳ Đang chờ kết quả quét M15...</div>`;
+  nxt.style.display='none';
 }
 
 // ══════════════════════════════════════════════
@@ -3359,6 +3376,8 @@ function resetAll(){
   // Reset state
   Object.assign(STATE,{
     bias:'',b2Verdict:'',b2Narrative:'',b4Entry:'',b4RR:'',
+    b3Mode:'',b3MarketState:'',b3NextAction:'',b3EntryDirection:'',
+    b3RiskLevel:'FULL',b3Invalidation:'',b3EntryZone:'',
     imgs:{b1_d1:null,b1_h4:null,b2_h1:null,b2_m15:null,b4_m5:null},
     psychAnswers:{},b3Answers:{},
     stages:{psych:false,bo1:false,bo3:false,bo2:false,bo4:false,bo5:false},
@@ -3392,90 +3411,6 @@ function resetAll(){
 if('serviceWorker'in navigator){
   const sw=`self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>new Response('Offline')))});`;
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
-}
-</script>
-
-<script>
-// REVERSAL ENGINE PATCH
-function detectReversal(data){
-    if(!data) return false;
-
-    let impulse = data.impulse || 0;
-    let wick = data.wick || 0;
-    let pullback = data.pullback || 0;
-
-    if(impulse > 30 && wick > 10 && pullback > 50){
-        return {
-            state: "REJECTION",
-            action: "CHO_XAC_NHAN_DAO_CHIEU"
-        };
-    }
-    return null;
-}
-
-// Override decision display (safe patch)
-function applyReversalUI(result){
-    if(!result) return;
-
-    let box = document.querySelector(".liquidity-verdict");
-    if(!box) return;
-
-    box.innerHTML = `
-        <div style="color:#facc15;font-weight:bold;font-size:18px">
-        ⚠️ PHẢN ỨNG SAU IMPULSE
-        </div>
-        <div style="margin-top:8px">
-        Chờ xác nhận đảo chiều (KHÔNG vào lệnh ngay)
-        </div>
-    `;
-}
-</script>
-
-
-<script>
-// ===== UPGRADE PRO LAYER =====
-
-// Safe render fix
-
-</script>
-
-
-<script>
-// ===== FULL BO3 ENGINE =====
-function classifyContext(ctx){
-    if(ctx.displacement && ctx.followThrough && !ctx.overlap){
-        return "continuation";
-    }
-    if(ctx.sweep && ctx.rejection){
-        return "reversal";
-    }
-    return "range";
-}
-
-function htfDecision(ctx){
-    if(ctx.htfAligned){
-        return "FULL_ENTRY";
-    }
-    if(!ctx.htfAligned){
-        if(ctx.displacementStrong && ctx.structureClear && ctx.pullbackWeak){
-            return "ALLOW_ENTRY_REDUCED_RISK";
-        }
-        return "NO_TRADE";
-    }
-}
-
-function entryModel(context, htf){
-    if(htf === "NO_TRADE") return "NO_TRADE";
-
-    if(context === "continuation"){
-        return "SELL_CONTINUATION";
-    }
-
-    if(context === "reversal"){
-        return "WAIT_CHOCH";
-    }
-
-    return "WAIT";
 }
 </script>
 
