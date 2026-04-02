@@ -3440,9 +3440,8 @@ function applyReversalUI(result){
 </script>
 
 
-<!-- ADVANCED FIX: BO 3 LOGIC UPGRADE -->
 <script>
-// classify context
+// ===== FULL BO3 ENGINE =====
 function classifyContext(ctx){
     if(ctx.displacement && ctx.followThrough && !ctx.overlap){
         return "continuation";
@@ -3453,7 +3452,6 @@ function classifyContext(ctx){
     return "range";
 }
 
-// HTF flexible filter
 function htfDecision(ctx){
     if(ctx.htfAligned){
         return "FULL_ENTRY";
@@ -3466,16 +3464,15 @@ function htfDecision(ctx){
     }
 }
 
-// entry model
 function entryModel(context, htf){
     if(htf === "NO_TRADE") return "NO_TRADE";
 
     if(context === "continuation"){
-        return "ENTRY_PULLBACK_LH";
+        return "SELL_CONTINUATION";
     }
 
     if(context === "reversal"){
-        return "ENTRY_CHOCH";
+        return "WAIT_CHOCH";
     }
 
     return "WAIT";
