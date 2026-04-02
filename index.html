@@ -1838,53 +1838,53 @@ Bao gồm cả các trường: summary, structure_detail, trend_direction_reason
 exhaustion_reason, pullback_quality_reason, no_trade_reason, momentum_weak_note, tất cả các _note.
 
 BẢNG DỊCH THUẬT NGỮ BẮT BUỘC:
-BOS → "Phá Cấu Trúc"
-CHoCH → "Đổi Hướng Cấu Trúc"
-MSS → "Dịch Chuyển Cấu Trúc"
-Displacement → "Nến Đẩy Mạnh"
-Sweep → "Quét Thanh Khoản"
-Pullback → "Hồi Giá"
-Impulse → "Sóng Đẩy"
-Momentum → "Động Lực"
-Structure → "Cấu Trúc"
-Overlap → "Nến Chồng Nhau"
-Continuation → "Tiếp Diễn"
-Exhaustion → "Kiệt Sức"
-Range → "Đi Ngang"
-Micro Range → "Vùng Đi Ngang Hẹp"
-Trend Extended → "Xu Hướng Đi Quá Xa"
-Momentum Decay → "Động Lực Suy Giảm"
-Pullback Quality → "Chất Lượng Hồi Giá"
-Clean Leg → "Nhịp Hồi Rõ Ràng"
-Internal BOS → "Phá Cấu Trúc Nhỏ Bên Trong"
-Rejection → "Nến Từ Chối"
-Stop Loss → "Cắt Lỗ"
-Take Profit → "Chốt Lời"
-Entry → "Điểm Vào"
-Kill Zone → "Vùng Giờ Vàng"
-High → "Đỉnh"
-Low → "Đáy"
-Higher High (HH) → "Đỉnh Cao Hơn"
-Lower Low (LL) → "Đáy Thấp Hơn"
-Higher Low (HL) → "Đáy Cao Hơn"
-Lower High (LH) → "Đỉnh Thấp Hơn"
-Body → "Thân Nến"
-Wick → "Bóng Nến"
-Breakout → "Phá Vỡ"
-Reversal → "Đảo Chiều"
-Bias → "Xu Hướng Chính"
-Support → "Hỗ Trợ"
-Resistance → "Kháng Cự"
-Liquidity → "Thanh Khoản"
-Fair Value Gap (FVG) → "Vùng Chênh Lệch Giá Trị"
-Order Block (OB) → "Khối Lệnh"
-Chop → "Giá Lộn Xộn"
-Sideway → "Đi Ngang"
+BOS = Phá Cấu Trúc
+CHoCH = Đổi Hướng Cấu Trúc
+MSS = Dịch Chuyển Cấu Trúc
+Displacement = Nến Đẩy Mạnh
+Sweep = Quét Thanh Khoản
+Pullback = Hồi Giá
+Impulse = Sóng Đẩy
+Momentum = Động Lực
+Structure = Cấu Trúc
+Overlap = Nến Chồng Nhau
+Continuation = Tiếp Diễn
+Exhaustion = Kiệt Sức
+Range = Đi Ngang
+Micro Range = Vùng Đi Ngang Hẹp
+Trend Extended = Xu Hướng Đi Quá Xa
+Momentum Decay = Động Lực Suy Giảm
+Pullback Quality = Chất Lượng Hồi Giá
+Clean Leg = Nhịp Hồi Rõ Ràng
+Internal BOS = Phá Cấu Trúc Nhỏ Bên Trong
+Rejection = Nến Từ Chối
+Stop Loss = Cắt Lỗ
+Take Profit = Chốt Lời
+Entry = Điểm Vào
+Kill Zone = Vùng Giờ Vàng
+High = Đỉnh
+Low = Đáy
+Higher High HH = Đỉnh Cao Hơn
+Lower Low LL = Đáy Thấp Hơn
+Higher Low HL = Đáy Cao Hơn
+Lower High LH = Đỉnh Thấp Hơn
+Body = Thân Nến
+Wick = Bóng Nến
+Breakout = Phá Vỡ
+Reversal = Đảo Chiều
+Bias = Xu Hướng Chính
+Support = Hỗ Trợ
+Resistance = Kháng Cự
+Liquidity = Thanh Khoản
+Fair Value Gap FVG = Vùng Chênh Lệch Giá
+Order Block OB = Khối Lệnh
+Chop = Giá Lộn Xộn
+Sideway = Đi Ngang
 
 ❌ CẤM TUYỆT ĐỐI: Dùng từ tiếng Anh trong bất kỳ field nào của JSON
-❌ CẤM: "BOS", "CHoCH", "Displacement", "Sweep", "Overlap", "Impulse", "Momentum"... xuất hiện trong _reason, _note, summary
+❌ CẤM: BOS, CHoCH, Displacement, Sweep, Overlap, Impulse, Momentum xuất hiện trong _reason, _note, summary
 ✅ PHẢI: Dùng bản dịch tiếng Việt tương ứng từ bảng trên
-✅ PHẢI: Viết số giá bằng số (VD: "Sóng Đẩy xuống 199 điểm", "Hồi Giá 12 điểm")
+✅ PHẢI: Viết số giá bằng số (VD: Sóng Đẩy xuống 199 điểm, Hồi Giá 12 điểm)
 
 Trả về DUY NHẤT JSON (không markdown, không backtick):
 {"trend_direction":"DOWN"|"UP"|"NONE","trend_direction_reason":"impulse gần nhất — hướng nào, body=X giá","mode":"CONTINUATION"|"IMPULSE_WAIT"|"NO_TRADE","phase":"IMPULSE"|"PULLBACK"|"WEAK_PULLBACK"|"MICRO_RANGE"|"CHOP"|"CONTINUATION"|"CONTINUATION_BASE"|"EXHAUSTION"|"RANGE","entry_direction":"SELL"|"BUY"|"NONE","entry_direction_reason":"lý do — consistent với trend_direction","entry_zone":"zone cụ thể","htf_alignment":"ALIGNED"|"CONFLICT"|"NEUTRAL","risk_level":"FULL"|"REDUCED"|"NONE","risk_reason":"lý do rõ ràng — score=X, zone=X, HTF=X","invalidation":"điều kiện mất hiệu lực","next_action":"WAIT_FOR_ENTRY"|"WAIT_PULLBACK"|"NO_TRADE","priority":"HIGH"|"MEDIUM"|"LOW","summary":"2-3 câu — nêu rõ phase + pullback score + lý do entry hoặc no trade","structure_detail":"LH/LL hoặc HL/HH, displacement, BOS cụ thể","recent_impulse":true|false,"recent_impulse_note":"body=X giá, hướng, cách X nến","has_choch":true|false,"choch_note":"mô tả nếu có","fail_structure":true|false,"fail_structure_note":"còn tạo LL/HH được không","exhaustion_score":"X/4 — [E1]/[E2]/[E3]/[E4]=có/không","exhaustion_check":"YES_EXHAUSTION"|"NO_EXHAUSTION","exhaustion_reason":"giải thích — score bao nhiêu, tại sao block hay không block entry","trend_extended":true|false,"trend_extended_note":"tổng move=X pips, legs=X","momentum_weak":true|false,"momentum_weak_note":"avg body so sánh","micro_range":true|false,"micro_range_note":"biên độ=X pips, overlap=X nến","pullback_quality":"STRONG"|"GOOD"|"ACCEPTABLE"|"WEAK"|"CHOP"|"MICRO_RANGE"|"N_A","pullback_quality_score":"X/6 — [Q1]/[Q2]/[Q3]/[Q4]/[Q5]/[Q6]=có/không","pullback_quality_reason":"mô tả lý do từng điểm — tại sao strong/good/acceptable/weak/chop","no_trade_reason":"NẾU NO_TRADE — ghi rõ lý do cụ thể: score=X, phase=X, block condition nào bị kích hoạt","zone_test_count":0,"zone_freshness":"FRESH"|"WEAK"|"DEAD","sweep_detected":true|false,"sweep_note":"mô tả nếu có"}`;
