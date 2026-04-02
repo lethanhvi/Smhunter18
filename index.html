@@ -3440,26 +3440,45 @@ function applyReversalUI(result){
 </script>
 
 
-<!-- FIXED LOGIC FOR BO 3 -->
+<!-- ADVANCED FIX: BO 3 LOGIC UPGRADE -->
 <script>
-function classifyMarket(context){
-    if(context.displacement && context.bos && !context.sweep){
+// classify context
+function classifyContext(ctx){
+    if(ctx.displacement && ctx.followThrough && !ctx.overlap){
         return "continuation";
     }
-    if(context.sweep && context.rejection){
+    if(ctx.sweep && ctx.rejection){
         return "reversal";
     }
-    return "unknown";
+    return "range";
 }
 
-function getEntry(model){
-    if(model === "continuation"){
-        return "WAIT_PULLBACK_LH_ENTRY";
+// HTF flexible filter
+function htfDecision(ctx){
+    if(ctx.htfAligned){
+        return "FULL_ENTRY";
     }
-    if(model === "reversal"){
-        return "WAIT_CHOCH_ENTRY";
+    if(!ctx.htfAligned){
+        if(ctx.displacementStrong && ctx.structureClear && ctx.pullbackWeak){
+            return "ALLOW_ENTRY_REDUCED_RISK";
+        }
+        return "NO_TRADE";
     }
-    return "NO_TRADE";
+}
+
+// entry model
+function entryModel(context, htf){
+    if(htf === "NO_TRADE") return "NO_TRADE";
+
+    if(context === "continuation"){
+        return "ENTRY_PULLBACK_LH";
+    }
+
+    if(context === "reversal"){
+        return "ENTRY_CHOCH";
+    }
+
+    return "WAIT";
 }
 </script>
 
