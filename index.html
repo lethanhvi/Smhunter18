@@ -943,6 +943,7 @@ function syncBo4Context() {
 
 function syncBo5Context(){
   const el=document.getElementById('b5-bias');
+  const b=STATE.bias||'--';
   el.textContent=b;
   el.style.color=b.includes('BUY')?'var(--green)':b.includes('SELL')?'var(--red)':'var(--amber)';
   document.getElementById('b5-b2v').textContent=STATE.b2Verdict||'--';
@@ -1159,7 +1160,7 @@ function startPriceFeed(){
 
 async function fetchPrice(){
   try{
-    const r = await fetch('/api/price');
+    const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=XAUUSDT');
     if(!r.ok) throw new Error('price fetch failed');
     const d = await r.json();
     const price = parseFloat(d.price||0);
@@ -1169,6 +1170,7 @@ async function fetchPrice(){
       checkAlertTriggers(price);
     }
   } catch(e){
+    // fallback silent
     const dot = document.getElementById('live-dot');
     if(dot){ dot.style.background='var(--red)'; dot.style.boxShadow='0 0 6px var(--red)'; }
   }
@@ -1847,39 +1849,39 @@ Trả về DUY NHẤT JSON (không có markdown, không backtick):
       ? `<div style="font-size:11px;color:var(--amber);margin-bottom:8px;padding:6px 8px;background:rgba(255,181,71,0.08);border:1px solid rgba(255,181,71,0.2);border-radius:4px">⚡ QUÉT THANH KHOẢN: ${r.sweep_note||''}</div>`
       : '';
 
-    let html=`<div style="background:var(--surface);border:2px solid ${color};border-radius:10px;padding:18px;text-align:center;margin-bottom:10px;animation:pulse-in 0.4s ease both">
-      <div style="font-size:32px;margin-bottom:8px">${emoji}</div>
-      <div style="font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:800;letter-spacing:2px;color:${color}">${label}</div>
-      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);margin:6px 0">PHASE: ${r.phase||'--'}</div>
-      <div style="margin:8px 0">${riskBadge}</div>
-      <div style="font-size:12px;color:#8a9ab8;line-height:1.6;margin-top:10px;max-width:360px;margin-left:auto;margin-right:auto;text-align:left">${r.summary||''}</div>
-      ${entryBlock}
-      ${invalidBlock}
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:12px;color:#8a9ab8;line-height:1.7">
-      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--gold);letter-spacing:2px;margin-bottom:8px">📊 CẤU TRÚC M15</div>
-      ${sweepBlock}
-      <div>${r.structure_detail||''}</div>
-      ${r.exhaustion_check==='YES_EXHAUSTION'?`<div style="margin-top:8px;color:#e8a0a8">⚠ EXHAUSTION: ${r.exhaustion_reason||''}</div>`:''}
-      ${r.htf_alignment?`<div style="margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted)">🔗 HTF: ${r.htf_alignment}</div>`:''}
-      <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-        <div style="background:var(--bg2);border-radius:4px;padding:6px 8px;text-align:center">
-          <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px;margin-bottom:2px">IMPULSE</div>
-          <div style="font-size:13px">${r.recent_impulse?'✅':'➖'}</div>
-          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${r.recent_impulse?'var(--green)':'var(--muted)'}">${r.recent_impulse?'CÓ':'KHÔNG'}</div>
-        </div>
-        <div style="background:var(--bg2);border-radius:4px;padding:6px 8px;text-align:center">
-          <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px;margin-bottom:2px">CHoCH</div>
-          <div style="font-size:13px">${r.has_choch?'🔴':'➖'}</div>
-          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${r.has_choch?'var(--red)':'var(--green)'}">${r.has_choch?'CÓ':'CHƯA'}</div>
-        </div>
-        <div style="background:var(--bg2);border-radius:4px;padding:6px 8px;text-align:center">
-          <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px;margin-bottom:2px">STRUCT</div>
-          <div style="font-size:13px">${r.fail_structure?'🔴':'✅'}</div>
-          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${r.fail_structure?'var(--red)':'var(--green)'}">${r.fail_structure?'FAIL':'GIỮ'}</div>
-        </div>
-      </div>
-      ${r.recent_impulse_note?`<div style="margin-top:6px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--amber);padding:4px 6px;background:rgba(255,181,71,0.06);border-radius:4px">⚡ ${r.recent_impulse_note}</div>`:''}
+    // Build diagnostic badges (avoid nested backticks)
+    const exhaustionBadge = r.exhaustion_check==='YES_EXHAUSTION'
+      ? '<div style="margin-top:8px;color:#e8a0a8">EXHAUSTION: '+(r.exhaustion_reason||'')+'</div>' : '';
+    const htfBadge = r.htf_alignment
+      ? '<div style="margin-top:8px;font-family:Share Tech Mono,monospace;font-size:10px;color:var(--muted)">HTF: '+r.htf_alignment+'</div>' : '';
+    const impulseBadge = r.recent_impulse_note
+      ? '<div style="margin-top:6px;font-family:Share Tech Mono,monospace;font-size:9px;color:var(--amber);padding:4px 6px;background:rgba(255,181,71,0.06);border-radius:4px">IMPULSE: '+r.recent_impulse_note+'</div>' : '';
+    const impulseIcon = r.recent_impulse ? '✅ CÓ' : '➖ KHÔNG';
+    const chochIcon = r.has_choch ? '🔴 CÓ' : '➖ CHƯA';
+    const structIcon = r.fail_structure ? '🔴 FAIL' : '✅ GIỮ';
+    const impulseColor = r.recent_impulse ? 'var(--green)' : 'var(--muted)';
+    const chochColor = r.has_choch ? 'var(--red)' : 'var(--green)';
+    const structColor = r.fail_structure ? 'var(--red)' : 'var(--green)';
+
+    let html = '<div style="background:var(--surface);border:2px solid '+color+';border-radius:10px;padding:18px;text-align:center;margin-bottom:10px;animation:pulse-in 0.4s ease both">'
+      + '<div style="font-size:32px;margin-bottom:8px">'+emoji+'</div>'
+      + '<div style="font-family:Rajdhani,sans-serif;font-size:20px;font-weight:800;letter-spacing:2px;color:'+color+'">'+label+'</div>'
+      + '<div style="font-family:Share Tech Mono,monospace;font-size:10px;color:var(--muted);margin:6px 0">PHASE: '+(r.phase||'--')+'</div>'
+      + '<div style="margin:8px 0">'+riskBadge+'</div>'
+      + '<div style="font-size:12px;color:#8a9ab8;line-height:1.6;margin-top:10px;max-width:360px;margin-left:auto;margin-right:auto;text-align:left">'+(r.summary||'')+'</div>'
+      + entryBlock + invalidBlock
+      + '</div>'
+      + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:12px;color:#8a9ab8;line-height:1.7">'
+      + '<div style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--gold);letter-spacing:2px;margin-bottom:8px">CẤU TRÚC M15</div>'
+      + sweepBlock
+      + '<div>'+(r.structure_detail||'')+'</div>'
+      + exhaustionBadge + htfBadge
+      + '<div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">'
+      + '<div style="background:var(--bg2);border-radius:4px;padding:6px 8px;text-align:center"><div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--muted);margin-bottom:2px">IMPULSE</div><div style="font-family:Share Tech Mono,monospace;font-size:9px;color:'+impulseColor+'">'+impulseIcon+'</div></div>'
+      + '<div style="background:var(--bg2);border-radius:4px;padding:6px 8px;text-align:center"><div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--muted);margin-bottom:2px">CHoCH</div><div style="font-family:Share Tech Mono,monospace;font-size:9px;color:'+chochColor+'">'+chochIcon+'</div></div>'
+      + '<div style="background:var(--bg2);border-radius:4px;padding:6px 8px;text-align:center"><div style="font-family:Share Tech Mono,monospace;font-size:8px;color:var(--muted);margin-bottom:2px">STRUCT</div><div style="font-family:Share Tech Mono,monospace;font-size:9px;color:'+structColor+'">'+structIcon+'</div></div>'
+      + '</div>'
+      + impulseBadge
 
     document.getElementById('b3-scan-result').innerHTML=html;
     document.getElementById('b3-scan-result').style.display='block';
@@ -2097,19 +2099,24 @@ function handleImg(prefix,tf,input){
 // API CALL HELPER
 // ══════════════════════════════════════════════
 async function callAPI(body, retries=3){
+  if(!STATE.apiKey) throw new Error('Chua co API Key — vui long nhap o Bo 1');
   for(let i=0; i<retries; i++){
     try{
-      const res=await fetch('/api/analyze',{
+      const res=await fetch('https://api.anthropic.com/v1/messages',{
         method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({apiKey:STATE.apiKey,body})
+        headers:{
+          'Content-Type':'application/json',
+          'x-api-key': STATE.apiKey,
+          'anthropic-version':'2023-06-01',
+          'anthropic-dangerous-direct-browser-access':'true'
+        },
+        body:JSON.stringify(body)
       });
       if(!res.ok){
         let msg=`HTTP ${res.status}`;
         try{const e=await res.json();msg=e.error?.message||msg;}catch(e){}
-        // Retry on overload (529) or server error (500,502,503)
         if((res.status===529||res.status>=500) && i<retries-1){
-          const wait=(i+1)*3000; // 3s, 6s, 9s
+          const wait=(i+1)*3000;
           await new Promise(r=>setTimeout(r,wait));
           continue;
         }
@@ -2120,7 +2127,6 @@ async function callAPI(body, retries=3){
       return JSON.parse(text.replace(/```json|```/g,'').trim());
     } catch(e){
       if(i===retries-1) throw e;
-      // Retry on network error
       if(e.message==='Failed to fetch'||e.message?.includes('overload')||e.message?.includes('Overload')){
         await new Promise(r=>setTimeout(r,(i+1)*3000));
         continue;
