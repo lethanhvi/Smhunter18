@@ -1711,141 +1711,38 @@ MICRO_RANGE_PIPS = 15 (biên độ pullback < 15 pips + overlap cao = micro rang
 ZONE_TEST_MAX = 2 (zone bị test ≥ 2 lần = zone yếu, hạ priority)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STATE MACHINE — THỰC HIỆN ĐÚNG THỨ TỰ, KHÔNG NHẢY BƯỚC
+STATE MACHINE 7 BƯỚC (thực hiện đúng thứ tự):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-══ BƯỚC 1: LOCK TREND DIRECTION (GỐC RỄ) ══
-Xác định hướng impulse/displacement GẦN NHẤT trong 20 nến:
-  DOWN = body đỏ lớn ≥ IMPULSE_MIN + BOS xuống ≥ BOS_MIN
-  UP   = body xanh lớn ≥ IMPULSE_MIN + BOS lên ≥ BOS_MIN
-  NONE = không có impulse rõ → FORCE NO_TRADE, dừng tại đây
-→ KHÓA: trend_direction không thay đổi dù HL/HH nhỏ xuất hiện sau đó.
+B1-TREND: DOWN=sóng đẩy đỏ lớn+phá cấu trúc xuống | UP=sóng đẩy xanh+phá cấu trúc lên | NONE=không rõ→NO_TRADE
 
-══ BƯỚC 2: EXHAUSTION CHECK ══
-KIỂM TRA 4 TIÊU CHÍ:
-  [E1] trend_extended: total_move ≥ EXHAUSTION_PIPS VÀ legs ≥ EXHAUSTION_LEGS
-  [E2] momentum_decay: avg_body_recent < avg_body_impulse × MOMENTUM_DECAY
-  [E3] wick_overload: wick_ratio_recent > WICK_RATIO_MAX
-  [E4] fail_structure: giá KHÔNG tạo được LL/HH mới sau leg cuối
+B2-EXHAUSTION (chạy trước mọi thứ):
+[E1]xu hướng ≥80 pips+≥3 chân | [E2]thân nến gần<thân impulse×0.5 | [E3]bóng nến nhiều>0.4 | [E4]không tạo được đáy/đỉnh mới
+Đủ E1+E2+(E3 hoặc E4)=EXHAUSTION→NO_TRADE. Chỉ E1=priority LOW. Chỉ E2/E3=risk REDUCED.
 
-  Đủ [E1]+[E2]+([E3] hoặc [E4]) = EXHAUSTION → NO_TRADE tuyệt đối, dừng tại đây
-  Chỉ [E1] = TREND_EXTENDED → priority = LOW, tiếp tục
-  Chỉ [E2]/[E3] = MOMENTUM_WEAK → risk = REDUCED, tiếp tục
+B3-MICRO RANGE (chặn trước pullback): biên độ<15 pips VÀ ≥4 nến chồng nhau→MICRO_RANGE→NO_TRADE
 
-══ BƯỚC 3: PULLBACK QUALITY FILTER — ĐÂY LÀ FIX QUAN TRỌNG NHẤT ══
-⚡ Phân biệt PULLBACK CHẤT LƯỢNG vs PULLBACK YẾU/CHOP
+B4-PULLBACK QUALITY SCORE (6 điểm):
+[Q1]nhịp hồi 1 chiều rõ [Q2]<2 nến chồng [Q3]có phá cấu trúc nhỏ bên trong [Q4]hồi 20-60% [Q5]thân đồng đều [Q6]không bóng nến từ chối lớn
+Có BLOCK(≥2 swing ngược/thân lộn xộn hoàn toàn)→CHOP→NO_TRADE
+Score≤2 hoặc BLOCK=CHOP→NO_TRADE | Score=3=YẾU→NO_TRADE | Score=4=CHẤP NHẬN→0.5R | Score≥5=TỐT→1R
 
-BƯỚC 3A — MICRO RANGE DETECTION (chặn trước):
-  micro_range = TRUE nếu ĐỦ CẢ 2:
-    [M1] biên độ vùng pullback < MICRO_RANGE_PIPS (giá dao động hẹp)
-    [M2] ≥ 4 nến liên tiếp overlap nhau (close nằm trong range nến trước)
-  → micro_range = TRUE → phase = MICRO_RANGE → NO_TRADE, dừng tại đây
-  ❌ CẤM: Micro range bị nhầm là pullback hợp lệ
+B5-PHASE: EXHAUSTION/MICRO_RANGE/RANGE/CHOP/YẾU→NO_TRADE | IMPULSE→CHỜ HỒI | HỒI TỐT→VÀO LỆNH
 
-BƯỚC 3B — PULLBACK QUALITY SCORING (6 tiêu chí):
-  NHẬN DIỆN PULLBACK CHẤT LƯỢNG CAO (+1 mỗi điều kiện):
-  [Q1] +1: clean leg — có nhịp hồi rõ hướng một chiều, không đảo chiều lặp lại
-  [Q2] +1: overlap thấp — < 2 nến overlap liên tiếp trong pullback
-  [Q3] +1: có internal BOS nhỏ — pullback tự tạo HH/HL nhỏ theo chiều hồi (structure trong pullback)
-  [Q4] +1: retracement 20–60% của impulse gần nhất (không quá nông, không quá sâu)
-  [Q5] +1: tốc độ rõ — body nến pullback đồng đều, không choppy
-  [Q6] +1: không có nến rejection mạnh ngược hướng trend chính (wick < 1.5 giá theo hướng trend)
+B6-REVERSAL GATE (ngược trend): cần ĐỦ CẢ 3: đổi hướng cấu trúc+phá cấu trúc ngược≥0.5+sóng đẩy ngược
 
-  BLOCK CONDITIONS (override score, NO_TRADE ngay):
-  [-BLOCK-A] ≥ 2 swing ngược chiều trong pullback (up-down-up) = CHOP → NO_TRADE
-  [-BLOCK-B] overlap ≥ 4 nến liên tiếp + biên độ hẹp = MICRO_RANGE → NO_TRADE (xem Bước 3A)
-  [-BLOCK-C] body nến lúc to lúc nhỏ hoàn toàn không đồng đều = CHOP → NO_TRADE
+B7-PRIORITY: P1 EXHAUSTION≥3/4→NO_TRADE | P2 MICRO/RANGE/CHOP/YẾU→NO_TRADE | P3 NONE→NO_TRADE | P4 IMPULSE→CHỜ | P5 Score=4+zone mới→0.5R | P6 Score≥5+HTF đúng→1R | P7 Score≥5+HTF ngược→0.5R
 
-  PHÁN QUYẾT SCORE — CÓ "QUYỀN LỰC" RÕ RÀNG:
-  score ≤ 2/6 hoặc có bất kỳ [-BLOCK] = CHOP → phase = RANGE → NO_TRADE (block hoàn toàn)
-  score = 3/6 = WEAK_PULLBACK → phase = WEAK_PULLBACK → NO_TRADE (không đủ điều kiện)
-  score = 4/6 = ACCEPTABLE_PULLBACK → phase = PULLBACK → WAIT_FOR_ENTRY nhưng risk = REDUCED (0.5R)
-  score = 5/6 = GOOD_PULLBACK → phase = PULLBACK → WAIT_FOR_ENTRY, risk = FULL (1R)
-  score = 6/6 = STRONG_PULLBACK → phase = PULLBACK → WAIT_FOR_ENTRY, risk = FULL (1R), priority nâng 1 cấp
+LUẬT CỨNG: Score≤3→NO_TRADE | Score=4→0.5R | Score≥5→1R | CHOP≠YẾU≠MICRO_RANGE phân biệt rõ | Zone test≥2→hạ priority
 
-  ⚡ RULE RÕ RÀNG:
-  score ≤ 3 → NO_TRADE (không entry dù trend rõ)
-  score = 4 → entry được nhưng HALF risk (0.5R)
-  score ≥ 5 → full entry, full risk
-
-  PHÂN BIỆT 3 TRẠNG THÁI TIÊU CỰC (không được gộp chung):
-  CHOP = giá lên xuống liên tục, ≥ 2 swing ngược, không có hướng rõ
-  WEAK_PULLBACK = có hướng nhưng chất lượng thấp (score 3/6), body nhỏ không đồng đều
-  MICRO_RANGE = sideways hẹp, overlap cao, biên độ < MICRO_RANGE_PIPS
-  → 3 trạng thái này đều = NO_TRADE nhưng hiển thị khác nhau để trader hiểu lý do
-
-BƯỚC 3C — ZONE FRESHNESS CHECK:
-  zone_test_count = số lần giá đã chạm / test vùng entry zone hiện tại
-  zone_test_count = 0–1 = FRESH ZONE → priority giữ nguyên
-  zone_test_count ≥ 2 = WEAK ZONE → priority hạ 1 cấp (HIGH→MEDIUM, MEDIUM→LOW)
-  zone_test_count ≥ 3 = DEAD ZONE → priority = LOW, risk = REDUCED, ghi chú cảnh báo
-
-══ BƯỚC 4: MOMENTUM DECAY CHECK — REAL-TIME ══
-  momentum_weak = TRUE nếu:
-    avg body 5 nến gần nhất < avg body impulse × MOMENTUM_DECAY
-    HOẶC wick_ratio 5 nến gần nhất > WICK_RATIO_MAX
-  IF momentum_weak + fail_structure → thêm 1 điểm EXHAUSTION
-
-══ BƯỚC 5: PHASE CLASSIFICATION ══
-  EXHAUSTION (score ≥ 3/4) → mode = NO_TRADE — block hoàn toàn, không xét tiếp
-  EXHAUSTION (score = 2/4) → mode = NO_TRADE — nếu đồng thời momentum_weak = TRUE
-  MICRO_RANGE → NO_TRADE
-  RANGE/CHOP → NO_TRADE
-  WEAK_PULLBACK (score 3/6) → NO_TRADE
-  IMPULSE → IMPULSE_WAIT
-  ACCEPTABLE_PULLBACK (score 4/6) → CONTINUATION, risk = REDUCED
-  GOOD/STRONG_PULLBACK (score ≥ 5/6) → CONTINUATION, risk = FULL
-  CONTINUATION_BASE → CONTINUATION, risk theo HTF alignment
-  REVERSAL (đủ Bước 6) → CONTINUATION hướng ngược
-
-══ BƯỚC 6: REVERSAL GATE — ĐỦ CẢ 3 ══
-  [R1] has_choch = TRUE | [R2] BOS ngược ≥ BOS_MIN | [R3] displacement ngược ≥ IMPULSE_MIN
-  → Thiếu 1 → KHÔNG đổi hướng
-
-══ BƯỚC 7: FINAL DECISION — PRIORITY TREE ══
-  P1: EXHAUSTION score ≥ 3/4 → NO_TRADE tuyệt đối
-  P2: EXHAUSTION score 2/4 + momentum_weak → NO_TRADE
-  P3: MICRO_RANGE / RANGE / CHOP / WEAK_PULLBACK → NO_TRADE
-  P4: trend_direction = NONE → NO_TRADE
-  P5: IMPULSE → IMPULSE_WAIT (chờ pullback hình thành)
-  P6: ACCEPTABLE_PULLBACK (4/6) + fresh zone → WAIT_FOR_ENTRY, risk = REDUCED (0.5R)
-  P7: GOOD/STRONG_PULLBACK (≥5/6) + fresh zone + HTF aligned → WAIT_FOR_ENTRY, risk = FULL (1R)
-  P8: GOOD/STRONG_PULLBACK + weak zone hoặc HTF conflict → WAIT_FOR_ENTRY, risk = REDUCED
-  P9: REVERSAL đủ điều kiện → WAIT_FOR_ENTRY, risk = REDUCED (luôn thận trọng khi ngược trend)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-LUẬT CỨNG — TUYỆT ĐỐI KHÔNG VI PHẠM
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ pullback_score ≤ 3/6 → NO_TRADE, không entry dù trend rõ, không ngoại lệ
-❌ pullback_score = 4/6 → chỉ được REDUCED risk (0.5R), không full risk
-❌ pullback_score ≥ 5/6 → mới được full risk (1R)
-❌ CHOP ≠ WEAK_PULLBACK ≠ MICRO_RANGE — phân biệt rõ, không gộp chung
-❌ MICRO_RANGE → NO_TRADE — overlap hẹp không phải pullback
-❌ CHOP → NO_TRADE tuyệt đối
-❌ EXHAUSTION score ≥ 3/4 → block entry, không xét pullback quality
-❌ EXHAUSTION score 2/4 + momentum_weak → block entry
-❌ HL trong downtrend = SELL zone — KHÔNG phải BUY
-❌ Zone test ≥ 2 lần → KHÔNG cho HIGH priority
-❌ mode=CONTINUATION + next_action=NO_TRADE là mâu thuẫn
-❌ mode=NO_TRADE + next_action=WAIT_FOR_ENTRY là mâu thuẫn
-❌ Trend extended + momentum_weak → KHÔNG cho FULL risk
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-NGÔN NGỮ — BẮT BUỘC 100% TIẾNG VIỆT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Tất cả nội dung giải thích trong JSON phải bằng tiếng Việt.
-Dịch thuật ngữ: BOS=Phá Cấu Trúc, CHoCH=Đổi Hướng, Displacement=Nến Đẩy Mạnh,
-Sweep=Quét Thanh Khoản, Pullback=Hồi Giá, Impulse=Sóng Đẩy, Overlap=Nến Chồng,
-Exhaustion=Kiệt Sức, Momentum=Động Lực, Range=Đi Ngang, Breakout=Phá Vỡ,
-Reversal=Đảo Chiều, Structure=Cấu Trúc, Body=Thân Nến, Wick=Bóng Nến.
-❌ CẤM dùng từ tiếng Anh trong _reason, _note, summary.
+NGÔN NGỮ: 100% tiếng Việt. BOS=Phá Cấu Trúc, CHoCH=Đổi Hướng, Displacement=Sóng Đẩy Mạnh, Sweep=Quét Thanh Khoản, Pullback=Hồi Giá, Impulse=Sóng Đẩy, Overlap=Nến Chồng, Momentum=Động Lực. Không dùng tiếng Anh trong _reason/_note/summary.
 
 Trả về DUY NHẤT JSON (không markdown, không backtick):
 {"trend_direction":"DOWN|UP|NONE","trend_direction_reason":"...","mode":"CONTINUATION|IMPULSE_WAIT|NO_TRADE","phase":"IMPULSE|PULLBACK|WEAK_PULLBACK|MICRO_RANGE|CHOP|CONTINUATION|CONTINUATION_BASE|EXHAUSTION|RANGE","entry_direction":"SELL|BUY|NONE","entry_direction_reason":"...","entry_zone":"...","htf_alignment":"ALIGNED|CONFLICT|NEUTRAL","risk_level":"FULL|REDUCED|NONE","risk_reason":"...","invalidation":"...","next_action":"WAIT_FOR_ENTRY|WAIT_PULLBACK|NO_TRADE","priority":"HIGH|MEDIUM|LOW","summary":"...","structure_detail":"...","recent_impulse":true,"recent_impulse_note":"...","has_choch":false,"choch_note":"...","fail_structure":false,"fail_structure_note":"...","exhaustion_score":"X/4","exhaustion_check":"YES_EXHAUSTION|NO_EXHAUSTION","exhaustion_reason":"...","trend_extended":false,"trend_extended_note":"...","momentum_weak":false,"momentum_weak_note":"...","micro_range":false,"micro_range_note":"...","pullback_quality":"STRONG|GOOD|ACCEPTABLE|WEAK|CHOP|MICRO_RANGE|N_A","pullback_quality_score":"X/6","pullback_quality_reason":"...","no_trade_reason":"...","zone_test_count":0,"zone_freshness":"FRESH|WEAK|DEAD","sweep_detected":false,"sweep_note":"..."}`;
 
     const b64=img.split(',')[1];
     const mtype=img.split(';')[0].split(':')[1];
-    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1500,system:sys,messages:[{role:'user',content:[
+    const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:2000,system:sys,messages:[{role:'user',content:[
       {type:'image',source:{type:'base64',media_type:mtype,data:b64}},
       {type:'text',text:`Phân tích chart M15 XAUUSD này. HTF Bias: ${HTF_BIAS}. Trả về JSON thuần túy, KHÔNG markdown, KHÔNG backtick. 100% tiếng Việt.`}
     ]}]});
@@ -2258,13 +2155,41 @@ async function callAPI(body, retries=3){
       const data=await res.json();
       const text=data.content.map(c=>c.text||'').join('');
       let cleaned = text.replace(/```json|```/g,'').trim();
-      // Fix truncated JSON — nếu bị cắt giữa chừng, tự đóng lại
-      if(cleaned && !cleaned.endsWith('}')) {
-        const lastBrace = cleaned.lastIndexOf('"}');
-        if(lastBrace > 0) cleaned = cleaned.substring(0, lastBrace+2) + '}';
-        else cleaned = cleaned + '"}';
+      // Robust fix: nếu JSON bị cắt, tìm { đầu tiên và } cuối cùng
+      const firstBrace = cleaned.indexOf('{');
+      const lastBrace = cleaned.lastIndexOf('}');
+      if(firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+      } else if(firstBrace !== -1) {
+        // JSON bị cắt hoàn toàn — tự đóng lại
+        cleaned = cleaned.substring(firstBrace);
+        // Đếm dấu ngoặc kép chưa đóng và đóng lại
+        const quoteCount = (cleaned.match(/(?<!\\)"/g)||[]).length;
+        if(quoteCount % 2 !== 0) cleaned += '"';
+        cleaned += '}';
       }
-      return JSON.parse(cleaned);
+      try {
+        return JSON.parse(cleaned);
+      } catch(parseErr) {
+        // Last resort: trích xuất các field quan trọng nhất
+        const extract = (key, def) => {
+          const m = cleaned.match(new RegExp('"'+key+'"\\s*:\\s*"([^"]*)"'));
+          return m ? m[1] : def;
+        };
+        return {
+          trend_direction: extract('trend_direction','NONE'),
+          mode: extract('mode','NO_TRADE'),
+          phase: extract('phase','RANGE'),
+          entry_direction: extract('entry_direction','NONE'),
+          next_action: extract('next_action','NO_TRADE'),
+          priority: extract('priority','LOW'),
+          summary: extract('summary','Lỗi phân tích — vui lòng thử lại'),
+          exhaustion_check: extract('exhaustion_check','NO_EXHAUSTION'),
+          pullback_quality: extract('pullback_quality','N_A'),
+          risk_level: extract('risk_level','NONE'),
+          _parse_error: true
+        };
+      }
     } catch(e){
       if(i===retries-1) throw e;
       if(e.message==='Failed to fetch'||e.message?.includes('overload')||e.message?.includes('Overload')){
