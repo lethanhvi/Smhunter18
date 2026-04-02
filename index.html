@@ -3439,5 +3439,29 @@ function applyReversalUI(result){
 
 </script>
 
+
+<!-- FIXED LOGIC FOR BO 3 -->
+<script>
+function classifyMarket(context){
+    if(context.displacement && context.bos && !context.sweep){
+        return "continuation";
+    }
+    if(context.sweep && context.rejection){
+        return "reversal";
+    }
+    return "unknown";
+}
+
+function getEntry(model){
+    if(model === "continuation"){
+        return "WAIT_PULLBACK_LH_ENTRY";
+    }
+    if(model === "reversal"){
+        return "WAIT_CHOCH_ENTRY";
+    }
+    return "NO_TRADE";
+}
+</script>
+
 </body>
 </html>
