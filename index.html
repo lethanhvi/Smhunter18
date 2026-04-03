@@ -2754,11 +2754,21 @@ IF B3 exhaustion ≥ 3/4:
 → DỪNG NGAY
 
 ══ RULE 0B — RANGE/CONSOLIDATION BREAKOUT DETECTION ══
-IF phase trước đó = CONSOLIDATION/RANGE NHƯNG hiện tại có:
-- BOS thoát range: close phá biên range ≥ 1 giá với nến thân lớn
-- Displacement mới: ≥ 2 nến cùng chiều sau BOS thoát range
-→ phase MỚI = IMPULSE_BREAKOUT — KHÔNG giữ label CONSOLIDATION cũ
-→ Áp dụng EXCEPTION MOMENTUM check ở trên
+
+🚨 QUY TẮC ĐỌC CHART BẮT BUỘC — PHẢI → TRÁI:
+Luôn đọc 3–5 nến GẦN NHẤT TRƯỚC (phần phải chart).
+KHÔNG gán label CONSOLIDATION nếu nến gần nhất đã thoát ra khỏi range.
+
+KIỂM TRA 5 NẾN CUỐI trước khi gán phase:
+→ IF bất kỳ nến nào trong 5 nến cuối close NGOÀI biên range cũ ≥ 0.5 giá → KHÔNG CÒN là CONSOLIDATION
+→ IF có ≥ 1 nến tiếp diễn cùng chiều sau BOS thoát → phase = IMPULSE_BREAKOUT ngay lập tức
+
+VÍ DỤ LỖI CẦN TRÁNH:
+❌ SAI: Thấy giữa chart có consolidation → label cả chart là CONSOLIDATION dù nến cuối đã BOS thoát
+✅ ĐÚNG: Phát hiện nến cuối BOS thoát range → label = IMPULSE_BREAKOUT → chạy EXCEPTION check
+
+IF phase = IMPULSE_BREAKOUT (5 nến cuối thoát range):
+→ Áp dụng EXCEPTION MOMENTUM check
 → Nếu đủ EX: model = MODEL_C_BREAKOUT | MAX = A_MINUS | TIẾP TỤC
 
 ══ MANDATORY TRIGGER — KIỂM TRA SAU RULE 0 ══
@@ -3065,10 +3075,22 @@ IF B3 exhaustion ≥ 3/4:
 → DỪNG NGAY
 
 ══ RULE 0B — RANGE/CONSOLIDATION BREAKOUT ══
-IF phase trước = CONSOLIDATION/RANGE NHƯNG hiện tại có BOS thoát range rõ ràng:
-- Close phá biên range ≥ 1 giá + ≥ 2 nến cùng chiều sau BOS thoát
-→ phase MỚI = IMPULSE_BREAKOUT — KHÔNG giữ label CONSOLIDATION cũ
-→ Áp dụng EXCEPTION MOMENTUM check ở trên
+
+🚨 QUY TẮC ĐỌC CHART BẮT BUỘC — PHẢI → TRÁI:
+Luôn đọc 3–5 nến GẦN NHẤT TRƯỚC (phần phải chart).
+KHÔNG gán label CONSOLIDATION nếu nến gần nhất đã thoát khỏi range.
+
+KIỂM TRA 5 NẾN CUỐI TRƯỚC KHI GÁN PHASE:
+→ IF bất kỳ nến nào trong 5 nến cuối close NGOÀI biên range cũ ≥ 0.5 giá → KHÔNG CÒN CONSOLIDATION
+→ IF có ≥ 1 nến tiếp diễn cùng chiều sau BOS thoát → phase = IMPULSE_BREAKOUT ngay lập tức
+
+VÍ DỤ LỖI THƯỜNG GẶP PHẢI TRÁNH:
+❌ SAI: Thấy giữa chart có vùng sideway 4653–4675 → label toàn bộ = CONSOLIDATION
+         dù nến cuối đã BOS lên 4683 với nến xanh thân lớn
+✅ ĐÚNG: Nến cuối BOS thoát 4675 → phase = IMPULSE_BREAKOUT → chạy EXCEPTION check → có thể A_MINUS
+
+IF phase = IMPULSE_BREAKOUT:
+→ Áp dụng EXCEPTION MOMENTUM check
 → Nếu đủ EX: mode = MODE_2A_BREAKOUT | MAX = A_MINUS | TIẾP TỤC
 
 ══ MANDATORY TRIGGER ══
@@ -3147,19 +3169,29 @@ CONSOLIDATION: giá đi ngang + nhiều nến overlap + ≥ 2 swing lên-xuống
 CONTINUATION: break khỏi range + displacement mới
 IMPULSE_BREAKOUT (MỚI): trước đó là CONSOLIDATION/RANGE NHƯNG hiện tại vừa có BOS thoát range rõ ràng
 
-⚠️ QUAN TRỌNG — PHASE LABEL PHẢI CẬP NHẬT REAL-TIME:
-Không giữ label cũ (CONSOLIDATION/RANGE) nếu hiện tại đã có BOS thoát range.
-Kiểm tra nến gần nhất: IF nến hiện tại close phá biên range ≥ 1 giá → phase = IMPULSE_BREAKOUT ngay lập tức.
+🚨 QUY TẮC SỐ 1 TUYỆT ĐỐI — ĐỌC CHART PHẢI → TRÁI:
+Luôn đọc nến GẦN NHẤT TRƯỚC (phần phải chart) — sau đó mới nhìn lịch sử.
+KHÔNG được gán phase dựa trên vùng giá cũ ở giữa chart nếu nến gần nhất đã thoát ra khỏi vùng đó.
+
+KIỂM TRA BẮT BUỘC TRƯỚC KHI GÁN PHASE:
+→ Nhìn 3–5 nến cuối cùng (phần phải chart): Giá đang ở đâu so với range/consolidation vừa xảy ra?
+→ IF 3–5 nến cuối đã close NGOÀI biên range cũ → phase KHÔNG CÒN là CONSOLIDATION
+→ IF nến cuối có BOS rõ (close phá swing high/low ≥ 0.5 giá) → phase = IMPULSE_BREAKOUT ngay lập tức
+→ KHÔNG label CONSOLIDATION nếu chart đang cho thấy displacement thoát range ở phần phải
+
+VÍ DỤ THỰC TẾ (lỗi phổ biến cần tránh):
+❌ SAI: "Giá đang trong consolidation 4653–4675" — nhưng nến cuối đã close tại 4683 (phá biên trên)
+✅ ĐÚNG: "Trước đó consolidation, nhưng nến gần nhất BOS thoát lên 4683 → phase = IMPULSE_BREAKOUT"
 
 BƯỚC 2 — CONSOLIDATION FILTER (có exception breakout):
-TRƯỚC TIÊN kiểm tra BOS thoát range:
-IF phase = CONSOLIDATION/RANGE NHƯNG có close phá biên trên/dưới ≥ 1 giá + ≥ 2 nến tiếp diễn cùng chiều:
+TRƯỚC TIÊN — kiểm tra 5 nến cuối cùng:
+IF bất kỳ nến nào trong 5 nến cuối close phá biên range ≥ 0.5 giá + có ≥ 1 nến tiếp diễn cùng chiều:
 → phase = IMPULSE_BREAKOUT → KHÔNG NO TRADE → chuyển sang Bước 0 EXCEPTION check
 
-IF phase = CONSOLIDATION thuần (KHÔNG có BOS thoát) → NO TRADE tuyệt đối, không phân tích tiếp
-IF số swing trong "pullback" ≥ 2 (up-down-up) VÀ không có BOS thoát → CONSOLIDATION → NO TRADE
-IF nhiều nến overlap liên tục VÀ không có BOS thoát → CONSOLIDATION → NO TRADE
-IF không tạo được HH/LL rõ VÀ không có BOS thoát → CONSOLIDATION → NO TRADE
+IF 5 nến cuối vẫn nằm trong biên range (CONSOLIDATION thuần) → NO TRADE tuyệt đối
+IF số swing trong "pullback" ≥ 2 (up-down-up) VÀ 5 nến cuối trong range → CONSOLIDATION → NO TRADE
+IF nhiều nến overlap liên tục VÀ 5 nến cuối trong range → CONSOLIDATION → NO TRADE
+IF không tạo được HH/LL rõ VÀ 5 nến cuối trong range → CONSOLIDATION → NO TRADE
 
 BƯỚC 3 — CHOP FILTER:
 IF số lần chạm 2 biên range ≥ 2 trong 20 nến → market = RANGE → BLOCK ALL TRADES
