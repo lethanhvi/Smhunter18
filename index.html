@@ -2741,17 +2741,24 @@ Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
 ══ KẾ HOẠCH BỘ 3 — BẮT BUỘC TUÂN THEO ══
 Hướng entry: ${STATE.b3EntryDirection || 'NONE'} (BẮT BUỘC — không được đổi hướng)
 Vùng entry: ${STATE.b3EntryZone || 'Chưa xác định'} (entry PHẢI trong vùng này)
+⚠️ QUAN TRỌNG — ĐỌC GIÁ ĐÚNG TỪ CHART:
+Giá hiện tại = close của NẾN CUỐI CÙNG bên phải chart (nến đang hình thành/vừa đóng)
+KHÔNG đọc từ đường kẻ ngang — đó là resistance/support cũ, KHÔNG phải giá hiện tại
+KHÔNG đọc số trên trục Y bên phải — đó chỉ là scale tham chiếu
+Ví dụ: Nếu thấy đường kẻ ở 4718 nhưng nến cuối đóng ở 4657 → giá hiện tại = 4657
+
 Phase: ${STATE.b3MarketState || '--'}
 Risk level: ${STATE.b3RiskLevel || 'REDUCED'}
 Invalidation: ${STATE.b3Invalidation || 'Chưa có'}
 Bias Bộ 1: ${STATE.bias} (chỉ ảnh hưởng TP — không khóa hướng entry)
 
+
 QUY TẮC BẮT BUỘC:
 1. Hướng entry = ${STATE.b3EntryDirection || 'NONE'} — KHÔNG ĐƯỢC PHÂN TÍCH LẠI HƯỚNG
 2. Chỉ tìm trigger (T1/T2/T3) trong vùng ${STATE.b3EntryZone || 'zone B3'}
-3. Nếu giá chưa vào vùng entry → verdict = B + đặt alert
-4. Nếu có trigger trong vùng → verdict theo chất lượng trigger
-5. KHÔNG tự chọn hướng ngược lại dù chart có vẻ ngược
+4. Nếu giá chưa vào vùng entry → verdict = B + đặt alert tại vùng đó
+5. Nếu có trigger trong vùng → verdict theo chất lượng trigger
+6. KHÔNG tự chọn hướng ngược lại dù chart có vẻ ngược
 
 ═══════════════════════════════
 CỐT LÕI: TÌM TRIGGER TRONG ZONE — KHÔNG RE-ANALYZE
@@ -3008,18 +3015,25 @@ Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
 ══ KẾ HOẠCH BỘ 3 — BẮT BUỘC TUÂN THEO ══
 Hướng entry: ${STATE.b3EntryDirection || 'NONE'} (BẮT BUỘC — không được đổi hướng)
 Vùng entry: ${STATE.b3EntryZone || 'Chưa xác định'} (entry PHẢI trong vùng này)
+⚠️ QUAN TRỌNG — ĐỌC GIÁ ĐÚNG TỪ CHART:
+Giá hiện tại = close của NẾN CUỐI CÙNG bên phải chart (nến đang hình thành/vừa đóng)
+KHÔNG đọc từ đường kẻ ngang — đó là resistance/support cũ, KHÔNG phải giá hiện tại
+KHÔNG đọc số trên trục Y bên phải — đó chỉ là scale tham chiếu
+Ví dụ: Nếu thấy đường kẻ ở 4718 nhưng nến cuối đóng ở 4657 → giá hiện tại = 4657
+
 Phase: ${STATE.b3MarketState || '--'}
 Risk level: ${STATE.b3RiskLevel || 'REDUCED'}
 Invalidation: ${STATE.b3Invalidation || 'Chưa có'}
 Bias Bộ 1: ${STATE.bias} (chỉ ảnh hưởng TP — không khóa hướng entry)
 Context Bộ 2: ${STATE.b2Verdict||'Không có'} — ${STATE.b2Narrative||'Không có'}
 
+
 QUY TẮC BẮT BUỘC:
 1. Hướng entry = ${STATE.b3EntryDirection || 'NONE'} — KHÔNG ĐƯỢC PHÂN TÍCH LẠI HƯỚNG
 2. Chỉ tìm trigger (T1/T2/T3) trong vùng ${STATE.b3EntryZone || 'zone B3'}
-3. Nếu giá chưa vào vùng entry → verdict = B + đặt alert tại vùng đó
-4. Nếu có trigger trong vùng → verdict theo chất lượng trigger
-5. KHÔNG tự chọn hướng ngược lại dù chart có vẻ ngược
+4. Nếu giá chưa vào vùng entry → verdict = B + đặt alert tại vùng đó
+5. Nếu có trigger trong vùng → verdict theo chất lượng trigger
+6. KHÔNG tự chọn hướng ngược lại dù chart có vẻ ngược
 
 ═══════════════════════════════
 CỐT LÕI: TÌM TRIGGER TRONG ZONE — KHÔNG RE-ANALYZE
