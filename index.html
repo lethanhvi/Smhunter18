@@ -877,6 +877,7 @@ const STATE = {
   b3EntryZone:'',
   b3PullbackQuality:'N_A',
   b3PullbackScore:0,
+  b3RecentImpulse:false,
   b4Entry:'',
   b4RR:'',
   kzActive:false,
@@ -1800,11 +1801,12 @@ Trả về DUY NHẤT JSON (không markdown, không backtick):
     STATE.b3InZone      = r.in_zone === true || r.in_zone === 'true';
     STATE.b3InZoneNote  = r.in_zone_note || '';
     STATE.b3ExhaustionScore = parseInt((r.exhaustion_score||'0/4').split('/')[0]) || 0;
+    STATE.b3RecentImpulse   = r.recent_impulse === true || r.recent_impulse === 'true';
     // Auto-map phase → mode cho đúng logic
-    const phaseToMode = {IMPULSE:'IMPULSE_WAIT',IMPULSE_PEAK:'IMPULSE_WAIT',PULLBACK:'CONTINUATION',READY:'CONTINUATION',CONTINUATION:'CONTINUATION',CONTINUATION_BASE:'CONTINUATION'};
+    const phaseToMode = {IMPULSE:'IMPULSE_WAIT',IMPULSE_PEAK:'IMPULSE_WAIT',IMPULSE_BREAKOUT:'CONTINUATION',PULLBACK:'CONTINUATION',READY:'CONTINUATION',CONTINUATION:'CONTINUATION',CONTINUATION_BASE:'CONTINUATION'};
     if(phaseToMode[r.phase]) STATE.b3Mode = phaseToMode[r.phase];
-    // Auto-unlock B4 nếu phase = PULLBACK/READY hoặc in_zone
-    if(STATE.b3InZone || ['PULLBACK','READY','CONTINUATION','CONTINUATION_BASE'].includes(r.phase)) {
+    // Auto-unlock B4 nếu phase = PULLBACK/READY/IMPULSE_BREAKOUT hoặc in_zone
+    if(STATE.b3InZone || ['PULLBACK','READY','CONTINUATION','CONTINUATION_BASE','IMPULSE_BREAKOUT'].includes(r.phase)) {
       STATE.b3NextAction = 'WAIT_FOR_ENTRY';
     }
     // Legacy compat for Bộ 2
@@ -2577,8 +2579,19 @@ function getTradePermission() {
       reason: `Exhaustion ${exhScore}/4 — Trend đã đi quá xa. Chặn trend entry. Chỉ cho phép reversal setup.` };
   }
 
-  // ── IMPULSE / IMPULSE_PEAK — chờ pullback ──
+  // ── IMPULSE_BREAKOUT — thoát range, cho phép 0.5R ──
+  if(phase === 'IMPULSE_BREAKOUT') {
+    return { allowed: true, risk: 'REDUCED', level: 'REDUCED',
+      reason: `Phase IMPULSE_BREAKOUT — BOS thoát range xác nhận → Cho phép entry HALF risk 0.5R (Mode C)` };
+  }
+
+  // ── IMPULSE / IMPULSE_PEAK — chờ pullback, TRỪ KHI momentum cực mạnh ──
   if(phase === 'IMPULSE' || phase === 'IMPULSE_PEAK' || mode === 'IMPULSE_WAIT') {
+    // EXCEPTION: B3 xác nhận recent_impulse + giá trong zone → cho phép 0.5R
+    if(inZone && STATE.b3RecentImpulse === true) {
+      return { allowed: true, risk: 'REDUCED', level: 'REDUCED',
+        reason: `Phase ${phase} + Giá trong zone + Impulse mạnh → Mở Bộ 4 HALF risk 0.5R (Mode C Momentum)` };
+    }
     return { allowed: false, risk: 'NONE', level: 'WAIT',
       reason: `Phase: ${phase || 'IMPULSE'} — BOS xảy ra nhưng chưa có pullback (retrace < 20%, chưa tạo LH/HL, < 2 nến ngược) → Chờ Bộ 3 detect PULLBACK` };
   }
@@ -3412,7 +3425,7 @@ function resetAll(){
   Object.assign(STATE,{
     bias:'',b2Verdict:'',b2Narrative:'',b4Entry:'',b4RR:'',
     b3TrendDir:'',b3Mode:'',b3MarketState:'',b3NextAction:'',b3EntryDirection:'',
-    b3RiskLevel:'FULL',b3Invalidation:'',b3EntryZone:'',
+    b3RiskLevel:'FULL',b3Invalidation:'',b3EntryZone:'',b3RecentImpulse:false,
     imgs:{b1_d1:null,b1_h4:null,b2_h1:null,b2_m15:null,b4_m5:null},
     psychAnswers:{},b3Answers:{},
     stages:{psych:false,bo1:false,bo3:false,bo2:false,bo4:false,bo5:false},
