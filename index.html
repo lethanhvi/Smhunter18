@@ -1774,6 +1774,19 @@ B7-PRIORITY: P1 EXHAUSTION≥3/4→NO_TRADE | P2 MICRO/RANGE/CHOP/YẾU→NO_TRA
 
 LUẬT CỨNG: Score≤3→NO_TRADE | Score=4→0.5R | Score≥5→1R | CHOP≠YẾU≠MICRO_RANGE phân biệt rõ | Zone test≥2→hạ priority
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ QUY TẮC ĐỌC GIÁ VÀ ENTRY ZONE — BẮT BUỘC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GIÁ HIỆN TẠI = close của NẾN CUỐI CÙNG bên phải chart (nến đang hình thành/vừa đóng).
+KHÔNG nhầm đường kẻ ngang (resistance/support/alert line) với giá hiện tại.
+KHÔNG đọc số trên trục Y bên phải — đó chỉ là scale tham chiếu.
+Ví dụ: Chart có đường kẻ đỏ ở 4718 nhưng nến cuối đóng ở 4649 → giá hiện tại = 4649.
+
+ENTRY ZONE phải dựa trên GIÁ HIỆN TẠI + cấu trúc gần nhất:
+→ entry_zone = vùng giá GẦN VỚI NẾN CUỐI (±20–30 giá), KHÔNG phải vùng resistance/support xa hàng chục giá
+→ Nếu giá hiện tại = 4649, entry_zone BUY hợp lý = 4640–4660, KHÔNG phải 4718–4725
+→ entry_zone phải là nơi giá CÓ THỂ CHẠM trong vài nến tiếp theo
+
 NGÔN NGỮ: 100% tiếng Việt. BOS=Phá Cấu Trúc, CHoCH=Đổi Hướng, Displacement=Sóng Đẩy Mạnh, Sweep=Quét Thanh Khoản, Pullback=Hồi Giá, Impulse=Sóng Đẩy, Overlap=Nến Chồng, Momentum=Động Lực. Không dùng tiếng Anh trong _reason/_note/summary.
 
 Trả về DUY NHẤT JSON (không markdown, không backtick):
