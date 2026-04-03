@@ -1777,15 +1777,60 @@ LUẬT CỨNG: Score≤3→NO_TRADE | Score=4→0.5R | Score≥5→1R | CHOP≠Y
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️ QUY TẮC ĐỌC GIÁ VÀ ENTRY ZONE — BẮT BUỘC
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-GIÁ HIỆN TẠI = close của NẾN CUỐI CÙNG bên phải chart (nến đang hình thành/vừa đóng).
-KHÔNG nhầm đường kẻ ngang (resistance/support/alert line) với giá hiện tại.
-KHÔNG đọc số trên trục Y bên phải — đó chỉ là scale tham chiếu.
-Ví dụ: Chart có đường kẻ đỏ ở 4718 nhưng nến cuối đóng ở 4649 → giá hiện tại = 4649.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 BƯỚC 0 BẮT BUỘC — ĐỌC GIÁ VÀ XÁC ĐỊNH ZONE TRƯỚC KHI PHÂN TÍCH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-ENTRY ZONE phải dựa trên GIÁ HIỆN TẠI + cấu trúc gần nhất:
-→ entry_zone = vùng giá GẦN VỚI NẾN CUỐI (±20–30 giá), KHÔNG phải vùng resistance/support xa hàng chục giá
-→ Nếu giá hiện tại = 4649, entry_zone BUY hợp lý = 4640–4660, KHÔNG phải 4718–4725
-→ entry_zone phải là nơi giá CÓ THỂ CHẠM trong vài nến tiếp theo
+BƯỚC A — XÁC ĐỊNH GIÁ HIỆN TẠI (làm đầu tiên, trước mọi phân tích):
+→ Nhìn vào NẾN CUỐI CÙNG bên PHẢI NHẤT của chart (cột nến ngoài cùng phải)
+→ Đọc giá CLOSE của nến đó = GIÁ HIỆN TẠI
+→ Ghi vào summary: "Giá hiện tại = X"
+→ KHÔNG đọc đường kẻ ngang màu đỏ/xanh/vàng/trắng trên chart — đó là mức cũ được vẽ tay, KHÔNG phải giá hiện tại
+→ KHÔNG đọc số trên trục Y bên phải — đó là scale tham chiếu
+
+KIỂM TRA CHÉO BẮT BUỘC (sau khi đọc giá):
+Hỏi: "Nến cuối cùng có nằm DƯỚI các đường kẻ ngang không?"
+→ Nếu CÓ (nến cuối thấp hơn đường kẻ): xác nhận giá = close nến cuối, đường kẻ = resistance phía trên
+→ Nếu KHÔNG: xác nhận lại
+
+VÍ DỤ THỰC TẾ (lỗi phổ biến nhất phải tránh):
+Chart có đường kẻ đỏ ở 4722, đường cyan ở 4718 nổi bật
+Nhưng nến cuối cùng bên phải đóng ở 4655
+→ GIÁ HIỆN TẠI = 4655 (KHÔNG phải 4718 hay 4722)
+→ 4718/4722 là resistance PHÍA TRÊN, giá chưa chạm tới
+
+BƯỚC B — XÁC ĐỊNH ENTRY ZONE (dựa trên giá hiện tại vừa đọc được):
+entry_zone PHẢI nằm trong khoảng ±30 giá so với GIÁ HIỆN TẠI.
+entry_zone PHẢI là nơi giá CÓ THỂ CHẠM trong 3–10 nến tiếp theo.
+
+LOGIC THEO PHASE:
+[PULLBACK BUY — giá đang giảm]:
+  entry_zone = vùng support GẦN NHẤT PHÍA DƯỚI giá hiện tại (FVG, OB, HL cũ)
+  Ví dụ: Giá hiện tại = 4655, đang pullback giảm
+  → entry_zone BUY = 4630–4650 (nơi có thể có rejection bên dưới)
+  → KHÔNG phải 4680–4700 (phía trên, giá phải tăng mới chạm — đó là target, không phải entry)
+
+[PULLBACK SELL — giá đang tăng]:
+  entry_zone = vùng resistance GẦN NHẤT PHÍA TRÊN giá hiện tại
+  Ví dụ: Giá hiện tại = 4655, đang pullback tăng
+  → entry_zone SELL = 4670–4690
+
+[READY — giá đã trong zone]:
+  entry_zone bao gồm giá hiện tại → in_zone = TRUE
+
+BẢNG KIỂM TRA BẮT BUỘC trước khi output entry_zone:
+□ Giá hiện tại (nến cuối) = bao nhiêu? → ghi vào summary
+□ entry_zone có trong ±30 giá so với giá hiện tại? → nếu KHÔNG → sửa lại
+□ Giá có thể chạm entry_zone trong 3–10 nến tới không? → nếu KHÔNG → sửa lại
+□ entry_zone có bị kéo về phía đường kẻ ngang cũ không? → nếu CÓ → sửa lại
+
+LỖI PHỔ BIẾN PHẢI TRÁNH:
+❌ SAI: Giá hiện tại 4655, đề xuất entry_zone = 4680–4700 (trên giá 25–45 điểm — đây là target, không phải entry BUY)
+❌ SAI: Nhìn thấy đường kẻ 4718 nổi bật → ghi entry_zone = 4718–4725 (đây là level cũ phía trên)
+✅ ĐÚNG: Giá hiện tại 4655, đang pullback từ 4720, HL cũ ở 4634 → entry_zone BUY = 4630–4650
+✅ ĐÚNG: Giá hiện tại 4655, in_zone = TRUE nếu zone là 4640–4665
+
 
 NGÔN NGỮ: 100% tiếng Việt. BOS=Phá Cấu Trúc, CHoCH=Đổi Hướng, Displacement=Sóng Đẩy Mạnh, Sweep=Quét Thanh Khoản, Pullback=Hồi Giá, Impulse=Sóng Đẩy, Overlap=Nến Chồng, Momentum=Động Lực. Không dùng tiếng Anh trong _reason/_note/summary.
 
@@ -2754,11 +2799,19 @@ Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
 ══ KẾ HOẠCH BỘ 3 — BẮT BUỘC TUÂN THEO ══
 Hướng entry: ${STATE.b3EntryDirection || 'NONE'} (BẮT BUỘC — không được đổi hướng)
 Vùng entry: ${STATE.b3EntryZone || 'Chưa xác định'} (entry PHẢI trong vùng này)
-⚠️ QUAN TRỌNG — ĐỌC GIÁ ĐÚNG TỪ CHART:
-Giá hiện tại = close của NẾN CUỐI CÙNG bên phải chart (nến đang hình thành/vừa đóng)
-KHÔNG đọc từ đường kẻ ngang — đó là resistance/support cũ, KHÔNG phải giá hiện tại
-KHÔNG đọc số trên trục Y bên phải — đó chỉ là scale tham chiếu
-Ví dụ: Nếu thấy đường kẻ ở 4718 nhưng nến cuối đóng ở 4657 → giá hiện tại = 4657
+🚨 QUY TẮC CỨNG — ĐỌC GIÁ VÀ SO SÁNH ZONE:
+→ Giá hiện tại = close NẾN CUỐI CÙNG bên phải chart (cực phải, đang hình thành)
+→ KHÔNG đọc đường kẻ ngang màu đỏ/xanh/vàng — đó là level cũ vẽ tay
+→ KHÔNG đọc số trên trục Y — đó chỉ là scale tham chiếu
+→ VÍ DỤ: Chart có đường đỏ 4722, đường cyan 4718, nhưng nến cuối ở 4657 → GIÁ = 4657
+
+BẢNG KIỂM TRA BẮT BUỘC (thực hiện trước khi output):
+□ Bước 1: Đọc giá nến cuối (cực phải chart) = X
+□ Bước 2: Vùng entry bộ 3 = ${STATE.b3EntryZone || 'zone B3'}
+□ Bước 3: X có nằm trong vùng entry không?
+   → Nếu CÓ → tìm trigger T1/T2/T3 → verdict theo chất lượng
+   → Nếu KHÔNG → verdict = B, alert_zone = ${STATE.b3EntryZone || 'zone B3'}
+❌ LỖI PHỔ BIẾN: Đọc đường kẻ 4718 thay vì nến cuối 4657 → so sánh sai → verdict sai
 
 Phase: ${STATE.b3MarketState || '--'}
 Risk level: ${STATE.b3RiskLevel || 'REDUCED'}
@@ -3028,11 +3081,19 @@ Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
 ══ KẾ HOẠCH BỘ 3 — BẮT BUỘC TUÂN THEO ══
 Hướng entry: ${STATE.b3EntryDirection || 'NONE'} (BẮT BUỘC — không được đổi hướng)
 Vùng entry: ${STATE.b3EntryZone || 'Chưa xác định'} (entry PHẢI trong vùng này)
-⚠️ QUAN TRỌNG — ĐỌC GIÁ ĐÚNG TỪ CHART:
-Giá hiện tại = close của NẾN CUỐI CÙNG bên phải chart (nến đang hình thành/vừa đóng)
-KHÔNG đọc từ đường kẻ ngang — đó là resistance/support cũ, KHÔNG phải giá hiện tại
-KHÔNG đọc số trên trục Y bên phải — đó chỉ là scale tham chiếu
-Ví dụ: Nếu thấy đường kẻ ở 4718 nhưng nến cuối đóng ở 4657 → giá hiện tại = 4657
+🚨 QUY TẮC CỨNG — ĐỌC GIÁ VÀ SO SÁNH ZONE:
+→ Giá hiện tại = close NẾN CUỐI CÙNG bên phải chart (cực phải, đang hình thành)
+→ KHÔNG đọc đường kẻ ngang màu đỏ/xanh/vàng — đó là level cũ vẽ tay
+→ KHÔNG đọc số trên trục Y — đó chỉ là scale tham chiếu
+→ VÍ DỤ: Chart có đường đỏ 4722, đường cyan 4718, nhưng nến cuối ở 4657 → GIÁ = 4657
+
+BẢNG KIỂM TRA BẮT BUỘC (thực hiện trước khi output):
+□ Bước 1: Đọc giá nến cuối (cực phải chart) = X
+□ Bước 2: Vùng entry bộ 3 = ${STATE.b3EntryZone || 'zone B3'}
+□ Bước 3: X có nằm trong vùng entry không?
+   → Nếu CÓ → tìm trigger T1/T2/T3 → verdict theo chất lượng
+   → Nếu KHÔNG → verdict = B, alert_zone = ${STATE.b3EntryZone || 'zone B3'}
+❌ LỖI PHỔ BIẾN: Đọc đường kẻ 4718 thay vì nến cuối 4657 → so sánh sai → verdict sai
 
 Phase: ${STATE.b3MarketState || '--'}
 Risk level: ${STATE.b3RiskLevel || 'REDUCED'}
