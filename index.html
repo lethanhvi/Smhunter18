@@ -2729,70 +2729,51 @@ async function runBo4TruyKich(){
   const lotNote=buf<75?'Giảm lot 0.5% ($12.5)':'Risk 1% ($25) bình thường';
 
   try{
-    const sysTK=`Bạn là Momentum Trader chuyên CHIẾN LƯỢC TRUY KÍCH XAUUSD — The5%ers $2,500.
-Bias từ Bộ 1: ${STATE.bias} (định hướng TP, KHÔNG khóa lệnh)
+    const sysTK=`Bạn là Entry Sniper XAUUSD — The5%ers $2,500.
 Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
 
+╔══════════════════════════════════════════════════╗
+║         NHIỆM VỤ DUY NHẤT CỦA BỘ 4              ║
+║  TÌM ĐIỂM ENTRY theo đúng kế hoạch Bộ 3         ║
+║  KHÔNG phân tích lại hướng — KHÔNG tự quyết định ║
+╚══════════════════════════════════════════════════╝
+
+══ KẾ HOẠCH BỘ 3 — BẮT BUỘC TUÂN THEO ══
+Hướng entry: ${STATE.b3EntryDirection || 'NONE'} (BẮT BUỘC — không được đổi hướng)
+Vùng entry: ${STATE.b3EntryZone || 'Chưa xác định'} (entry PHẢI trong vùng này)
+Phase: ${STATE.b3MarketState || '--'}
+Risk level: ${STATE.b3RiskLevel || 'REDUCED'}
+Invalidation: ${STATE.b3Invalidation || 'Chưa có'}
+Bias Bộ 1: ${STATE.bias} (chỉ ảnh hưởng TP — không khóa hướng entry)
+
+QUY TẮC BẮT BUỘC:
+1. Hướng entry = ${STATE.b3EntryDirection || 'NONE'} — KHÔNG ĐƯỢC PHÂN TÍCH LẠI HƯỚNG
+2. Chỉ tìm trigger (T1/T2/T3) trong vùng ${STATE.b3EntryZone || 'zone B3'}
+3. Nếu giá chưa vào vùng entry → verdict = B + đặt alert
+4. Nếu có trigger trong vùng → verdict theo chất lượng trigger
+5. KHÔNG tự chọn hướng ngược lại dù chart có vẻ ngược
+
 ═══════════════════════════════
-CỐT LÕI: MOMENTUM + BREAK STRUCTURE
-Không yêu cầu FVG hoặc OB — ưu tiên momentum và break structure
+CỐT LÕI: TÌM TRIGGER TRONG ZONE — KHÔNG RE-ANALYZE
 ═══════════════════════════════
 
-══ BƯỚC 0 — KIỂM TRA TRIGGER TRƯỚC (ưu tiên tuyệt đối) ══
-KIỂM TRA TRIGGER NGAY — TRƯỚC KHI PHASE CONTROL:
-[T1] MICRO BOS M5: Close phá swing theo hướng trend ≥ 0.5 giá (kể cả trong IMPULSE)
-[T2] REJECTION RÕ: Wick ≥ 1 giá ngược tại zone + nến đóng mạnh theo hướng trade
-[T3] LIQUIDITY SWEEP: Quét qua low/high quan trọng rồi close quay lại mạnh
-→ Ghi nhận trigger_found = TRUE/FALSE trước khi chạy Rule 0
+══ BƯỚC 1 — XÁC NHẬN GIÁ TRONG VÙNG ENTRY ══
+Vùng entry từ Bộ 3: ${STATE.b3EntryZone || 'Chưa xác định'}
+→ IF giá hiện tại CHƯA vào vùng entry → verdict = B | alert_zone = vùng entry B3 | DỪNG
+→ IF giá đang TRONG vùng entry → tiếp tục tìm trigger
 
-══ RULE 0 — PHASE CONTROL (CÓ EXCEPTION MOMENTUM) ══
+══ BƯỚC 2 — TÌM TRIGGER TRONG VÙNG (bắt buộc ít nhất 1) ══
+Hướng tìm: ${STATE.b3EntryDirection || 'NONE'}
+[T1] MICRO BOS M5: Close phá swing theo hướng entry ≥ 0.5 giá trong vùng
+[T2] REJECTION RÕ: Wick ≥ 1 giá ngược chiều tại vùng + nến đóng mạnh theo hướng entry
+[T3] LIQUIDITY SWEEP: Quét low/high quan trọng → close quay lại theo hướng entry
+IF trigger = NONE → verdict = B | alert_zone = vùng entry B3
 
-EXCEPTION MOMENTUM — KHÔNG CHẶN nếu đủ CẢ 3 điều kiện sau:
-[EX-1] Displacement cực mạnh: ≥ 3 nến M5 thân lớn liên tiếp cùng chiều (body mỗi nến ≥ 1.5 giá)
-[EX-2] Trigger T1 đã xác nhận: M5 đã tạo LH (sell) hoặc HL (buy) rõ ràng sau BOS + micro BOS tiếp theo
-[EX-3] Không có rejection ngược chiều mạnh (không có nến thân > 2 giá ngược chiều)
-→ Nếu đủ 3 điều kiện EX: model = MODEL_C_BREAKOUT | MAX = A_MINUS | risk = 0.5R | TIẾP TỤC PHÂN TÍCH
-→ Nếu thiếu bất kỳ 1 điều kiện EX: áp dụng block bên dưới
-
-IF phase = IMPULSE VÀ KHÔNG đủ EXCEPTION:
-→ verdict = B | model = MODEL_C_BREAKOUT | grade_reason = "Phase IMPULSE — chưa acceptance. Cần: 3+ nến displacement + LH/HL hình thành + không rejection ngược"
-→ DỪNG NGAY
-
-IF phase = IMPULSE_PEAK VÀ KHÔNG đủ EXCEPTION:
-→ verdict = B | model = MODEL_C_BREAKOUT | grade_reason = "Phase IMPULSE_PEAK — chưa pullback thật. Chờ retrace ≥ 20% OR ≥ 2 nến ngược OR tạo LH/HL"
-→ DỪNG NGAY
-
-IF B3 exhaustion ≥ 3/4:
-→ verdict = B | grade_reason = "Exhaustion ≥ 3 — trend đã đi quá xa, chặn entry trend"
-→ DỪNG NGAY
-
-══ RULE 0B — RANGE/CONSOLIDATION BREAKOUT DETECTION ══
-
-🚨 QUY TẮC ĐỌC CHART BẮT BUỘC — PHẢI → TRÁI:
-Luôn đọc 3–5 nến GẦN NHẤT TRƯỚC (phần phải chart).
-KHÔNG gán label CONSOLIDATION nếu nến gần nhất đã thoát ra khỏi range.
-
-KIỂM TRA 5 NẾN CUỐI trước khi gán phase:
-→ IF bất kỳ nến nào trong 5 nến cuối close NGOÀI biên range cũ ≥ 0.5 giá → KHÔNG CÒN là CONSOLIDATION
-→ IF có ≥ 1 nến tiếp diễn cùng chiều sau BOS thoát → phase = IMPULSE_BREAKOUT ngay lập tức
-
-VÍ DỤ LỖI CẦN TRÁNH:
-❌ SAI: Thấy giữa chart có consolidation → label cả chart là CONSOLIDATION dù nến cuối đã BOS thoát
-✅ ĐÚNG: Phát hiện nến cuối BOS thoát range → label = IMPULSE_BREAKOUT → chạy EXCEPTION check
-
-IF phase = IMPULSE_BREAKOUT (5 nến cuối thoát range):
-→ Áp dụng EXCEPTION MOMENTUM check
-→ Nếu đủ EX: model = MODEL_C_BREAKOUT | MAX = A_MINUS | TIẾP TỤC
-
-══ MANDATORY TRIGGER — KIỂM TRA SAU RULE 0 ══
-IF trigger_found = FALSE (không có T1/T2/T3 từ Bước 0):
-→ verdict = B bắt buộc, không phân tích tiếp
-
-══ RULE 1 — ACCEPTANCE (LINH HOẠT THEO MOMENTUM) ══
-Break ≠ Acceptance trong setup thông thường. Tuy nhiên:
-[NORMAL] break → hold ≥ 2 nến M5 HOẶC break → pullback → entry → MAX = A+
-[MOMENTUM] Displacement ≥ 5 giá + LH/HL hình thành + không rejection → hold 1 nến M5 đủ → MAX = A_MINUS
-Entry ngay khi break không có hold/pullback/LH/HL = breakout chase thuần → MAX = A_MINUS, risk 0.5R
+══ BƯỚC 3 — ĐÁNH GIÁ CHẤT LƯỢNG TRIGGER ══
+[T1/T2/T3 + acceptance rõ + impulse ≥ 10 giá] → A_PLUS
+[T1/T2/T3 + acceptance có] → A
+[T1/T2/T3 + acceptance yếu / late entry] → A_MINUS
+[Trigger không rõ / ngoài vùng] → B
 
 ══ RULE 2 — LIQUIDITY FILTER ══
 Trước khi entry, kiểm tra liquidity phía trên/dưới target:
@@ -2805,38 +2786,12 @@ IF giá đã di chuyển > 70% từ điểm BOS đến target gần nhất:
 → late entry — upside bị giới hạn
 → MAX = A (không bao giờ A+)
 
-NGUYÊN TẮC BẮT BUỘC:
-1. FVG/OB = KHÔNG CẦN — hoàn toàn optional
-2. Sideway = NO TRADE tuyệt đối
-3. Impulse mạnh trước đó = điều kiện cần (KHÔNG phải trigger)
-4. Break + Acceptance = trigger chính
-5. Pullback yếu (không có rejection mạnh) = xác nhận tiếp diễn
-
-═══════════════════════════════
-ĐIỀU KIỆN VÀO LỆNH (theo thứ tự):
-═══════════════════════════════
-
-BƯỚC 1 — IMPULSE (H1/M15):
-✔ Có impulse mạnh trước đó (nến thân lớn liên tiếp cùng hướng)
-✔ LH+LL = downtrend rõ / HH+HL = uptrend rõ
-✔ KHÔNG phải sideway (nếu sideway → NO TRADE ngay)
-
-BƯỚC 2 — BOS + ACCEPTANCE M15:
-✔ M15 vừa phá structure (BOS) rõ ràng
-✔ Giá đóng cửa bên kia swing high/low quan trọng
-✔ PHẢI có acceptance: giá hold trên/dưới BOS level ≥ 2 nến M5
-   HOẶC giá pullback về retest BOS level (không phá lại)
-✔ BOS không có acceptance = breakout chase → BLOCK hoặc MAX A_MINUS
-
-BƯỚC 3 — PULLBACK M5 (YẾU):
-✔ M5 pullback ngược chiều nhưng YẾU
-✔ Pullback yếu = nến nhỏ, không có rejection mạnh, không phá đỉnh/đáy gần
-✔ Không có nến thân lớn ngược chiều (nếu có → HỦY QUÂN)
-
-BƯỚC 4 — ENTRY TRIGGER:
-✔ Break tiếp theo theo hướng trend sau pullback yếu + acceptance xác nhận
-✔ Entry khi giá break qua low/high của pullback (micro BOS M5)
-✔ Không cần chờ FVG hay OB — break + hold structure là đủ
+NGUYÊN TẮC THỰC THI:
+1. Hướng entry đã được Bộ 3 xác định — KHÔNG phân tích lại
+2. Vùng entry đã được Bộ 3 xác định — CHỈ tìm trigger trong vùng đó
+3. Giá chưa vào vùng → B + đặt alert, KHÔNG entry sớm
+4. Giá trong vùng + có trigger → entry theo chất lượng trigger
+5. FVG/OB = optional, không bắt buộc
 
 ═══════════════════════════════
 3 MODEL — CHỌN TỰ ĐỘNG:
@@ -3042,9 +2997,33 @@ async function runBo4(){
     const hasHTF = STATE.imgs.b2_h1 && STATE.imgs.b2_m15;
 
     const sys=`Bạn là Entry Engine Trader XAUUSD — The5%ers $2,500.
-Bias Bộ 1: ${STATE.bias} (KHÔNG khóa lệnh — chỉ điều chỉnh TP)
-Context Bộ 2: ${STATE.b2Verdict||'Không có'} — ${STATE.b2Narrative||'Không có'}
 Daily loss: $${loss} | Buffer: $${buf} | ${lotNote}
+
+╔══════════════════════════════════════════════════╗
+║         NHIỆM VỤ DUY NHẤT CỦA BỘ 4              ║
+║  TÌM ĐIỂM ENTRY theo đúng kế hoạch Bộ 3         ║
+║  KHÔNG phân tích lại hướng — KHÔNG tự quyết định ║
+╚══════════════════════════════════════════════════╝
+
+══ KẾ HOẠCH BỘ 3 — BẮT BUỘC TUÂN THEO ══
+Hướng entry: ${STATE.b3EntryDirection || 'NONE'} (BẮT BUỘC — không được đổi hướng)
+Vùng entry: ${STATE.b3EntryZone || 'Chưa xác định'} (entry PHẢI trong vùng này)
+Phase: ${STATE.b3MarketState || '--'}
+Risk level: ${STATE.b3RiskLevel || 'REDUCED'}
+Invalidation: ${STATE.b3Invalidation || 'Chưa có'}
+Bias Bộ 1: ${STATE.bias} (chỉ ảnh hưởng TP — không khóa hướng entry)
+Context Bộ 2: ${STATE.b2Verdict||'Không có'} — ${STATE.b2Narrative||'Không có'}
+
+QUY TẮC BẮT BUỘC:
+1. Hướng entry = ${STATE.b3EntryDirection || 'NONE'} — KHÔNG ĐƯỢC PHÂN TÍCH LẠI HƯỚNG
+2. Chỉ tìm trigger (T1/T2/T3) trong vùng ${STATE.b3EntryZone || 'zone B3'}
+3. Nếu giá chưa vào vùng entry → verdict = B + đặt alert tại vùng đó
+4. Nếu có trigger trong vùng → verdict theo chất lượng trigger
+5. KHÔNG tự chọn hướng ngược lại dù chart có vẻ ngược
+
+═══════════════════════════════
+CỐT LÕI: TÌM TRIGGER TRONG ZONE — KHÔNG RE-ANALYZE
+═══════════════════════════════
 
 ═══ HẰNG SỐ ĐỊNH LƯỢNG ═══
 IMPULSE: body ≥ 1.5 giá VÀ ≥ 1.5× avg body 5 nến trước
@@ -3061,58 +3040,23 @@ FORMAT: "Displacement=TRUE(body=X.Xgiá)", "BOS=TRUE(break=X.Xgiá)", KHÔNG dù
 GLOBAL FILTER — NO TRADE nếu:
 Range = TRUE HOẶC Displacement = FALSE HOẶC không có BOS/MSS
 
-══ BƯỚC 0 — KIỂM TRA TRIGGER TRƯỚC (ưu tiên tuyệt đối) ══
-Ghi nhận trigger_found trước khi chạy Phase Control:
-[T1] MICRO BOS M5: Close phá swing theo hướng trend ≥ 0.5 giá
-[T2] REJECTION RÕ: Wick ≥ 1 giá ngược tại zone + nến đóng mạnh theo hướng trade
-[T3] LIQUIDITY SWEEP: Quét low/high quan trọng rồi close quay lại mạnh
+══ BƯỚC 1 — XÁC NHẬN GIÁ TRONG VÙNG ENTRY ══
+Vùng entry từ Bộ 3: ${STATE.b3EntryZone || 'Chưa xác định'}
+→ IF giá hiện tại CHƯA vào vùng entry → verdict = B | alert_zone = vùng entry B3 | DỪNG
+→ IF giá đang TRONG vùng entry → tiếp tục tìm trigger
 
-══ PHASE CONTROL — CÓ EXCEPTION MOMENTUM ══
+══ BƯỚC 2 — TÌM TRIGGER TRONG VÙNG (bắt buộc ít nhất 1) ══
+Hướng tìm: ${STATE.b3EntryDirection || 'NONE'}
+[T1] MICRO BOS M5: Close phá swing theo hướng entry ≥ 0.5 giá trong vùng
+[T2] REJECTION RÕ: Wick ≥ 1 giá ngược chiều tại vùng + nến đóng mạnh theo hướng entry
+[T3] LIQUIDITY SWEEP: Quét low/high quan trọng → close quay lại theo hướng entry
+IF trigger = NONE → verdict = B | alert_zone = vùng entry B3
 
-EXCEPTION MOMENTUM — KHÔNG CHẶN nếu đủ CẢ 3:
-[EX-1] Displacement cực mạnh: ≥ 3 nến M5 thân lớn liên tiếp cùng chiều (body ≥ 1.5 giá/nến)
-[EX-2] LH/HL đã hình thành rõ trên M5 sau BOS (trigger T1 xác nhận)
-[EX-3] Không có rejection ngược chiều mạnh (không có nến thân > 2 giá ngược chiều)
-→ Nếu đủ 3 EX: mode = MODE_2C_CONTINUATION | MAX = A_MINUS | risk 0.5R | TIẾP TỤC
-
-IF phase = IMPULSE VÀ KHÔNG đủ EXCEPTION:
-→ verdict = B | mode = NO_TRADE | grade_reason = "Phase IMPULSE — chưa hold structure. Cần: 3+ nến displacement + LH/HL + không rejection ngược"
-→ DỪNG NGAY
-
-IF phase = IMPULSE_PEAK VÀ KHÔNG đủ EXCEPTION:
-→ verdict = B | mode = NO_TRADE | grade_reason = "Phase IMPULSE_PEAK — chưa pullback thật. Chờ: retrace ≥ 20% OR ≥ 2 nến ngược OR tạo LH/HL"
-→ DỪNG NGAY
-
-IF B3 exhaustion ≥ 3/4:
-→ verdict = B | mode = NO_TRADE | grade_reason = "Exhaustion ≥ 3/4 — chặn trend entry"
-→ DỪNG NGAY
-
-══ RULE 0B — RANGE/CONSOLIDATION BREAKOUT ══
-
-🚨 QUY TẮC ĐỌC CHART BẮT BUỘC — PHẢI → TRÁI:
-Luôn đọc 3–5 nến GẦN NHẤT TRƯỚC (phần phải chart).
-KHÔNG gán label CONSOLIDATION nếu nến gần nhất đã thoát khỏi range.
-
-KIỂM TRA 5 NẾN CUỐI TRƯỚC KHI GÁN PHASE:
-→ IF bất kỳ nến nào trong 5 nến cuối close NGOÀI biên range cũ ≥ 0.5 giá → KHÔNG CÒN CONSOLIDATION
-→ IF có ≥ 1 nến tiếp diễn cùng chiều sau BOS thoát → phase = IMPULSE_BREAKOUT ngay lập tức
-
-VÍ DỤ LỖI THƯỜNG GẶP PHẢI TRÁNH:
-❌ SAI: Thấy giữa chart có vùng sideway 4653–4675 → label toàn bộ = CONSOLIDATION
-         dù nến cuối đã BOS lên 4683 với nến xanh thân lớn
-✅ ĐÚNG: Nến cuối BOS thoát 4675 → phase = IMPULSE_BREAKOUT → chạy EXCEPTION check → có thể A_MINUS
-
-IF phase = IMPULSE_BREAKOUT:
-→ Áp dụng EXCEPTION MOMENTUM check
-→ Nếu đủ EX: mode = MODE_2A_BREAKOUT | MAX = A_MINUS | TIẾP TỤC
-
-══ MANDATORY TRIGGER ══
-IF trigger_found = FALSE → verdict = B bắt buộc, không phân tích tiếp
-
-══ ACCEPTANCE RULE (LINH HOẠT) ══
-[NORMAL] BOS → hold ≥ 2 nến M5 HOẶC BOS → pullback → entry → đủ điều kiện A+
-[MOMENTUM] Displacement ≥ 5 giá + LH/HL rõ + không rejection → hold 1 nến đủ → MAX = A_MINUS
-Breakout chase thuần (không LH/HL, không hold) → MAX = A_MINUS, risk 0.5R
+══ BƯỚC 3 — ĐÁNH GIÁ CHẤT LƯỢNG TRIGGER ══
+[T1/T2/T3 + acceptance rõ + impulse ≥ 10 giá] → A_PLUS
+[T1/T2/T3 + acceptance có] → A
+[T1/T2/T3 + acceptance yếu / late entry] → A_MINUS
+[Trigger không rõ / ngoài vùng] → B
 
 ══ LIQUIDITY FILTER ══
 Kiểm tra fresh liquidity trước khi entry:
