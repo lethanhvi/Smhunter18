@@ -2562,9 +2562,13 @@ function getTradePermission() {
 
   // ── BLOCK TUYỆT ĐỐI — phase độc hại ──
   const blockPhases = ['EXHAUSTION','RANGE','MICRO_RANGE','CHOP','WEAK_PULLBACK'];
-  if(blockPhases.includes(phase) || mode === 'NO_TRADE' || nextAction === 'NO_TRADE') {
-    return { allowed: false, risk: 'NONE', level: 'BLOCK',
-      reason: `Bộ 3 chặn entry — Phase: ${phase || 'NO_TRADE'} | Cần đợi hồi giá chất lượng` };
+  const allowPhases = ['PULLBACK','READY','CONTINUATION','CONTINUATION_BASE'];
+  // Nếu phase là PULLBACK/READY/CONTINUATION → bỏ qua nextAction, ưu tiên phase
+  if(!allowPhases.includes(phase)) {
+    if(blockPhases.includes(phase) || mode === 'NO_TRADE' || nextAction === 'NO_TRADE') {
+      return { allowed: false, risk: 'NONE', level: 'BLOCK',
+        reason: `Bộ 3 chặn entry — Phase: ${phase || 'NO_TRADE'} | Cần đợi hồi giá chất lượng` };
+    }
   }
 
   // ── EXHAUSTION ≥ 3 — block trend entry ──
@@ -2598,15 +2602,30 @@ function getTradePermission() {
       reason: `Hồi giá chấp nhận được (${pqScore}/6) — Cho phép entry HALF risk 0.5R` };
   }
 
+  // ── PULLBACK / READY — đây là phase CHỦ ĐỘNG unlock B4 ──
+  if(phase === 'PULLBACK' || phase === 'READY') {
+    const riskLevel = (pqScore >= 5 || pq === 'STRONG' || pq === 'GOOD') ? 'FULL'
+      : (pqScore === 4 || pq === 'ACCEPTABLE') ? 'REDUCED'
+      : STATE.b3RiskLevel || 'REDUCED';
+    return { allowed: true, risk: riskLevel, level: riskLevel,
+      reason: `Phase ${phase} — Hồi giá xác nhận (score ${pqScore}/6) → Cho phép entry ${riskLevel === 'FULL' ? 'full risk 1R' : 'half risk 0.5R'}` };
+  }
+
   // ── CONTINUATION_BASE / CONTINUATION ──
   if(phase === 'CONTINUATION_BASE' || phase === 'CONTINUATION') {
     return { allowed: true, risk: STATE.b3RiskLevel || 'REDUCED', level: 'REDUCED',
       reason: `Tiếp diễn sau sóng đẩy — Cho phép entry risk ${STATE.b3RiskLevel || 'REDUCED'}` };
   }
 
+  // ── FALLBACK: mode=CONTINUATION (B3 trả mode đúng nhưng phase lạ) ──
+  if(mode === 'CONTINUATION') {
+    return { allowed: true, risk: STATE.b3RiskLevel || 'REDUCED', level: 'REDUCED',
+      reason: `Mode CONTINUATION từ Bộ 3 (phase=${phase}) → Cho phép entry risk ${STATE.b3RiskLevel || 'REDUCED'}` };
+  }
+
   // Default block
   return { allowed: false, risk: 'NONE', level: 'BLOCK',
-    reason: `Bộ 3 chưa xác nhận — phase=${phase} chưa đủ điều kiện entry` };
+    reason: `Bộ 3 chưa xác nhận — phase=${phase}, mode=${mode} chưa đủ điều kiện entry` };
 }
 
 function renderMasterGate() {
