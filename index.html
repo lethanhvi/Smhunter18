@@ -2657,11 +2657,35 @@ CỐT LÕI: MOMENTUM + BREAK STRUCTURE
 Không yêu cầu FVG hoặc OB — ưu tiên momentum và break structure
 ═══════════════════════════════
 
+══ RULE 0 — PHASE CONTROL (CHẶN TRƯỚC KHI PHÂN TÍCH) ══
+IF phase hiện tại = IMPULSE (BOS vừa xảy ra, chưa có pullback):
+→ KHÔNG entry breakout ngay sau BOS
+→ BOS tạo điều kiện, KHÔNG phải trigger entry
+→ verdict = B (NO TRADE) | model = MODEL_C_BREAKOUT | grade_reason = "Phase IMPULSE — chưa có acceptance, breakout entry bị chặn"
+→ DỪNG LẠI, không phân tích tiếp
+
+══ RULE 1 — ACCEPTANCE REQUIREMENT ══
+Break ≠ Acceptance. Entry hợp lệ chỉ khi:
+- break → hold structure (giá đứng lại trên/dưới BOS level ≥ 1-2 nến M5)
+- HOẶC break → pullback → entry (pullback về test vùng BOS)
+Entry ngay khi break mà KHÔNG có hold/pullback = entry breakout chase → MAX = A_MINUS
+
+══ RULE 2 — LIQUIDITY FILTER ══
+Trước khi entry, kiểm tra liquidity phía trên/dưới target:
+IF target liquidity (BSL/SSL) đã bị test trong 5-10 nến gần nhất → liquidity STALE
+→ giảm 1 level (A+→A, A→A-)
+IF không còn fresh liquidity rõ ràng phía target → downgrade thêm
+
+══ RULE 3 — ENTRY TIMING FILTER ══
+IF giá đã di chuyển > 70% từ điểm BOS đến target gần nhất:
+→ late entry — upside bị giới hạn
+→ MAX = A (không bao giờ A+)
+
 NGUYÊN TẮC BẮT BUỘC:
 1. FVG/OB = KHÔNG CẦN — hoàn toàn optional
 2. Sideway = NO TRADE tuyệt đối
-3. Impulse mạnh trước đó = điều kiện cần
-4. Break structure = trigger chính
+3. Impulse mạnh trước đó = điều kiện cần (KHÔNG phải trigger)
+4. Break + Acceptance = trigger chính
 5. Pullback yếu (không có rejection mạnh) = xác nhận tiếp diễn
 
 ═══════════════════════════════
@@ -2673,10 +2697,12 @@ BƯỚC 1 — IMPULSE (H1/M15):
 ✔ LH+LL = downtrend rõ / HH+HL = uptrend rõ
 ✔ KHÔNG phải sideway (nếu sideway → NO TRADE ngay)
 
-BƯỚC 2 — BOS M15:
-✔ M15 vừa phá structure (Break of Structure) rõ ràng
+BƯỚC 2 — BOS + ACCEPTANCE M15:
+✔ M15 vừa phá structure (BOS) rõ ràng
 ✔ Giá đóng cửa bên kia swing high/low quan trọng
-✔ BOS = xác nhận hướng momentum
+✔ PHẢI có acceptance: giá hold trên/dưới BOS level ≥ 2 nến M5
+   HOẶC giá pullback về retest BOS level (không phá lại)
+✔ BOS không có acceptance = breakout chase → BLOCK hoặc MAX A_MINUS
 
 BƯỚC 3 — PULLBACK M5 (YẾU):
 ✔ M5 pullback ngược chiều nhưng YẾU
@@ -2684,48 +2710,56 @@ BƯỚC 3 — PULLBACK M5 (YẾU):
 ✔ Không có nến thân lớn ngược chiều (nếu có → HỦY QUÂN)
 
 BƯỚC 4 — ENTRY TRIGGER:
-✔ Break tiếp theo theo hướng trend sau pullback yếu
+✔ Break tiếp theo theo hướng trend sau pullback yếu + acceptance xác nhận
 ✔ Entry khi giá break qua low/high của pullback (micro BOS M5)
-✔ Không cần chờ FVG hay OB — break structure là đủ
+✔ Không cần chờ FVG hay OB — break + hold structure là đủ
 
 ═══════════════════════════════
 3 MODEL — CHỌN TỰ ĐỘNG:
 ═══════════════════════════════
 
 MODEL A — EARLY (ưu tiên cao):
-Trigger: Impulse + BOS M15 + LH/HL hình thành M5
-Entry: Break low/high của pullback nhỏ
+Trigger: Impulse + BOS M15 + hold structure (acceptance) + LH/HL hình thành M5
+Entry: Break low/high của pullback nhỏ SAU acceptance
 SL: Trên LH / dưới HL vừa hình thành (6-15 pip)
+Lưu ý: Chỉ hợp lệ khi có acceptance rõ ràng
 
 MODEL B — PULLBACK (tiêu chuẩn):
-Trigger: Impulse + pullback < 61.8% + structure giữ
-Entry: Cuối pullback khi nến nhỏ dần
+Trigger: Impulse + BOS + pullback về retest zone + structure giữ
+Entry: Cuối pullback khi nến nhỏ dần + rejection tại zone
 SL: Trên/dưới high/low pullback (6-15 pip)
 
-MODEL C — BREAKOUT (muộn):
-Trigger: Tích lũy nhỏ + break high/low vùng tích lũy
-Entry: Ngay khi break
+MODEL C — BREAKOUT (đặc biệt — B+ class):
+Trigger: BOS mạnh + displacement lớn NHƯNG chưa có pullback/acceptance
+Phân loại: KHÔNG bao giờ A+ | MAX = A_MINUS
+Entry: Chỉ khi có mini pullback (2-3 nến) sau BOS
 SL: Ngoài vùng tích lũy (5-12 pip)
+Cảnh báo: Đây là setup B+ — rủi ro cao hơn, xác suất thấp hơn
 
 ═══════════════════════════════
 QUY TẮC RISK:
 ═══════════════════════════════
 Model A/B: SL 6-15 pip | TP ≥ 30 pip | R:R ≥ 1:2
-Model C: SL 5-12 pip | TP ≥ 25 pip | R:R ≥ 1:2
+Model C (B+): SL 5-12 pip | TP ≥ 25 pip | R:R ≥ 1:2 | MAX risk = 0.5R
 Buffer: +0.5-1 pip thực tế
 
-Thuận bias B1 → TP full (liquidity xa)
+Thuận bias B1 → TP full (liquidity xa — nếu fresh)
 Ngược bias B1 → TP ngắn (liquidity gần nhất)
+Liquidity stale → rút ngắn TP thêm 30%
 
 VERDICT:
 
 ═══ RULE BẢO VỆ A+ (BẮT BUỘC KIỂM TRA TRƯỚC KHI CHO A+) ═══
 
+RULE 0 — PHASE BLOCK:
+IF phase = IMPULSE (BOS mới, chưa acceptance) → KHÔNG A+, KHÔNG A — chỉ B
+
 RULE 1 — IMPULSE CHUẨN:
 IF M15 impulse < 6 giá → MAX = A, KHÔNG BAO GIỜ A+
 
-RULE 2 — ENTRY GẦN ĐỈNH:
+RULE 2 — ENTRY GẦN ĐỈNH / LIQUIDITY STALE:
 IF entry cách đỉnh H1 gần nhất < 2 giá → GIẢM 1 LEVEL (A+→A, A→A-)
+IF target liquidity đã bị test gần → GIẢM 1 LEVEL
 
 RULE 3 — WICK TRAP DETECTOR:
 IF M5 có wick trên > 1 giá SAU break → INVALID continuation → KHÔNG A+
@@ -2734,23 +2768,27 @@ IF có nến đảo chiều mạnh (body > 1 giá ngược hướng) ngay sau br
 RULE 4 — FAKE BOS FILTER:
 IF BOS xảy ra NHƯNG nến tiếp theo yếu (body < 0.5 giá hoặc có wick dài ngược chiều) → BOS = FAKE → MAX = A-
 
-CHỈ CHO A+ KHI VƯỢT QUA TẤT CẢ 4 RULE TRÊN.
+RULE 5 — ACCEPTANCE REQUIRED FOR A+:
+IF không có hold structure (acceptance) sau BOS → KHÔNG BAO GIỜ A+
+IF entry kiểu breakout chase (ngay sau BOS không có pullback/hold) → MAX = A_MINUS
+
+CHỈ CHO A+ KHI VƯỢT QUA TẤT CẢ 5 RULE TRÊN.
 
 PHÂN LOẠI SETUP (BẮT BUỘC):
-A_PLUS: H1 trend rõ + M15 BOS + impulse ≥ 10 giá + M5 pullback ≤ 4 giá + VƯỢT QUA 4 RULE BẢO VỆ → vào mạnh full risk
-A: H1 trend rõ + M15 BOS + impulse ≥ 8 giá + M5 pullback 4-6 giá → trade được
-A_MINUS: H1 yếu hoặc impulse < 8 giá hoặc pullback > 6 giá hoặc failed 1 rule → giảm risk hoặc bỏ
-B: sideway / không BOS / không impulse → no trade
+A_PLUS: H1 trend rõ + M15 BOS + acceptance + impulse ≥ 10 giá + M5 pullback ≤ 4 giá + VƯỢT QUA 5 RULE BẢO VỆ → vào mạnh full risk
+A: H1 trend rõ + M15 BOS + acceptance có + impulse ≥ 8 giá + M5 pullback 4-6 giá → trade được
+A_MINUS: BOS có nhưng chưa acceptance RÕ / impulse < 8 giá / late entry / breakout chase → giảm risk 0.5R
+B: phase IMPULSE chưa có acceptance / sideway / không BOS / không impulse → no trade
 KHÔNG dùng FIRE/WAIT/CANCEL — chỉ dùng A_PLUS/A/A_MINUS/B
 FORMING = đang hình thành, đặt alert
-WAIT = chưa đủ (thiếu impulse hoặc BOS)
+WAIT = chưa đủ (thiếu acceptance hoặc BOS)
 CANCEL = sideway hoặc có rejection mạnh ngược chiều
 
 NGÔN NGỮ BẮT BUỘC: Toàn bộ kết quả phải bằng tiếng Việt — KHÔNG dùng tiếng Anh trong bất kỳ field nào của JSON. Các thuật ngữ kỹ thuật (BOS, MSS, FVG, OB, Displacement, Sweep, Pullback) giữ nguyên nhưng giải thích bằng tiếng Việt.
 
 QUAN TRỌNG: Trả lời HOÀN TOÀN bằng tiếng Việt.
 Trả về DUY NHẤT JSON:
-{"verdict":"A_PLUS"|"A"|"A_MINUS"|"B","model":"MODEL_A_EARLY"|"MODEL_B_PULLBACK"|"MODEL_C_BREAKOUT","grade_reason":"A+/A/A-/B + kết quả 4 rule (impulse=X giá, entry cách đỉnh=X giá, wick_trap=có/không, fake_bos=có/không)","model_reason":"lý do chọn model","verdict_reason":"...","h1_analysis":"trend H1 LH/LL hay HH/HL","m15_analysis":"impulse=Xgiá,BOS=TRUE/FALSE","m5_analysis":"pullback=Xgiá,rejection=có/không,trigger=break tại X","with_bias":"thuận/ngược bias","alert_zone":"vùng giá cần alert nếu cần","order_type":"...","entry":"giá cụ thể","sl":"giá cụ thể","tp":"giá cụ thể","sl_pips":"pip","tp_pips":"pip","lot":"...","rr":"X:Y","fail_reasons":["...","...","..."]}`;
+{"verdict":"A_PLUS"|"A"|"A_MINUS"|"B","model":"MODEL_A_EARLY"|"MODEL_B_PULLBACK"|"MODEL_C_BREAKOUT","grade_reason":"A+/A/A-/B + kết quả 5 rule (impulse=X giá, acceptance=có/không, entry cách đỉnh=X giá, wick_trap=có/không, fake_bos=có/không, liquidity=fresh/stale)","model_reason":"lý do chọn model","verdict_reason":"...","h1_analysis":"trend H1 LH/LL hay HH/HL","m15_analysis":"impulse=Xgiá,BOS=TRUE/FALSE,acceptance=có/không","m5_analysis":"pullback=Xgiá,rejection=có/không,trigger=break tại X","with_bias":"thuận/ngược bias","acceptance":"TRUE/FALSE — có hold structure sau BOS không","liquidity_status":"FRESH/STALE — target liquidity đã bị test chưa","alert_zone":"vùng giá cần alert nếu cần","order_type":"...","entry":"giá cụ thể","sl":"giá cụ thể","tp":"giá cụ thể","sl_pips":"pip","tp_pips":"pip","lot":"...","rr":"X:Y","fail_reasons":["...","...","..."]}`;
 
     const b64h1=STATE.imgs.b2_h1.split(',')[1];
     const mtypeh1=STATE.imgs.b2_h1.split(';')[0].split(':')[1];
@@ -2770,7 +2808,7 @@ Trả về DUY NHẤT JSON:
 
     // Render result
     const vbox=document.getElementById('b4-verdict-box');
-    const gradeMap={'A_PLUS':{emoji:'🎯',cls:'fire',title:'SETUP A+ — SNIPER',sub:'→ Có thể vào mạnh (full risk)'},'A':{emoji:'⚖️',cls:'wait',title:'SETUP A — TỐT',sub:'→ Trade được, cân nhắc entry'},'A_MINUS':{emoji:'⚠️',cls:'wait',title:'SETUP A- — RỦI RO',sub:'→ Nên giảm risk hoặc bỏ'},'B':{emoji:'⛔',cls:'cancel',title:'NO TRADE — KHÔNG ĐỦ ĐIỀU KIỆN',sub:'→ Không đủ điều kiện'}};
+    const gradeMap={'A_PLUS':{emoji:'🎯',cls:'fire',title:'SETUP A+ — SNIPER',sub:'→ Có thể vào mạnh (full risk)'},'A':{emoji:'⚖️',cls:'wait',title:'SETUP A — TỐT',sub:'→ Trade được, cân nhắc entry'},'A_MINUS':{emoji:'⚠️',cls:'wait',title:'SETUP A- — RỦI RO',sub:'→ Nên giảm risk 0.5R hoặc bỏ'},'B':{emoji:'⛔',cls:'cancel',title:'NO TRADE — KHÔNG ĐỦ ĐIỀU KIỆN',sub:'→ Không đủ điều kiện — chờ acceptance'}};
     const g=gradeMap[r.verdict]||gradeMap['B'];
     const isFire=r.verdict==='A_PLUS'||r.verdict==='A';
     vbox.className='verdict-box '+g.cls;
@@ -2788,7 +2826,7 @@ Trả về DUY NHẤT JSON:
 
     const checklistEl=document.getElementById('b4-smc-checklist');
     if(checklistEl){
-      const modelLabels={'MODEL_A_EARLY':'🔵 MODEL A: EARLY SHIFT','MODEL_B_PULLBACK':'🔵 MODEL B: PULLBACK','MODEL_C_BREAKOUT':'🔵 MODEL C: BREAKOUT'};
+      const modelLabels={'MODEL_A_EARLY':'🔵 MODEL A: EARLY SHIFT','MODEL_B_PULLBACK':'🔵 MODEL B: PULLBACK','MODEL_C_BREAKOUT':'🟡 MODEL C: BREAKOUT (B+ Class)'};
       const modelBadge=r.model?`<div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--blue);background:rgba(77,159,255,0.1);border:1px solid rgba(77,159,255,0.3);padding:3px 10px;border-radius:10px;margin-bottom:6px;display:inline-block">${modelLabels[r.model]||r.model}</div>`:'';
       const badge='<div style=\"font-family:\'Share Tech Mono\',monospace;font-size:9px;background:rgba(255,181,71,0.2);border:1px solid rgba(255,181,71,0.4);color:var(--amber);padding:3px 10px;border-radius:10px;letter-spacing:1px;margin-bottom:8px;display:inline-block\">⚡ MODE: TRUY KÍCH</div>';
       const tkChecks=[
@@ -2899,6 +2937,31 @@ FORMAT: "Displacement=TRUE(body=X.Xgiá)", "BOS=TRUE(break=X.Xgiá)", KHÔNG dù
 GLOBAL FILTER — NO TRADE nếu:
 Range = TRUE HOẶC Displacement = FALSE HOẶC không có BOS/MSS
 
+══ PHASE CONTROL — CHẶN TRƯỚC KHI PHÂN TÍCH ══
+IF phase = IMPULSE (BOS vừa xảy ra, chưa có pullback/acceptance):
+→ verdict = B | mode = NO_TRADE
+→ grade_reason = "Phase IMPULSE — BOS ≠ Acceptance. Chưa hold structure, chưa có retest. Entry bị chặn."
+→ KHÔNG phân tích mode nào — dừng ngay
+
+Impulse chỉ tạo ĐIỀU KIỆN. Trigger entry phải là:
+→ break → hold structure (giá đứng ≥ 2 nến M5 bên kia BOS level)
+→ HOẶC break → pullback → entry
+
+══ ACCEPTANCE RULE ══
+Entry hợp lệ PHẢI có một trong hai:
+[1] BOS → giá hold trên/dưới BOS level ≥ 2 nến M5 (acceptance)
+[2] BOS → pullback về retest BOS level → rejection → entry
+Entry ngay khi BOS không có hold/pullback = breakout chase → MAX = A_MINUS
+
+══ LIQUIDITY FILTER ══
+Kiểm tra fresh liquidity trước khi entry:
+IF BSL/SSL target đã bị test trong 5-10 nến gần nhất → liquidity STALE → giảm 1 level
+IF không còn fresh liquidity rõ phía target → downgrade thêm / rút ngắn TP
+
+══ ENTRY TIMING FILTER ══
+IF giá đã đi > 70% khoảng cách từ BOS đến target gần nhất:
+→ late entry — upside bị giới hạn → MAX = A
+
 ═══ 3 MODE — CHỌN TỰ ĐỘNG ═══
 
 MODE 1 — SMC REVERSAL (Pullback sâu):
@@ -2992,19 +3055,23 @@ IF không có structure rõ → B (NO TRADE)
 IF phase = CONSOLIDATION → FORCE B (NO TRADE), không bao giờ là A_MINUS
 
 ═══ RULE BẢO VỆ A+ (SAU KHI VƯỢT QUA CÁC BƯỚC TRÊN) ═══
+RULE 0 — PHASE BLOCK: IF phase = IMPULSE (chưa acceptance) → KHÔNG A+, KHÔNG A → chỉ B
 RULE 1 — IMPULSE: IF M15 impulse < 6 giá → MAX = A
 RULE 2 — ENTRY GẦN ĐỈNH: IF entry cách đỉnh H1 < 2 giá → GIẢM 1 LEVEL
+         LIQUIDITY STALE: IF target liquidity đã bị test gần → GIẢM 1 LEVEL
 RULE 3 — WICK TRAP: IF M5 wick > 1 giá sau break HOẶC nến đảo chiều ngay sau break → KHÔNG A+
 RULE 4 — FAKE BOS: IF nến sau BOS yếu (body < 0.5 giá) → BOS = FAKE → MAX = A-
-CHỈ CHO A+ KHI VƯỢT QUA CẢ 4 RULE NÀY.
+RULE 5 — ACCEPTANCE: IF không có hold structure sau BOS → KHÔNG A+
+          IF entry ngay sau BOS không có pullback/hold (breakout chase) → MAX = A_MINUS
+CHỈ CHO A+ KHI VƯỢT QUA CẢ 5 RULE NÀY.
 
 PHÂN LOẠI SETUP — THAY THẾ FIRE/WAIT/CANCEL:
-A_PLUS (Sniper): impulse ≥ 10 giá + pullback ≤ 4 giá + VƯỢT QUA 4 RULE + entry không sát đỉnh → vào mạnh
-A (Tốt): impulse ≥ 8 giá + pullback 4-6 giá + tối đa 1 rule bị fail → trade được
-A_MINUS (Rủi ro): impulse < 8 giá HOẶC pullback > 6 giá HOẶC fail ≥ 2 rule → giảm risk
-B (No trade): sideway / không BOS / không impulse → không trade
+A_PLUS (Sniper): impulse ≥ 10 giá + acceptance rõ + pullback ≤ 4 giá + VƯỢT QUA 5 RULE + entry không sát đỉnh + fresh liquidity → vào mạnh full risk
+A (Tốt): impulse ≥ 8 giá + acceptance có + pullback 4-6 giá + tối đa 1 rule bị fail → trade được
+A_MINUS (Rủi ro): BOS có nhưng chưa acceptance / impulse < 8 giá / late entry >70% / fail ≥ 2 rule → giảm risk 0.5R
+B (No trade): phase IMPULSE chưa acceptance / sideway / không BOS / không impulse / breakout chase → không trade
 
-CANCEL nếu: Range=TRUE hoặc SL ngoài range cho phép của mode
+CANCEL nếu: Range=TRUE hoặc SL ngoài range cho phép của mode hoặc phase=IMPULSE chưa hold
 
 NGÔN NGỮ BẮT BUỘC: Toàn bộ kết quả phải bằng tiếng Việt — KHÔNG dùng tiếng Anh trong bất kỳ field nào của JSON. Các thuật ngữ kỹ thuật (BOS, MSS, FVG, OB, Displacement, Sweep, Pullback) giữ nguyên nhưng giải thích bằng tiếng Việt.
 
