@@ -2898,6 +2898,7 @@ Trả về DUY NHẤT JSON:
     document.getElementById('b4-vreason').textContent=(r.grade_reason||r.verdict_reason||'')+' '+g.sub;
 
     // Show alert zone if FORMING
+    const isForming = r.verdict === 'FORMING' || (r.alert_zone && (r.verdict === 'A_MINUS' || r.verdict === 'B'));
     const vrEl = document.getElementById('b4-vreason');
     if(isForming && r.alert_zone){
       vrEl.innerHTML=`${r.verdict_reason||''}<br><br><span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--amber)">🔔 ĐẶT ALERT TẠI: ${r.alert_zone}</span>`;
