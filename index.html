@@ -866,6 +866,9 @@ const STATE = {
   bias:'',
   b2Verdict:'',
   b2Narrative:'',
+  b2FailedBreakout:'FALSE',
+  b2FailedBreakoutNote:'',
+  b2WyckoffContext:'NONE',
   b3Priority:'MEDIUM',
   b3TrendDir:'',
   b3Mode:'',
@@ -1383,6 +1386,9 @@ function saveState(){
       bias: STATE.bias,
       b2Verdict: STATE.b2Verdict,
       b2Narrative: STATE.b2Narrative,
+      b2FailedBreakout: STATE.b2FailedBreakout,
+      b2FailedBreakoutNote: STATE.b2FailedBreakoutNote,
+      b2WyckoffContext: STATE.b2WyckoffContext,
       b4Entry: STATE.b4Entry,
       b4RR: STATE.b4RR,
       psychAnswers: STATE.psychAnswers,
@@ -1415,6 +1421,9 @@ function loadState(){
       bias:         saved.bias         || '',
       b2Verdict:    saved.b2Verdict    || '',
       b2Narrative:  saved.b2Narrative  || '',
+      b2FailedBreakout: saved.b2FailedBreakout || 'FALSE',
+      b2FailedBreakoutNote: saved.b2FailedBreakoutNote || '',
+      b2WyckoffContext: saved.b2WyckoffContext || 'NONE',
       b4Entry:      saved.b4Entry      || '',
       b4RR:         saved.b4RR         || '',
       psychAnswers: saved.psychAnswers  || {},
@@ -1709,12 +1718,24 @@ async function scanM15B3(){
   const HTF_BIAS = STATE.bias || 'NEUTRAL';
   const B2_VERDICT = STATE.b2Verdict || 'Chưa có';
   const B2_STATE = STATE.b2Narrative ? STATE.b2Narrative.split('|')[0].trim() : 'Chưa có';
+  const B2_FAILED_BOS = STATE.b2FailedBreakout || 'FALSE';
+  const B2_WYCKOFF = STATE.b2WyckoffContext || 'NONE';
+  const B2_FAILED_NOTE = STATE.b2FailedBreakoutNote || '';
 
   try{
     const sys=`Bạn là Market State Classifier v2 cho XAUUSD M15 — Smart Hunter System (The5%ers $2,500).
 
 HTF Bias từ Bộ 1: ${HTF_BIAS} | Kết quả Bộ 2: ${B2_VERDICT} | Trạng thái Bộ 2: ${B2_STATE}
+Failed Breakout từ Bộ 2: ${B2_FAILED_BOS} | Wyckoff Context: ${B2_WYCKOFF}
+${B2_FAILED_NOTE ? '→ Chi tiết: ' + B2_FAILED_NOTE : ''}
 → Bộ 2 đã phân tích H1+M15 trước. Bộ 3 bổ sung: Kill Zone + lọc tin tức + xác nhận M15 lần cuối.
+
+⚠️ ĐỌC KỸ CONTEXT BỘ 2 TRƯỚC KHI PHÂN TÍCH:
+IF Bộ 2 = FAILED_BREAKOUT TRUE hoặc Wyckoff = SPRING/UTAD:
+→ Đây là tín hiệu ĐẢO CHIỀU mạnh — KHÔNG chỉ nhìn một chiều theo bias cũ
+→ PHẢI xem xét khả năng reversal song song với exhaustion/continuation
+→ Nếu Bộ 2 detect SPRING → BUY bias cần được xem xét dù HTF đang SELL
+→ Nếu Bộ 2 detect UTAD → SELL bias cần được xem xét dù HTF đang BUY
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🚨 BƯỚC 0 BẮT BUỘC — ĐỌC GIÁ VÀ XÁC ĐỊNH ZONE TRƯỚC KHI PHÂN TÍCH
@@ -1846,6 +1867,23 @@ B5-PHASE — STATE MACHINE 4 TRẠNG THÁI (phân biệt bắt buộc):
 B6-REVERSAL GATE (ngược trend): cần ĐỦ CẢ 3: đổi hướng cấu trúc+phá cấu trúc ngược≥0.5+sóng đẩy ngược
 
 B7-PRIORITY: P1 EXHAUSTION≥3/4→NO_TRADE | P2 MICRO/RANGE/CHOP/YẾU→NO_TRADE | P3 NONE→NO_TRADE | P4 IMPULSE→CHỜ | P5 Score=4+zone mới→0.5R | P6 Score≥5+HTF đúng→1R | P7 Score≥5+HTF ngược→0.5R
+
+B8-WYCKOFF OVERRIDE (ưu tiên cao — kiểm tra SAU B7):
+IF Bộ 2 detect FAILED_BREAKOUT=TRUE hoặc WYCKOFF=SPRING:
+→ Dù EXHAUSTION score cao, vẫn phải ghi nhận khả năng REVERSAL BUY
+→ Nếu có SPRING + displacement ngược ≥ 1.5 giá trên M15 → phase = REVERSAL, không phải EXHAUSTION thuần
+→ entry_direction = BUY, entry_zone = vùng pullback sau Spring
+→ Ghi vào summary: "Bộ 2 detect Spring/Failed Breakdown — xem xét BUY reversal"
+
+IF Bộ 2 detect FAILED_BREAKOUT=TRUE hoặc WYCKOFF=UTAD:
+→ Dù HTF đang BUY, vẫn phải ghi nhận khả năng REVERSAL SELL mạnh
+→ entry_direction = SELL, entry_zone = vùng pullback sau UTAD
+→ Ghi vào summary: "Bộ 2 detect UTAD/Failed Breakout — xem xét SELL reversal"
+
+PHÂN BIỆT EXHAUSTION vs SPRING:
+- EXHAUSTION thuần: trend đi xa + momentum yếu + KHÔNG có failed breakdown → chờ pullback
+- SPRING: trend đi xa + momentum yếu + CÓ failed breakdown + displacement ngược → REVERSAL entry
+→ Nếu có cả 2: ưu tiên SPRING nếu displacement ngược ≥ 1.5 giá xác nhận
 
 LUẬT CỨNG: Score≤3→NO_TRADE | Score=4→0.5R | Score≥5→1R | CHOP≠YẾU≠MICRO_RANGE phân biệt rõ | Zone test≥2→hạ priority
 
@@ -2611,6 +2649,10 @@ Trả về DUY NHẤT JSON:
     // Save for Bo4
     STATE.b2Verdict=r.verdict;
     STATE.b2Narrative=(r.path||'')+(r.mode_trigger?` | Mode: ${r.mode_trigger}`:'');
+    // Save Failed Breakout + Wyckoff for B3
+    STATE.b2FailedBreakout = r.failed_breakout || 'FALSE';
+    STATE.b2FailedBreakoutNote = r.failed_breakout_note || '';
+    STATE.b2WyckoffContext = r.wyckoff_context || 'NONE';
     saveState();
 
     // Render
