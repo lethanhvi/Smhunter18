@@ -604,8 +604,8 @@ input[type="file"]{display:none}
   <!-- Auto bias from Bo1 -->
   <div class="panel">
     <div class="sec-label"><span>TỰ ĐỘNG</span> CONTEXT TỪ BỘ 1</div>
-    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;font-family:'Share Tech Mono',monospace;font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:8px" id="b2-bias-display">--</div>
-    <div id="b2-b1-context" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:11px;color:var(--muted);line-height:1.8;font-family:'Share Tech Mono',monospace"></div>
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:12px 16px;font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:800;letter-spacing:2px;margin-bottom:0px;display:flex;align-items:center;gap:10px" id="b2-bias-display">--</div>
+    <div id="b2-b1-context" style="display:none;margin-top:8px;border-radius:8px;overflow:hidden;border:1px solid rgba(201,168,76,0.2)"></div>
   </div>
 
   <div class="panel">
@@ -951,23 +951,47 @@ function syncBo3Context() {
 
 function syncBo2Context() {
   const d = document.getElementById('b2-bias-display');
-  d.textContent = STATE.bias || '--';
-  d.style.color = STATE.bias.includes('BUY') ? 'var(--green)' : STATE.bias.includes('SELL') ? 'var(--red)' : 'var(--amber)';
+  const bias = STATE.bias || '--';
+  const isBuy = bias.includes('BUY') || bias.includes('TĂNG');
+  const isSell = bias.includes('SELL') || bias.includes('GIẢM');
+  const biasColor = isBuy ? 'var(--green)' : isSell ? 'var(--red)' : 'var(--amber)';
+  d.textContent = bias;
+  d.style.color = biasColor;
 
-  // Show Bo1 detail context
+  // Render Bo1 detail context with highlights
   const ctx = document.getElementById('b2-b1-context');
-  const lines = [];
-  if(STATE.b1Phase) lines.push(`PHASE: ${STATE.b1Phase}`);
-  if(STATE.b1Execution) lines.push(`EXECUTION: ${STATE.b1Execution}`);
-  if(STATE.b1Structure) lines.push(`STRUCTURE: ${STATE.b1Structure}`);
-  if(STATE.b1LiquidityNear) lines.push(`LQ GẦN: ${STATE.b1LiquidityNear}`);
-  if(STATE.b1LiquidityFar) lines.push(`LQ XA: ${STATE.b1LiquidityFar}`);
-  if(STATE.b1Zones) lines.push(`ZONES: ${STATE.b1Zones}`);
-  if(STATE.b1Intent) lines.push(`INTENT: ${STATE.b1Intent}`);
-  if(lines.length > 0){
-    ctx.innerHTML = lines.map(l=>`<div style="padding:2px 0;border-bottom:1px solid var(--border)">${l}</div>`).join('');
-    ctx.style.display = 'block';
-  }
+  if(!STATE.b1Phase && !STATE.b1Structure){ctx.style.display='none';checkB2Ready();return;}
+
+  const phaseColor = STATE.b1Phase==='RANGE' ? 'var(--amber)' : 'var(--green)';
+  const execColor = STATE.b1Execution==='ACTIVE' ? 'var(--green)' : STATE.b1Execution==='WAIT_BREAKOUT' ? 'var(--amber)' : 'var(--muted)';
+
+  const rows = [
+    { icon:'📊', label:'PHASE', value: STATE.b1Phase||'--', valColor: phaseColor },
+    { icon:'⚡', label:'EXECUTION', value: STATE.b1Execution||'--', valColor: execColor },
+    { icon:'🏗️', label:'STRUCTURE', value: STATE.b1Structure||'--', valColor:'var(--text)', full:true },
+    { icon:'🎯', label:'LQ GẦN', value: STATE.b1LiquidityNear||'--', valColor:'var(--amber)', full:true },
+    { icon:'🔭', label:'LQ XA', value: STATE.b1LiquidityFar||'--', valColor:'var(--muted)', full:true },
+    { icon:'📦', label:'ZONES', value: STATE.b1Zones||'--', valColor:'var(--blue)', full:true },
+    { icon:'🧭', label:'INTENT', value: STATE.b1Intent||'--', valColor:'var(--cyan)', full:true },
+  ].filter(r => r.value && r.value !== '--');
+
+  ctx.innerHTML = rows.map((r,i) => `
+    <div style="
+      display:flex; align-items:${r.full?'flex-start':'center'}; gap:10px;
+      padding:10px 14px;
+      background:${i%2===0?'rgba(201,168,76,0.04)':'rgba(0,0,0,0.2)'};
+      border-bottom:1px solid rgba(201,168,76,0.08);
+      ${i===rows.length-1?'border-bottom:none':''}
+    ">
+      <span style="font-size:14px;flex-shrink:0;margin-top:${r.full?'2px':'0'}">${r.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:rgba(201,168,76,0.6);letter-spacing:2px;margin-bottom:3px">${r.label}</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:${r.valColor};line-height:1.5;word-break:break-word">${r.value}</div>
+      </div>
+    </div>
+  `).join('');
+
+  ctx.style.display = 'block';
   checkB2Ready();
 }
 
