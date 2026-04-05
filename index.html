@@ -601,10 +601,11 @@ input[type="file"]{display:none}
     <div class="scr-sub">H1 + M15 · Ngữ Cảnh Thị Trường Scanner</div>
   </div>
 
-  <!-- Auto bias -->
+  <!-- Auto bias from Bo1 -->
   <div class="panel">
-    <div class="sec-label"><span>TỰ ĐỘNG</span> XU HƯỚNG TỪ BỘ 1</div>
-    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;font-family:'Share Tech Mono',monospace;font-size:12px;font-weight:700;letter-spacing:1px" id="b2-bias-display">--</div>
+    <div class="sec-label"><span>TỰ ĐỘNG</span> CONTEXT TỪ BỘ 1</div>
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;font-family:'Share Tech Mono',monospace;font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:8px" id="b2-bias-display">--</div>
+    <div id="b2-b1-context" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:11px;color:var(--muted);line-height:1.8;font-family:'Share Tech Mono',monospace"></div>
   </div>
 
   <div class="panel">
@@ -952,6 +953,21 @@ function syncBo2Context() {
   const d = document.getElementById('b2-bias-display');
   d.textContent = STATE.bias || '--';
   d.style.color = STATE.bias.includes('BUY') ? 'var(--green)' : STATE.bias.includes('SELL') ? 'var(--red)' : 'var(--amber)';
+
+  // Show Bo1 detail context
+  const ctx = document.getElementById('b2-b1-context');
+  const lines = [];
+  if(STATE.b1Phase) lines.push(`PHASE: ${STATE.b1Phase}`);
+  if(STATE.b1Execution) lines.push(`EXECUTION: ${STATE.b1Execution}`);
+  if(STATE.b1Structure) lines.push(`STRUCTURE: ${STATE.b1Structure}`);
+  if(STATE.b1LiquidityNear) lines.push(`LQ GẦN: ${STATE.b1LiquidityNear}`);
+  if(STATE.b1LiquidityFar) lines.push(`LQ XA: ${STATE.b1LiquidityFar}`);
+  if(STATE.b1Zones) lines.push(`ZONES: ${STATE.b1Zones}`);
+  if(STATE.b1Intent) lines.push(`INTENT: ${STATE.b1Intent}`);
+  if(lines.length > 0){
+    ctx.innerHTML = lines.map(l=>`<div style="padding:2px 0;border-bottom:1px solid var(--border)">${l}</div>`).join('');
+    ctx.style.display = 'block';
+  }
   checkB2Ready();
 }
 
@@ -2558,6 +2574,14 @@ Trả về DUY NHẤT JSON:
     STATE.bias = biasMap[r.bias]||r.bias;
     STATE.b1Phase = r.market_phase||'';
     STATE.b1Execution = r.execution||'';
+    STATE.b1RawBias = r.bias||'';
+    STATE.b1Structure = r.structure||'';
+    STATE.b1LiquidityNear = r.liquidity_near||'';
+    STATE.b1LiquidityFar = r.liquidity_far||'';
+    STATE.b1Zones = r.zones||'';
+    STATE.b1RangeBox = r.range_box||'';
+    STATE.b1Intent = r.intent||'';
+    STATE.b1ExecutionNote = r.execution_note||r.bias_reason||'';
     saveState();
 
     // Render
@@ -2608,7 +2632,29 @@ async function runBo2(){
   document.getElementById('b2-error').classList.remove('show');
   try{
     const sys=`Bạn là Context Engine Analyst XAUUSD — H1 + M15.
-Macro bias Bộ 1: ${STATE.bias} | Phase Bộ 1: ${STATE.b1Phase||'Không rõ'}
+
+══ CONTEXT BỘ 1 (D1/H4 — BẮT BUỘC ĐỌC TRƯỚC) ══
+Macro Bias: ${STATE.bias} | Raw: ${STATE.b1RawBias||'?'} | Phase D1/H4: ${STATE.b1Phase||'Không rõ'}
+Execution: ${STATE.b1Execution||'?'} — ${STATE.b1ExecutionNote||''}
+H4 Structure: ${STATE.b1Structure||'Chưa có'}
+Key Levels — Gần: ${STATE.b1LiquidityNear||'?'} | Xa: ${STATE.b1LiquidityFar||'?'}
+Supply/Demand Zones: ${STATE.b1Zones||'?'}
+${STATE.b1RangeBox?'Range Box D1/H4: '+STATE.b1RangeBox:''}
+Intent D1/H4: ${STATE.b1Intent||'?'}
+
+══ QUY TẮC FILTER WYCKOFF THEO BIAS BỘ 1 (BẮT BUỘC) ══
+IF Macro Bias = SELL_CONTEXT hoặc BỐI CẢNH GIẢM:
+  → KHÔNG được label wyckoff_context = ACCUMULATION
+  → Chỉ được dùng: DISTRIBUTION | UTAD | REDISTRIBUTION | NONE
+  → Nếu thấy pattern tích lũy → label = REDISTRIBUTION (không phải ACCUMULATION)
+IF Macro Bias = BUY_CONTEXT hoặc BỐI CẢNH TĂNG:
+  → KHÔNG được label wyckoff_context = DISTRIBUTION
+  → Chỉ được dùng: ACCUMULATION | SPRING | RE-ACCUMULATION | NONE
+  → Nếu thấy pattern phân phối → label = RE-DISTRIBUTION (không phải DISTRIBUTION)
+IF Macro Bias = NEUTRAL hoặc TRUNG LẬP:
+  → Cho phép tất cả Wyckoff label — đọc chart thực tế
+
+══ CONTEXT BỘ 3 (nếu đã quét) ══
 Market State M15 từ Bộ 3: ${STATE.b3MarketState||'Chưa quét'} — IF STRONG_DISTRIBUTION/CONSOLIDATION → ưu tiên STOP
 Hành động tiếp theo từ Bộ 3: ${STATE.b3NextAction||'Không rõ'}
 Hướng entry gợi ý từ Bộ 3: ${STATE.b3EntryDirection||'NONE'}
