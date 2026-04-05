@@ -1013,10 +1013,17 @@ async function runBo5(){
 
 Session context:
 - Bias Bộ 1: ${STATE.bias||'--'}
-- Verdict Bộ 2: ${STATE.b2Verdict||'--'}
+- Verdict Bộ 2: ${STATE.b2Verdict||'--'} | Wyckoff: ${STATE.b2WyckoffContext||'NONE'} | Failed BOS: ${STATE.b2FailedBreakout||'FALSE'}
 - Narrative: ${STATE.b2Narrative||'--'}
-- Entry đặt: ${STATE.b4Entry||'--'}
-- R:R đặt: ${STATE.b4RR||'--'}
+- Phase Bộ 3: ${STATE.b3MarketState||'--'} | Entry hướng: ${STATE.b3EntryDirection||'--'} | Zone: ${STATE.b3EntryZone||'--'}
+- Exhaustion Bộ 3: ${STATE.b3ExhaustionScore||0}/4 | Risk level: ${STATE.b3RiskLevel||'--'}
+- Entry đặt: ${STATE.b4Entry||'--'} | R:R đặt: ${STATE.b4RR||'--'}
+
+ĐÁNH GIÁ QUY TRÌNH (bắt buộc phân tích):
+1. Entry có đúng zone bộ 3 đề xuất (${STATE.b3EntryZone||'--'}) không?
+2. Hướng trade có đúng bias bộ 3 (${STATE.b3EntryDirection||'--'}) không?
+3. Nếu Wyckoff=SPRING/UTAD → có cân nhắc reversal risk không?
+4. Nếu Exhaustion ≥3/4 → có giảm risk xuống 0.5R không?
 
 Kết quả lệnh:
 - Kết quả: ${STATE.b5TradeResult}
@@ -1051,6 +1058,8 @@ Trả về DUY NHẤT JSON, không markdown:
   "psych_analysis": "Phân tích tâm lý và mức độ kỷ luật",
   "compliance": "The5%ers compliance status và đánh giá buffer",
   "new_rule": "SMART HUNTER RULE: [rule cụ thể actionable]",
+  "process_compliance": "ĐÚNG_QUY_TRÌNH|SAI_ZONE|SAI_HƯỚNG|SAI_RISK — entry có đúng kế hoạch B3 không",
+  "process_note": "giải thích chi tiết: zone entry so với B3, hướng so với B3, risk so với exhaustion score",
   "next_decision": "CONTINUE"|"REST"|"STOP",
   "next_reason": "Lý do quyết định phiên tiếp theo"
 }`;
@@ -1087,7 +1096,17 @@ Trả về DUY NHẤT JSON, không markdown:
     // Sections
     document.getElementById('b5-c-tech').textContent=r.tech_errors||'';
     document.getElementById('b5-c-psych').textContent=r.psych_analysis||'';
-    document.getElementById('b5-c-comp').textContent=r.compliance||'';
+
+    // Process compliance badge
+    const compEl = document.getElementById('b5-c-comp');
+    const compColor = r.process_compliance==='ĐÚNG_QUY_TRÌNH' ? 'var(--green)'
+                    : r.process_compliance==='SAI_RISK' ? 'var(--amber)' : 'var(--red)';
+    const compEmoji = r.process_compliance==='ĐÚNG_QUY_TRÌNH' ? '✅' : r.process_compliance==='SAI_RISK' ? '⚠️' : '❌';
+    compEl.innerHTML = (r.process_compliance
+      ? `<div style="padding:8px 12px;background:${r.process_compliance==='ĐÚNG_QUY_TRÌNH'?'rgba(46,204,138,0.1)':'rgba(255,68,102,0.1)'};border:1px solid ${compColor};border-radius:6px;font-family:'Share Tech Mono',monospace;font-size:11px;color:${compColor};margin-bottom:8px">${compEmoji} QUY TRÌNH: ${r.process_compliance}</div>`
+      : '') + (r.process_note ? `<div style="font-size:12px;color:#8a9ab8;line-height:1.6">${r.process_note}</div>` : '')
+      + `<div style="margin-top:8px;font-size:12px;color:#c5c9d6;line-height:1.6">${r.compliance||''}</div>`;
+
     document.getElementById('b5-new-rule').textContent=r.new_rule||'--';
 
     // Next decision
@@ -1880,6 +1899,11 @@ CHoCH (Change of Character) — PHÂN BIỆT RÕ 3 MỨC ĐỘ:
 → VÀ có BOS ngược nhỏ (micro BOS ≥ 0.5 giá) trên M15
 → Nhưng chưa phá được swing high/low quan trọng
 → has_choch = TRUE (FORMING) | phase = REVERSAL_FORMING
+→ ACTION PLAN khi FORMING:
+   - Nếu đang có SELL setup: GIẢM risk xuống 0.5R vì có nguy cơ reversal
+   - Đặt alert tại swing high gần nhất — nếu giá phá qua = CHoCH CONFIRMED
+   - Ghi vào invalidation: "CHoCH invalid nếu giá phá [swing high/low] — chuyển sang REVERSAL BUY/SELL"
+   - KHÔNG cancel setup SELL ngay, nhưng chuẩn bị thoát nhanh nếu CHoCH xác nhận
 
 [CHoCH MỨC 3 — MẠNH] Xác nhận đảo chiều:
 → Bounce ≥ 50% impulse VÀ BOS ngược phá swing high/low quan trọng ≥ 1 giá
@@ -1931,6 +1955,18 @@ PHÂN BIỆT EXHAUSTION vs SPRING:
 → Nếu có cả 2: ưu tiên SPRING nếu displacement ngược ≥ 1.5 giá xác nhận
 
 LUẬT CỨNG: Score≤3→NO_TRADE | Score=4→0.5R | Score≥5→1R | CHOP≠YẾU≠MICRO_RANGE phân biệt rõ | Zone test≥2→hạ priority
+
+⚠️ LUẬT RISK BẮT BUỘC — TREND EXTENDED:
+IF trend_extended = TRUE VÀ exhaustion_score ≥ 2/4:
+→ MAX risk = 0.5R — KHÔNG ĐƯỢC FULL RISK 1R
+→ Lý do: Trend đã đi xa, xác suất reversal tăng cao, cần bảo vệ account
+IF exhaustion_score ≥ 3/4:
+→ MAX risk = 0.5R tuyệt đối dù pullback score cao
+IF trend_extended = TRUE VÀ exhaustion_score = 1/4:
+→ Risk = 0.75R (giảm nhẹ, momentum vẫn còn)
+→ Ghi rõ vào risk_reason: "Trend Extended — giảm risk"
+
+RULE BẤT BIẾN: KHÔNG BAO GIỜ FULL RISK 1R khi có cả trend_extended + exhaustion ≥ 2/4
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️ QUY TẮC ĐỌC GIÁ VÀ ENTRY ZONE — BẮT BUỘC
@@ -2579,6 +2615,17 @@ Hướng entry gợi ý từ Bộ 3: ${STATE.b3EntryDirection||'NONE'}
 Priority Bộ 3: ${STATE.b3Priority||'MEDIUM'}
 ${STATE.b3Priority==='HIGH'?'→ HIGH: SMC + Pullback + Truy Kích, chấp nhận early shift':STATE.b3Priority==='LOW'?'→ LOW: Chỉ A+ confirm đầy đủ, cấm entry sớm':'→ MEDIUM: SMC + Pullback, Truy Kích phải rõ'}
 
+══ KILL ZONE CONTEXT ══
+Giờ VN hiện tại được inject tự động — AI cần đánh giá xác suất theo kill zone:
+LONDON KZ (13:00–16:00 VN / 06:00–09:00 UTC): Xác suất cao nhất — displacement mạnh thường xảy ra
+NEW YORK KZ (20:00–23:00 VN / 13:00–16:00 UTC): Xác suất cao — news & reversal
+ASIA (22:00–08:00 VN): Biên độ thấp, tránh breakout giả
+MID-SESSION (08:00–13:00, 16:00–20:00 VN): Xác suất trung bình
+
+IF đang trong London/NY KZ → tăng confidence cho setup hợp lệ
+IF đang trong Asia → cảnh báo breakout giả, giảm risk
+IF không trong KZ → ghi nhận trong verdict_reason
+
 ═══════════════════════════════
 HẰNG SỐ ĐỊNH LƯỢNG (BẮT BUỘC ÁP DỤNG):
 ═══════════════════════════════
@@ -2700,7 +2747,7 @@ Trả về DUY NHẤT JSON:
       {type:'image',source:{type:'base64',media_type:h1t,data:h1b64}},
       {type:'text',text:'Chart H1 — xác định structure và momentum'},
       {type:'image',source:{type:'base64',media_type:m15t,data:m15b64}},
-      {type:'text',text:'Chart M15 — xác định liquidity và confirmation. Phân tích Ngữ Cảnh JSON.'}
+      {type:'text',text:`Chart M15 — xác định liquidity và confirmation. Giờ VN hiện tại: ${vnTime()}. Phân tích Ngữ Cảnh JSON.`}
     ]}]});
 
     // Save for Bo4
@@ -3159,7 +3206,8 @@ Trả về DUY NHẤT JSON:
 
     const checklistEl=document.getElementById('b4-smc-checklist');
     if(checklistEl){
-      const modelLabels={'MODEL_A_EARLY':'🔵 MODEL A: EARLY SHIFT','MODEL_B_PULLBACK':'🔵 MODEL B: PULLBACK','MODEL_C_BREAKOUT':'🟡 MODEL C: BREAKOUT (B+ Class — MAX A-)'};
+      const modelLabels={'MODEL_A_EARLY':'🔵 MODEL A: EARLY SHIFT','MODEL_B_PULLBACK':'🔵 MODEL B: PULLBACK','MODEL_C_BREAKOUT':'🟡 MODEL C: BREAKOUT (B+ Class — MAX A-)',
+        'WAITING_B':'⏳ MODEL B — ĐANG CHỜ GIÁ VÀO ZONE','WAITING_A':'⏳ MODEL A — ĐANG CHỜ TRIGGER'};
       const modelBadge=r.model?`<div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--blue);background:rgba(77,159,255,0.1);border:1px solid rgba(77,159,255,0.3);padding:3px 10px;border-radius:10px;margin-bottom:6px;display:inline-block">${modelLabels[r.model]||r.model}</div>`:'';
       const badge='<div style=\"font-family:\'Share Tech Mono\',monospace;font-size:9px;background:rgba(255,181,71,0.2);border:1px solid rgba(255,181,71,0.4);color:var(--amber);padding:3px 10px;border-radius:10px;letter-spacing:1px;margin-bottom:8px;display:inline-block\">⚡ MODE: TRUY KÍCH</div>';
       const tkChecks=[
