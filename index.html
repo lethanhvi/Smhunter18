@@ -12,6 +12,12 @@
 <script>
 const md={name:"Smart Hunter System",short_name:"Smart Hunter",start_url:"./",display:"standalone",background_color:"#080a0c",theme_color:"#080a0c",orientation:"portrait",icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%23080a0c'/%3E%3Ctext y='130' x='96' font-size='110' text-anchor='middle'%3E%F0%9F%8E%AF%3C/text%3E%3C/svg%3E",sizes:"192x192",type:"image/svg+xml"}]};
 document.write(`<link rel="manifest" href="${URL.createObjectURL(new Blob([JSON.stringify(md)],{type:'application/json'}))}">`);
+
+// === FIXED ENTRY ZONE LOGIC ===
+function isInEntryZone(price, low, high, tolerance=0.5){
+    return price >= (low - tolerance) && price <= (high + tolerance);
+}
+
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -3791,6 +3797,12 @@ if('serviceWorker'in navigator){
   const sw=`self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>new Response('Offline')))});`;
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
 }
+
+// === FIXED ENTRY ZONE LOGIC ===
+function isInEntryZone(price, low, high, tolerance=0.5){
+    return price >= (low - tolerance) && price <= (high + tolerance);
+}
+
 </script>
 
 </body>
