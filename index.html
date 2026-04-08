@@ -3147,10 +3147,24 @@ Hướng tìm: ${STATE.b3EntryDirection || 'NONE'}
 IF trigger = NONE → verdict = B | alert_zone = vùng entry B3
 
 ══ BƯỚC 3 — ĐÁNH GIÁ CHẤT LƯỢNG TRIGGER ══
-[T1/T2/T3 + acceptance rõ + impulse ≥ 10 giá] → A_PLUS
+[T1/T2/T3 + acceptance rõ + impulse ≥ 10 giá] → ứng viên A_PLUS (PHẢI qua thêm filter premium)
 [T1/T2/T3 + acceptance có] → A
 [T1/T2/T3 + acceptance yếu / late entry] → A_MINUS
 [Trigger không rõ / ngoài vùng] → B
+
+══ PREMIUM FILTER (BẮT BUỘC TRƯỚC KHI CHO A+) ══
+PULLBACK QUALITY:
+- Pullback < 20% impulse → MAX = A_MINUS
+- Pullback 20–30% impulse → MAX = A
+- Pullback 30–50% impulse → đủ chuẩn premium
+- Pullback > 60% impulse → giảm 1 level
+
+EXTENDED MOVE:
+- Nếu impulse đã chạy extended > 20 giá chưa reset sâu → MAX = A
+
+ENTRY LOCATION:
+- Nếu entry nằm top/bottom 15% của swing hiện tại → MAX = A
+- Nếu entry quá gần extreme/high-low gần nhất → giảm 1 level
 
 ══ RULE 2 — LIQUIDITY FILTER ══
 Trước khi entry, kiểm tra liquidity phía trên/dưới target:
@@ -3233,9 +3247,9 @@ IF breakout chase thuần (không LH/HL, không hold) → MAX = A_MINUS bắt bu
 CHỈ CHO A+ KHI VƯỢT QUA TẤT CẢ 5 RULE TRÊN.
 
 PHÂN LOẠI SETUP (BẮT BUỘC):
-A_PLUS: H1 trend rõ + M15 BOS + acceptance đầy đủ + impulse ≥ 10 giá + M5 pullback ≤ 4 giá + VƯỢT QUA 5 RULE → full risk
-A: H1 trend rõ + M15 BOS + acceptance có + impulse ≥ 8 giá + pullback 4-6 giá + tối đa 1 rule fail → trade được
-A_MINUS: phase IMPULSE qua EXCEPTION / BOS không acceptance rõ / impulse < 8 giá / breakout chase / late entry → 0.5R
+A_PLUS: H1 trend rõ + M15 BOS + acceptance đầy đủ + impulse ≥ 10 giá + pullback đạt 30-50% impulse + KHÔNG extended + KHÔNG near extreme + VƯỢT QUA toàn bộ filter → full risk
+A: H1 trend rõ + M15 BOS + acceptance có + impulse ≥ 8 giá + pullback 20-30% hoặc có 1 warning nhỏ → trade được
+A_MINUS: phase IMPULSE qua EXCEPTION / BOS không acceptance rõ / impulse < 8 giá / breakout chase / late entry / pullback <20% → 0.5R
 B: phase IMPULSE không qua EXCEPTION / sideway / không BOS / không trigger → no trade
 KHÔNG dùng FIRE/WAIT/CANCEL — chỉ dùng A_PLUS/A/A_MINUS/B
 
@@ -3446,10 +3460,24 @@ Hướng tìm: ${STATE.b3EntryDirection || 'NONE'}
 IF trigger = NONE → verdict = B | alert_zone = vùng entry B3
 
 ══ BƯỚC 3 — ĐÁNH GIÁ CHẤT LƯỢNG TRIGGER ══
-[T1/T2/T3 + acceptance rõ + impulse ≥ 10 giá] → A_PLUS
+[T1/T2/T3 + acceptance rõ + impulse ≥ 10 giá] → ứng viên A_PLUS (PHẢI qua thêm filter premium)
 [T1/T2/T3 + acceptance có] → A
 [T1/T2/T3 + acceptance yếu / late entry] → A_MINUS
 [Trigger không rõ / ngoài vùng] → B
+
+══ PREMIUM FILTER (BẮT BUỘC TRƯỚC KHI CHO A+) ══
+PULLBACK QUALITY:
+- Pullback < 20% impulse → MAX = A_MINUS
+- Pullback 20–30% impulse → MAX = A
+- Pullback 30–50% impulse → đủ chuẩn premium
+- Pullback > 60% impulse → giảm 1 level
+
+EXTENDED MOVE:
+- Nếu impulse đã chạy extended > 20 giá chưa reset sâu → MAX = A
+
+ENTRY LOCATION:
+- Nếu entry nằm top/bottom 15% của swing hiện tại → MAX = A
+- Nếu entry quá gần extreme/high-low gần nhất → giảm 1 level
 
 ══ LIQUIDITY FILTER ══
 Kiểm tra fresh liquidity trước khi entry:
