@@ -2215,10 +2215,14 @@ Trả về JSON thuần túy, KHÔNG markdown, KHÔNG backtick. 100% tiếng Vi�
       + '<div style="font-size:12px;color:#8a9ab8;line-height:1.6;margin-top:10px;max-width:360px;margin-left:auto;margin-right:auto;text-align:left">'+(r.summary||'')+'</div>'
       + entryBlock + invalidBlock
       + '</div>'
-      + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:12px;color:#8a9ab8;line-height:1.7">'
-      + '<div style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--gold);letter-spacing:2px;margin-bottom:8px">CẤU TRÚC M15 — STATE MACHINE v2</div>'
+      + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:0">'
+      + '<div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'.b3-chev\').style.transform=this.nextElementSibling.style.display===\'block\'?\'rotate(180deg)\':\'rotate(0deg)\'" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent">'
+      + '<div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px">🔬</div><div style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--gold);letter-spacing:2px">CẤU TRÚC M15 — STATE MACHINE v2</div></div>'
+      + '<div class="b3-chev" style="font-size:10px;color:var(--muted);transition:transform 0.2s">▼</div>'
+      + '</div>'
+      + '<div style="display:none;padding:0 16px 14px;font-size:12px;color:#8a9ab8;line-height:1.7;border-top:1px solid var(--border)">'
       + sweepBlock
-      + '<div>'+(r.structure_detail||'')+'</div>'
+      + '<div style="margin-top:10px">'+(r.structure_detail||'')+'</div>'
       + (r.entry_direction_reason ? '<div style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--muted);margin-top:4px;line-height:1.5">'+r.entry_direction_reason+'</div>' : '')
       + bounceBadge + exhaustionBadge + trendExtBadge + momentumBadge + microRangeBadge + pullbackQualityBadge + noTradeBadge + zoneFreshBadge + htfBadge
       + '<div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px">'
@@ -2228,6 +2232,8 @@ Trả về JSON thuần túy, KHÔNG markdown, KHÔNG backtick. 100% tiếng Vi�
       + '<div style="background:var(--bg2);border-radius:4px;padding:5px 4px;text-align:center"><div style="font-family:Share Tech Mono,monospace;font-size:7px;color:var(--muted);margin-bottom:2px">MOMENTUM</div><div style="font-family:Share Tech Mono,monospace;font-size:9px;color:'+momentumColor+'">'+momentumIcon+'</div></div>'
       + '</div>'
       + impulseBadge
+      + '</div>'
+      + '</div>'
 
     document.getElementById('b3-scan-result').innerHTML=html;
     document.getElementById('b3-scan-result').style.display='block';
