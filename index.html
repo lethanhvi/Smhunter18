@@ -1896,28 +1896,6 @@ STATE MACHINE 7 BƯỚC (thực hiện đúng thứ tự):
 
 B1-TREND: DOWN=sóng đẩy đỏ lớn+phá cấu trúc xuống | UP=sóng đẩy xanh+phá cấu trúc lên | NONE=không rõ→NO_TRADE
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚨 QUY TẮC ĐỌC IMPULSE BẮT BUỘC — TRƯỚC B2
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Trước khi tính exhaustion, phải xác định đúng điểm bắt đầu impulse:
-→ Điểm BẮT ĐẦU impulse = nến đầu tiên của sóng đẩy hiện tại (OPEN của nến đó, KHÔNG phải swing high/low gần nhất trên trục Y)
-→ Điểm KẾT THÚC impulse = close của nến impulse cuối cùng trước khi giá đổi chiều
-→ Tổng move = |điểm kết thúc - điểm bắt đầu| tính bằng giá
-
-LỖI PHỔ BIẾN CẦN TRÁNH:
-❌ SAI: Đọc đường kẻ ngang gần nhất trên chart làm điểm xuất phát
-❌ SAI: Dùng swing high/low trên trục Y thay vì close nến thực tế
-❌ SAI: Tính từ đỉnh/đáy của bóng nến thay vì thân nến
-
-✅ ĐÚNG: Xác định nến đầu tiên của sóng — đọc giá OPEN/CLOSE thực của nến đó
-✅ ĐÚNG: Tính move = close nến cuối impulse - open nến đầu impulse
-✅ ĐÚNG: Kiểm tra chéo với nến cuối cùng (bên phải nhất) để xác nhận giá hiện tại
-
-VÍ DỤ:
-Chart có đường kẻ 4800, nhưng impulse thực bắt đầu từ nến open 4794 → close 4744
-→ Tổng move = 4794 - 4744 = 50 giá — KHÔNG phải 4800 - 4744 = 56 giá
-→ Ghi rõ: "Impulse từ [open nến đầu] → [close nến cuối] = X giá"
-
 B2-EXHAUSTION (chạy trước mọi thứ):
 [E1]xu hướng ≥8 giá (80 pips)+≥3 chân | [E2]thân nến gần<thân impulse×0.5 | [E3]bóng nến nhiều>0.4 | [E4]không tạo được đáy/đỉnh mới
 Đủ E1+E2+(E3 hoặc E4)=EXHAUSTION→NO_TRADE. Chỉ E1=priority LOW. Chỉ E2/E3=risk REDUCED.
@@ -2021,27 +1999,6 @@ PHÂN BIỆT EXHAUSTION vs SPRING:
 
 LUẬT CỨNG: Score≤3→NO_TRADE | Score=4→0.5R | Score≥5→1R | CHOP≠YẾU≠MICRO_RANGE phân biệt rõ | Zone test≥2→hạ priority
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️ QUY TẮC INVALIDATION BẮT BUỘC — KỂ CẢ KHI NO_TRADE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Field "invalidation" KHÔNG BAO GIỜ được để trống hoặc ghi "Không áp dụng".
-Dù mode = NO_TRADE, vẫn phải ghi điều kiện để trader theo dõi tiếp.
-
-INVALIDATION theo từng phase:
-→ EXHAUSTION SELL: "Nếu giá phá xuống [đáy gần nhất - 0.5 giá] với body nến ≥ 1.5 giá → exhaustion invalid, trend tiếp tục xuống"
-→ EXHAUSTION BUY: "Nếu giá phá lên [đỉnh gần nhất + 0.5 giá] với body nến ≥ 1.5 giá → exhaustion invalid, trend tiếp tục lên"
-→ RANGE: "Nếu giá close ngoài range [biên trên] hoặc [biên dưới] với displacement ≥ 1.5 giá → range break, theo chiều breakout"
-→ CHOP/MICRO_RANGE: "Nếu giá tạo displacement rõ ≥ 1.5 giá và BOS ≥ 0.5 giá → chop kết thúc, entry theo chiều displacement"
-
-VÍ DỤ ĐÚNG cho EXHAUSTION NO_TRADE:
-✅ "Exhaustion SELL invalid nếu giá phá xuống 4728 với body ≥ 1.5 giá → trend SELL tiếp tục, chờ pullback mới"
-✅ "Nếu giá bounce lên qua 4760 với displacement xanh ≥ 1.5 giá → CHoCH xác nhận, chuyển BUY setup"
-
-VÍ DỤ SAI:
-❌ "Không áp dụng do NO_TRADE"
-❌ "N/A"
-❌ Để trống
-
 ⚠️ LUẬT RISK BẮT BUỘC — TREND EXTENDED:
 IF trend_extended = TRUE VÀ exhaustion_score ≥ 2/4:
 → MAX risk = 0.5R — KHÔNG ĐƯỢC FULL RISK 1R
@@ -2059,7 +2016,7 @@ RULE BẤT BIẾN: KHÔNG BAO GIỜ FULL RISK 1R khi có cả trend_extended + e
 NGÔN NGỮ: 100% tiếng Việt. BOS=Phá Cấu Trúc, CHoCH=Đổi Hướng, Displacement=Sóng Đẩy Mạnh, Sweep=Quét Thanh Khoản, Pullback=Hồi Giá, Impulse=Sóng Đẩy, Overlap=Nến Chồng, Momentum=Động Lực. Không dùng tiếng Anh trong _reason/_note/summary.
 
 Trả về DUY NHẤT JSON (không markdown, không backtick):
-{"trend_direction":"DOWN|UP|NONE","trend_direction_reason":"...","mode":"CONTINUATION|IMPULSE_WAIT|NO_TRADE","phase":"IMPULSE|IMPULSE_PEAK|PULLBACK|READY|WEAK_PULLBACK|MICRO_RANGE|CHOP|CONTINUATION|CONTINUATION_BASE|EXHAUSTION|RANGE","in_zone":false,"in_zone_note":"giá có đang trong entry_zone không — TRUE/FALSE + lý do","entry_direction":"SELL|BUY|NONE","entry_direction_reason":"...","entry_zone":"...","htf_alignment":"ALIGNED|CONFLICT|NEUTRAL","risk_level":"FULL|REDUCED|NONE","risk_reason":"...","invalidation":"BẮT BUỘC — điều kiện cụ thể để theo dõi kể cả khi NO_TRADE (giá phá X với body ≥ Y giá)","next_action":"WAIT_FOR_ENTRY|WAIT_PULLBACK|NO_TRADE","priority":"HIGH|MEDIUM|LOW","summary":"...","structure_detail":"...","recent_impulse":true,"recent_impulse_note":"...","has_choch":false,"choch_level":"NONE|FORMING|CONFIRMED — mức độ CHoCH","choch_note":"mô tả chi tiết: bounce=X pip (X% impulse), BOS ngược=có/không, displacement ngược=X giá","bounce_pct":"X% — bounce hiện tại so với impulse gần nhất","fail_structure":false,"fail_structure_note":"...","exhaustion_score":"X/4","exhaustion_check":"YES_EXHAUSTION|NO_EXHAUSTION","exhaustion_reason":"...","trend_extended":false,"trend_extended_note":"...","momentum_weak":false,"momentum_weak_note":"...","micro_range":false,"micro_range_note":"...","pullback_quality":"STRONG|GOOD|ACCEPTABLE|WEAK|CHOP|MICRO_RANGE|N_A","pullback_quality_score":"X/6","pullback_quality_reason":"...","no_trade_reason":"...","zone_test_count":0,"zone_freshness":"FRESH|WEAK|DEAD","sweep_detected":false,"sweep_note":"..."}`;
+{"trend_direction":"DOWN|UP|NONE","trend_direction_reason":"...","mode":"CONTINUATION|IMPULSE_WAIT|NO_TRADE","phase":"IMPULSE|IMPULSE_PEAK|PULLBACK|READY|WEAK_PULLBACK|MICRO_RANGE|CHOP|CONTINUATION|CONTINUATION_BASE|EXHAUSTION|RANGE","in_zone":false,"in_zone_note":"giá có đang trong entry_zone không — TRUE/FALSE + lý do","entry_direction":"SELL|BUY|NONE","entry_direction_reason":"...","entry_zone":"...","htf_alignment":"ALIGNED|CONFLICT|NEUTRAL","risk_level":"FULL|REDUCED|NONE","risk_reason":"...","invalidation":"...","next_action":"WAIT_FOR_ENTRY|WAIT_PULLBACK|NO_TRADE","priority":"HIGH|MEDIUM|LOW","summary":"...","structure_detail":"...","recent_impulse":true,"recent_impulse_note":"...","has_choch":false,"choch_level":"NONE|FORMING|CONFIRMED — mức độ CHoCH","choch_note":"mô tả chi tiết: bounce=X pip (X% impulse), BOS ngược=có/không, displacement ngược=X giá","bounce_pct":"X% — bounce hiện tại so với impulse gần nhất","fail_structure":false,"fail_structure_note":"...","exhaustion_score":"X/4","exhaustion_check":"YES_EXHAUSTION|NO_EXHAUSTION","exhaustion_reason":"...","trend_extended":false,"trend_extended_note":"...","momentum_weak":false,"momentum_weak_note":"...","micro_range":false,"micro_range_note":"...","pullback_quality":"STRONG|GOOD|ACCEPTABLE|WEAK|CHOP|MICRO_RANGE|N_A","pullback_quality_score":"X/6","pullback_quality_reason":"...","no_trade_reason":"...","zone_test_count":0,"zone_freshness":"FRESH|WEAK|DEAD","sweep_detected":false,"sweep_note":"..."}`;
 
     const b64=img.split(',')[1];
     const mtype=img.split(';')[0].split(':')[1];
@@ -2627,7 +2584,7 @@ Chỉ trade khi giá break khỏi range với displacement ≥ 1.5 giá
 
 OUTPUT phải có giá cụ thể. Trả lời HOÀN TOÀN bằng tiếng Việt.
 Trả về DUY NHẤT JSON:
-{"bias":"SELL_CONTEXT"|"BUY_CONTEXT"|"NEUTRAL","market_phase":"TRENDING"|"RANGE","execution":"ACTIVE"|"WAIT_BREAKOUT"|"NEUTRAL","bias_reason":"Phase=X, D1=LH+LL/HH+HL tại giá X","execution_note":"tại sao active hay chờ breakout","structure":"mô tả H4+D1 với giá cụ thể","liquidity_near":"EQH/EQL gần nhất tại giá X — cần sweep trước","liquidity_far":"BSL/SSL xa tại X — target sau","zones":"Supply X-X, Demand Y-Y","range_box":"nếu RANGE — high=X low=Y breakout cần displacement ≥ 1.5 giá","dxy":"tác động DXY","intent":"Re-accumulation/Distribution/Trending"}`;
+{"bias":"SELL_CONTEXT"|"BUY_CONTEXT"|"NEUTRAL","market_phase":"TRENDING"|"RANGE","execution":"ACTIVE"|"WAIT_BREAKOUT"|"NEUTRAL","bias_reason":"Phase=X, D1=LH+LL/HH+HL tại giá X","execution_note":"tại sao active hay chờ breakout","structure":"mô tả H4+D1 với giá cụ thể","liquidity_near":"EQH/EQL gần nhất tại giá X — cần sweep trước","liquidity_far":"BSL (phía trên đỉnh) tại X / SSL (phía dưới đáy) tại Y — target xa","zones":"Supply X-X, Demand Y-Y","range_box":"nếu RANGE — high=X low=Y breakout cần displacement ≥ 1.5 giá","dxy":"tác động DXY","intent":"Re-accumulation/Distribution/Trending"}`;
     const d1b64=STATE.imgs.b1_d1.split(',')[1],h4b64=STATE.imgs.b1_h4.split(',')[1];
     const d1t=STATE.imgs.b1_d1.split(';')[0].split(':')[1],h4t=STATE.imgs.b1_h4.split(';')[0].split(':')[1];
     const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:d1t,data:d1b64}},{type:'text',text:'Chart 1: D1'},{type:'image',source:{type:'base64',media_type:h4t,data:h4b64}},{type:'text',text:'Chart 2: H4. Phân tích JSON.'}]}]});
@@ -2769,6 +2726,27 @@ FVG_MIN = 0.5 giá (5 pips — gap giữa nến 1 và 3)
 - Pullback nông: 20–50% của impulse | Pullback sâu: 50–80%
 - FVG = TRUE: Gap nến 1 và 3 ≥ 0.5 giá
 - OB hợp lệ: Nến cuối trước displacement ≥ 1.5 giá
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 ĐỊNH NGHĨA BSL / SSL — BẮT BUỘC ĐỌC VÀ ÁP DỤNG ĐÚNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BSL (Buy Side Liquidity) = Thanh khoản phía MUA = nằm TRÊN các đỉnh (swing highs)
+→ Đây là nơi stop loss của người SELL bị đặt → Smart Money săn bằng cách đẩy giá LÊN để quét
+→ BSL luôn nằm TRÊN giá hiện tại hoặc TRÊN đỉnh gần nhất
+
+SSL (Sell Side Liquidity) = Thanh khoản phía BÁN = nằm DƯỚI các đáy (swing lows)
+→ Đây là nơi stop loss của người BUY bị đặt → Smart Money săn bằng cách đẩy giá XUỐNG để quét
+→ SSL luôn nằm DƯỚI giá hiện tại hoặc DƯỚI đáy gần nhất
+
+QUY TẮC GHI NHẤT QUÁN:
+✅ ĐÚNG: "BSL tại 4800 (swing high phía trên) — stop loss SELL cluster ở đây"
+✅ ĐÚNG: "SSL tại 4740 (swing low phía dưới) — stop loss BUY cluster ở đây"
+❌ SAI: "BSL tại 4740 (swing low)" — BSL không bao giờ nằm ở swing low
+❌ SAI: "SSL tại 4800 (swing high)" — SSL không bao giờ nằm ở swing high
+
+KIỂM TRA CHÉO BẮT BUỘC trước khi output:
+→ BSL có nằm TRÊN giá hiện tại không? Nếu KHÔNG → sai, đổi lại
+→ SSL có nằm DƯỚI giá hiện tại không? Nếu KHÔNG → sai, đổi lại
 
 FORMAT OUTPUT BẮT BUỘC:
 ❌ CẤM: "momentum yếu", "có vẻ", "có thể", "khá mạnh"
