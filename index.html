@@ -888,9 +888,7 @@ const STATE = {
   imgs:{ b1_d1:null, b1_h4:null, b2_h1:null, b2_m15:null, b3_m15:null, b4_m5:null },
   psychAnswers:{},
   b3Answers:{},
-  b5Result:null, b5TradeResult:'', b5Trail:'',
-  b1Phase:'', b1Execution:'', b1ExecutionNote:'', b1Structure:'',
-  b1LiquidityNear:'', b1LiquidityFar:'', b1Zones:'', b1Intent:'', b1RawBias:''
+  b5Result:null, b5TradeResult:'', b5Trail:''
 };
 
 // ══════════════════════════════════════════════
@@ -960,22 +958,39 @@ function syncBo2Context() {
   d.textContent = bias;
   d.style.color = biasColor;
 
-  // Render compact B1 context — chỉ Supply/Demand zones + LQ quan trọng
+  // Render Bo1 detail context with highlights
   const ctx = document.getElementById('b2-b1-context');
-  if(!STATE.b1Zones && !STATE.b1LiquidityNear && !STATE.b1LiquidityFar){
-    ctx.style.display='none'; checkB2Ready(); return;
-  }
+  if(!STATE.b1Phase && !STATE.b1Structure){ctx.style.display='none';checkB2Ready();return;}
 
+  const phaseColor = STATE.b1Phase==='RANGE' ? 'var(--amber)' : 'var(--green)';
   const execColor = STATE.b1Execution==='ACTIVE' ? 'var(--green)' : STATE.b1Execution==='WAIT_BREAKOUT' ? 'var(--amber)' : 'var(--muted)';
-  const execIcon  = STATE.b1Execution==='ACTIVE' ? '🟢' : STATE.b1Execution==='WAIT_BREAKOUT' ? '🟡' : '⚪';
 
-  let lines = [];
-  if(STATE.b1Zones)          lines.push(`<span style="color:var(--blue)">📦 ${STATE.b1Zones}</span>`);
-  if(STATE.b1LiquidityNear)  lines.push(`<span style="color:var(--amber)">🎯 LQ gần: ${STATE.b1LiquidityNear}</span>`);
-  if(STATE.b1LiquidityFar)   lines.push(`<span style="color:var(--muted)">🔭 LQ xa: ${STATE.b1LiquidityFar}</span>`);
-  if(STATE.b1Execution)      lines.push(`<span style="color:${execColor}">${execIcon} ${STATE.b1Execution}</span>`);
+  const rows = [
+    { icon:'📊', label:'PHASE', value: STATE.b1Phase||'--', valColor: phaseColor },
+    { icon:'⚡', label:'EXECUTION', value: STATE.b1Execution||'--', valColor: execColor },
+    { icon:'🏗️', label:'STRUCTURE', value: STATE.b1Structure||'--', valColor:'var(--text)', full:true },
+    { icon:'🎯', label:'LQ GẦN', value: STATE.b1LiquidityNear||'--', valColor:'var(--amber)', full:true },
+    { icon:'🔭', label:'LQ XA', value: STATE.b1LiquidityFar||'--', valColor:'var(--muted)', full:true },
+    { icon:'📦', label:'ZONES', value: STATE.b1Zones||'--', valColor:'var(--blue)', full:true },
+    { icon:'🧭', label:'INTENT', value: STATE.b1Intent||'--', valColor:'var(--cyan)', full:true },
+  ].filter(r => r.value && r.value !== '--');
 
-  ctx.innerHTML = `<div style="padding:10px 14px;font-family:'Share Tech Mono',monospace;font-size:10px;line-height:1.9;background:rgba(201,168,76,0.03)">${lines.join('<br>')}</div>`;
+  ctx.innerHTML = rows.map((r,i) => `
+    <div style="
+      display:flex; align-items:${r.full?'flex-start':'center'}; gap:10px;
+      padding:10px 14px;
+      background:${i%2===0?'rgba(201,168,76,0.04)':'rgba(0,0,0,0.2)'};
+      border-bottom:1px solid rgba(201,168,76,0.08);
+      ${i===rows.length-1?'border-bottom:none':''}
+    ">
+      <span style="font-size:14px;flex-shrink:0;margin-top:${r.full?'2px':'0'}">${r.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:rgba(201,168,76,0.6);letter-spacing:2px;margin-bottom:3px">${r.label}</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:${r.valColor};line-height:1.5;word-break:break-word">${r.value}</div>
+      </div>
+    </div>
+  `).join('');
+
   ctx.style.display = 'block';
   checkB2Ready();
 }
@@ -1149,7 +1164,6 @@ Trả về DUY NHẤT JSON, không markdown:
     document.getElementById('b5-result').style.display='block';
     if(navigator.vibrate)navigator.vibrate([50,30,80]);
     setTimeout(()=>document.getElementById('b5-result').scrollIntoView({behavior:'smooth',block:'start'}),200);
-    saveState();
   }catch(err){
     document.getElementById('b5-error-msg').textContent=err.message;
     document.getElementById('b5-error').classList.add('show');
@@ -1424,6 +1438,7 @@ function showRandomQuote(){
 // ══════════════════════════════════════════════
 function saveState(){
   try{
+    // Save everything except large image data
     const toSave={
       apiKey: STATE.apiKey,
       stages: STATE.stages,
@@ -1433,43 +1448,12 @@ function saveState(){
       b2FailedBreakout: STATE.b2FailedBreakout,
       b2FailedBreakoutNote: STATE.b2FailedBreakoutNote,
       b2WyckoffContext: STATE.b2WyckoffContext,
-      b3Priority: STATE.b3Priority,
-      b3TrendDir: STATE.b3TrendDir,
-      b3Mode: STATE.b3Mode,
-      b3MarketState: STATE.b3MarketState,
-      b3NextAction: STATE.b3NextAction,
-      b3EntryDirection: STATE.b3EntryDirection,
-      b3RiskLevel: STATE.b3RiskLevel,
-      b3Invalidation: STATE.b3Invalidation,
-      b3EntryZone: STATE.b3EntryZone,
-      b3PullbackQuality: STATE.b3PullbackQuality,
-      b3PullbackScore: STATE.b3PullbackScore,
-      b3InZone: STATE.b3InZone,
-      b3InZoneNote: STATE.b3InZoneNote,
-      b3ExhaustionScore: STATE.b3ExhaustionScore,
-      b3RecentImpulse: STATE.b3RecentImpulse,
       b4Entry: STATE.b4Entry,
       b4RR: STATE.b4RR,
       psychAnswers: STATE.psychAnswers,
       b3Answers: STATE.b3Answers,
       b5TradeResult: STATE.b5TradeResult,
       b5Trail: STATE.b5Trail,
-      r_b1: document.getElementById('b1-result') ? document.getElementById('b1-result').innerHTML : '',
-      r_b2: document.getElementById('b2-result') ? document.getElementById('b2-result').innerHTML : '',
-      r_b3: document.getElementById('b3-scan-result') ? document.getElementById('b3-scan-result').innerHTML : '',
-      r_b3v: document.getElementById('b3-verdict') ? document.getElementById('b3-verdict').innerHTML : '',
-      r_b4: document.getElementById('b4-result') ? document.getElementById('b4-result').innerHTML : '',
-      r_b5: document.getElementById('b5-result') ? document.getElementById('b5-result').innerHTML : '',
-      imgs: STATE.imgs,
-      b1Phase: STATE.b1Phase,
-      b1Execution: STATE.b1Execution,
-      b1ExecutionNote: STATE.b1ExecutionNote,
-      b1Structure: STATE.b1Structure,
-      b1LiquidityNear: STATE.b1LiquidityNear,
-      b1LiquidityFar: STATE.b1LiquidityFar,
-      b1Zones: STATE.b1Zones,
-      b1Intent: STATE.b1Intent,
-      b1RawBias: STATE.b1RawBias,
       savedAt: Date.now()
     };
     localStorage.setItem('shs_state', JSON.stringify(toSave));
@@ -1499,75 +1483,15 @@ function loadState(){
       b2FailedBreakout: saved.b2FailedBreakout || 'FALSE',
       b2FailedBreakoutNote: saved.b2FailedBreakoutNote || '',
       b2WyckoffContext: saved.b2WyckoffContext || 'NONE',
-      b3Priority:   saved.b3Priority   || 'MEDIUM',
-      b3TrendDir:   saved.b3TrendDir   || '',
-      b3Mode:       saved.b3Mode       || '',
-      b3MarketState:saved.b3MarketState|| '',
-      b3NextAction: saved.b3NextAction || '',
-      b3EntryDirection: saved.b3EntryDirection || 'NONE',
-      b3RiskLevel:  saved.b3RiskLevel  || 'FULL',
-      b3Invalidation: saved.b3Invalidation || '',
-      b3EntryZone:  saved.b3EntryZone  || '',
-      b3PullbackQuality: saved.b3PullbackQuality || 'N_A',
-      b3PullbackScore: saved.b3PullbackScore || 0,
-      b3InZone:     saved.b3InZone     || false,
-      b3InZoneNote: saved.b3InZoneNote || '',
-      b3ExhaustionScore: saved.b3ExhaustionScore || 0,
-      b3RecentImpulse: saved.b3RecentImpulse || false,
       b4Entry:      saved.b4Entry      || '',
       b4RR:         saved.b4RR         || '',
       psychAnswers: saved.psychAnswers  || {},
       b3Answers:    saved.b3Answers    || {},
       b5TradeResult:saved.b5TradeResult|| '',
-      b5Trail:      saved.b5Trail      || '',
-      imgs:         saved.imgs         || STATE.imgs,
-      b1Phase:      saved.b1Phase      || '',
-      b1Execution:  saved.b1Execution  || '',
-      b1ExecutionNote: saved.b1ExecutionNote || '',
-      b1Structure:  saved.b1Structure  || '',
-      b1LiquidityNear: saved.b1LiquidityNear || '',
-      b1LiquidityFar:  saved.b1LiquidityFar  || '',
-      b1Zones:      saved.b1Zones      || '',
-      b1Intent:     saved.b1Intent     || '',
-      b1RawBias:    saved.b1RawBias    || ''
+      b5Trail:      saved.b5Trail      || ''
     });
 
-    // Restore result HTML
-    const restoreEl = (id, html) => { if(!html) return; const el=document.getElementById(id); if(el){ el.innerHTML=html; el.style.display='block'; } };
-    restoreEl('b1-result', saved.r_b1);
-    restoreEl('b2-result', saved.r_b2);
-    restoreEl('b3-scan-result', saved.r_b3);
-    restoreEl('b3-verdict', saved.r_b3v);
-    restoreEl('b4-result', saved.r_b4);
-    restoreEl('b5-result', saved.r_b5);
-
-    // Restore image previews
-    if(saved.imgs){
-      [['b1','d1'],['b1','h4'],['b2','h1'],['b2','m15'],['b3','m15'],['b4','m5']].forEach(([p,t])=>{
-        const imgData = saved.imgs[p+'_'+t];
-        if(!imgData) return;
-        const box = document.getElementById(p+'-box-'+t);
-        if(!box) return;
-        box.classList.add('has-img');
-        let img = box.querySelector('img');
-        if(!img){ img=document.createElement('img'); img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:6px;opacity:0.7'; box.appendChild(img); }
-        img.src = imgData;
-      });
-    }
-
-    // Restore next buttons visibility based on stages
-    if(saved.stages){
-      if(saved.stages.psych){ const el=document.getElementById('psych-next'); if(el) el.style.display='block'; }
-      if(saved.stages.bo1){   const el=document.getElementById('b1-next');    if(el) el.style.display='block'; }
-      if(saved.stages.bo2){
-        const el=document.getElementById('b2-next');
-        if(el){ el.style.display='block'; el.textContent='→ TIẾN HÀNH BỘ 3'; }
-      }
-      if(saved.stages.bo3){   const el=document.getElementById('b3-next');    if(el) el.style.display='block'; }
-      if(saved.stages.bo4){   const el=document.getElementById('b4-next');    if(el) el.style.display='block'; }
-    }
-
-    // Restore API key UI
+    // Restore API key UI - only update if element exists
     if(STATE.apiKey){
       const inp = document.getElementById('dash-api-input');
       const sts = document.getElementById('dash-api-status');
@@ -1864,6 +1788,27 @@ HTF Bias từ Bộ 1: ${HTF_BIAS} | Kết quả Bộ 2: ${B2_VERDICT} | Trạng 
 Failed Breakout từ Bộ 2: ${B2_FAILED_BOS} | Wyckoff Context: ${B2_WYCKOFF}
 ${B2_FAILED_NOTE ? '→ Chi tiết: ' + B2_FAILED_NOTE : ''}
 → Bộ 2 đã phân tích H1+M15 trước. Bộ 3 bổ sung: Kill Zone + lọc tin tức + xác nhận M15 lần cuối.
+
+══ QUY TẮC HTF_ALIGNMENT — BẮT BUỘC (không được tự suy luận) ══
+HTF Bias chính xác từ Bộ 1 = "${HTF_BIAS}"
+KHÔNG được tự nhận định HTF là BUY/SELL/TĂNG/GIẢM ngoài giá trị trên.
+
+IF HTF_BIAS chứa "SELL" hoặc "GIẢM":
+  → htf_alignment = "ALIGNED" khi M15 đang SELL/giảm
+  → htf_alignment = "CONFLICT" khi M15 đang BUY/tăng
+  → KHÔNG được viết "HTF bias tăng" hay "HTF đang tăng" — sai với dữ liệu Bo1
+
+IF HTF_BIAS chứa "BUY" hoặc "TĂNG":
+  → htf_alignment = "ALIGNED" khi M15 đang BUY/tăng
+  → htf_alignment = "CONFLICT" khi M15 đang SELL/giảm
+  → KHÔNG được viết "HTF bias giảm" hay "HTF đang giảm" — sai với dữ liệu Bo1
+
+IF HTF_BIAS = "NEUTRAL" hoặc "TRUNG LẬP":
+  → htf_alignment = "NEUTRAL" — không có bias từ Bo1
+  → KHÔNG tự gán ALIGNED hay CONFLICT
+
+VÍ DỤ ĐÚNG: HTF_BIAS="BỐI CẢNH GIẢM", M15 đang SELL → htf_alignment="ALIGNED", summary KHÔNG mention "HTF conflict"
+VÍ DỤ SAI: HTF_BIAS="BỐI CẢNH GIẢM", AI viết "HTF bias tăng xung đột" → SAI HOÀN TOÀN
 
 ⚠️ ĐỌC KỸ CONTEXT BỘ 2 TRƯỚC KHI PHÂN TÍCH:
 IF Bộ 2 = FAILED_BREAKOUT TRUE hoặc Wyckoff = SPRING/UTAD:
@@ -2275,8 +2220,11 @@ Trả về JSON thuần túy, KHÔNG markdown, KHÔNG backtick. 100% tiếng Vi�
       ? '<div style="margin-top:6px;padding:5px 8px;background:rgba(255,181,71,0.08);border:1px solid rgba(255,181,71,0.2);border-radius:5px;font-family:Share Tech Mono,monospace;font-size:9px;color:'+(zfColors[r.zone_freshness]||'var(--muted)')+'">'+(zfIcons[r.zone_freshness]||'')+' ZONE: '+r.zone_freshness+' (test '+( r.zone_test_count||'?')+'x)</div>'
       : '';
 
+    const htfAlignColor = r.htf_alignment === 'ALIGNED' ? 'var(--green)' : r.htf_alignment === 'CONFLICT' ? 'var(--red)' : 'var(--muted)';
+    const htfAlignIcon = r.htf_alignment === 'ALIGNED' ? '✅' : r.htf_alignment === 'CONFLICT' ? '⚠️' : '➖';
+    const htfAlignLabel = r.htf_alignment === 'ALIGNED' ? `ALIGNED với Bo1 (${HTF_BIAS})` : r.htf_alignment === 'CONFLICT' ? `CONFLICT với Bo1 (${HTF_BIAS})` : `NEUTRAL`;
     const htfBadge = r.htf_alignment
-      ? '<div style="margin-top:6px;font-family:Share Tech Mono,monospace;font-size:9px;color:var(--muted)">HTF: '+r.htf_alignment+'</div>' : '';
+      ? `<div style="margin-top:6px;padding:4px 8px;background:rgba(0,0,0,0.2);border-radius:4px;font-family:Share Tech Mono,monospace;font-size:9px;color:${htfAlignColor}">${htfAlignIcon} HTF: ${htfAlignLabel}</div>` : '';
     const impulseBadge = r.recent_impulse_note
       ? '<div style="margin-top:6px;font-family:Share Tech Mono,monospace;font-size:9px;color:var(--amber);padding:4px 6px;background:rgba(255,181,71,0.06);border-radius:4px">IMPULSE: '+r.recent_impulse_note+'</div>' : '';
     const momentumIcon = r.momentum_weak ? '⚠ YẾU' : '✅ OK';
@@ -2307,7 +2255,6 @@ Trả về JSON thuần túy, KHÔNG markdown, KHÔNG backtick. 100% tiếng Vi�
 
     document.getElementById('b3-scan-result').innerHTML=html;
     document.getElementById('b3-scan-result').style.display='block';
-    saveState();
 
     checkB3Verdict();
 
@@ -2661,7 +2608,7 @@ Chỉ trade khi giá break khỏi range với displacement ≥ 1.5 giá
 
 OUTPUT phải có giá cụ thể. Trả lời HOÀN TOÀN bằng tiếng Việt.
 Trả về DUY NHẤT JSON:
-{"bias":"SELL_CONTEXT"|"BUY_CONTEXT"|"NEUTRAL","market_phase":"TRENDING"|"RANGE","execution":"ACTIVE"|"WAIT_BREAKOUT"|"NEUTRAL","bias_reason":"Phase=X, D1=LH+LL/HH+HL tại giá X","execution_note":"tại sao active hay chờ breakout","structure":"mô tả H4+D1 với giá cụ thể","liquidity_near":"EQH/EQL gần nhất tại giá X — cần sweep trước","liquidity_far":"BSL (phía trên đỉnh) tại X / SSL (phía dưới đáy) tại Y — target xa","zones":"Supply X-X, Demand Y-Y","range_box":"nếu RANGE — high=X low=Y breakout cần displacement ≥ 1.5 giá","dxy":"tác động DXY","intent":"Re-accumulation/Distribution/Trending"}`;
+{"bias":"SELL_CONTEXT"|"BUY_CONTEXT"|"NEUTRAL","market_phase":"TRENDING"|"RANGE","execution":"ACTIVE"|"WAIT_BREAKOUT"|"NEUTRAL","bias_reason":"Phase=X, D1=LH+LL/HH+HL tại giá X","execution_note":"tại sao active hay chờ breakout","structure":"mô tả H4+D1 với giá cụ thể","liquidity_near":"EQH/EQL gần nhất tại giá X — cần sweep trước","liquidity_far":"BSL/SSL xa tại X — target sau","zones":"Supply X-X, Demand Y-Y","range_box":"nếu RANGE — high=X low=Y breakout cần displacement ≥ 1.5 giá","dxy":"tác động DXY","intent":"Re-accumulation/Distribution/Trending"}`;
     const d1b64=STATE.imgs.b1_d1.split(',')[1],h4b64=STATE.imgs.b1_h4.split(',')[1];
     const d1t=STATE.imgs.b1_d1.split(';')[0].split(':')[1],h4t=STATE.imgs.b1_h4.split(';')[0].split(':')[1];
     const r=await callAPI({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:d1t,data:d1b64}},{type:'text',text:'Chart 1: D1'},{type:'image',source:{type:'base64',media_type:h4t,data:h4b64}},{type:'text',text:'Chart 2: H4. Phân tích JSON.'}]}]});
@@ -2724,7 +2671,6 @@ Trả về DUY NHẤT JSON:
     document.getElementById('b1-next').style.display='block';
     if(navigator.vibrate)navigator.vibrate([50,30,80]);
     setTimeout(()=>document.getElementById('b1-result').scrollIntoView({behavior:'smooth',block:'start'}),200);
-    saveState();
   }catch(err){document.getElementById('b1-error-msg').textContent=err.message;document.getElementById('b1-error').classList.add('show');}
   finally{document.getElementById('b1-loading').classList.remove('show');document.getElementById('b1-analyze-btn').disabled=false;checkB1Ready();}
 }
@@ -2804,27 +2750,6 @@ FVG_MIN = 0.5 giá (5 pips — gap giữa nến 1 và 3)
 - Pullback nông: 20–50% của impulse | Pullback sâu: 50–80%
 - FVG = TRUE: Gap nến 1 và 3 ≥ 0.5 giá
 - OB hợp lệ: Nến cuối trước displacement ≥ 1.5 giá
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚨 ĐỊNH NGHĨA BSL / SSL — BẮT BUỘC ĐỌC VÀ ÁP DỤNG ĐÚNG
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BSL (Buy Side Liquidity) = Thanh khoản phía MUA = nằm TRÊN các đỉnh (swing highs)
-→ Đây là nơi stop loss của người SELL bị đặt → Smart Money săn bằng cách đẩy giá LÊN để quét
-→ BSL luôn nằm TRÊN giá hiện tại hoặc TRÊN đỉnh gần nhất
-
-SSL (Sell Side Liquidity) = Thanh khoản phía BÁN = nằm DƯỚI các đáy (swing lows)
-→ Đây là nơi stop loss của người BUY bị đặt → Smart Money săn bằng cách đẩy giá XUỐNG để quét
-→ SSL luôn nằm DƯỚI giá hiện tại hoặc DƯỚI đáy gần nhất
-
-QUY TẮC GHI NHẤT QUÁN:
-✅ ĐÚNG: "BSL tại 4800 (swing high phía trên) — stop loss SELL cluster ở đây"
-✅ ĐÚNG: "SSL tại 4740 (swing low phía dưới) — stop loss BUY cluster ở đây"
-❌ SAI: "BSL tại 4740 (swing low)" — BSL không bao giờ nằm ở swing low
-❌ SAI: "SSL tại 4800 (swing high)" — SSL không bao giờ nằm ở swing high
-
-KIỂM TRA CHÉO BẮT BUỘC trước khi output:
-→ BSL có nằm TRÊN giá hiện tại không? Nếu KHÔNG → sai, đổi lại
-→ SSL có nằm DƯỚI giá hiện tại không? Nếu KHÔNG → sai, đổi lại
 
 FORMAT OUTPUT BẮT BUỘC:
 ❌ CẤM: "momentum yếu", "có vẻ", "có thể", "khá mạnh"
@@ -2997,25 +2922,9 @@ Trả về DUY NHẤT JSON:
 
     document.getElementById('b2-sec-lq').classList.add('open');
     document.getElementById('b2-result').style.display='block';
-
-    // Hiện nút Bộ 3 cho cả GO và WAIT có setup hợp lệ (MODE 1/2)
-    const nxtB2 = document.getElementById('b2-next');
-    if(r.verdict==='GO'){
-      nxtB2.style.display='block';
-      nxtB2.textContent='→ TIẾN HÀNH BỘ 3';
-      nxtB2.style.background='';
-    } else if(r.verdict==='WAIT' && r.mode_trigger !== 'NO_TRADE'){
-      nxtB2.style.display='block';
-      nxtB2.textContent='→ VÀO BỘ 3 ĐỂ CHỜ SETUP';
-      nxtB2.style.background='linear-gradient(135deg,rgba(255,181,71,0.25),rgba(255,181,71,0.1))';
-      nxtB2.style.borderColor='rgba(255,181,71,0.5)';
-      nxtB2.style.color='var(--amber)';
-    } else {
-      nxtB2.style.display='none';
-    }
+    if(r.verdict==='GO') document.getElementById('b2-next').style.display='block';
     if(navigator.vibrate)navigator.vibrate([50,30,80]);
     setTimeout(()=>document.getElementById('b2-result').scrollIntoView({behavior:'smooth',block:'start'}),200);
-    saveState();
   }catch(err){document.getElementById('b2-error-msg').textContent=err.message;document.getElementById('b2-error').classList.add('show');}
   finally{document.getElementById('b2-loading').classList.remove('show');document.getElementById('b2-analyze-btn').disabled=false;checkB2Ready();}
 }
@@ -3459,7 +3368,6 @@ Trả về DUY NHẤT JSON:
     document.getElementById('b4-result').style.display='block';
     if(navigator.vibrate) navigator.vibrate(isFire?[50,30,80,30,50]:[50,30,50]);
     setTimeout(()=>document.getElementById('b4-result').scrollIntoView({behavior:'smooth',block:'start'}),200);
-    saveState();
 
   } catch(err){
     document.getElementById('b4-error-msg').textContent=err.message;
@@ -3887,18 +3795,13 @@ function resetAll(){
   // Reset state
   Object.assign(STATE,{
     bias:'',b2Verdict:'',b2Narrative:'',b4Entry:'',b4RR:'',
-    b1Phase:'',b1Execution:'',b1ExecutionNote:'',b1Structure:'',b1LiquidityNear:'',b1LiquidityFar:'',b1Zones:'',b1Intent:'',b1RawBias:'',
-    b2FailedBreakout:'FALSE',b2FailedBreakoutNote:'',b2WyckoffContext:'NONE',
-    b3Priority:'MEDIUM',b3TrendDir:'',b3Mode:'',b3MarketState:'',b3NextAction:'',b3EntryDirection:'',
+    b3TrendDir:'',b3Mode:'',b3MarketState:'',b3NextAction:'',b3EntryDirection:'',
     b3RiskLevel:'FULL',b3Invalidation:'',b3EntryZone:'',b3RecentImpulse:false,
-    b3PullbackQuality:'N_A',b3PullbackScore:0,b3InZone:false,b3InZoneNote:'',b3ExhaustionScore:0,
-    imgs:{b1_d1:null,b1_h4:null,b2_h1:null,b2_m15:null,b3_m15:null,b4_m5:null},
+    imgs:{b1_d1:null,b1_h4:null,b2_h1:null,b2_m15:null,b4_m5:null},
     psychAnswers:{},b3Answers:{},
     stages:{psych:false,bo1:false,bo3:false,bo2:false,bo4:false,bo5:false},
     b5TradeResult:'',b5Trail:''
   });
-  // Clear result HTML
-  ['b3-scan-result'].forEach(id=>{const el=document.getElementById(id);if(el){el.innerHTML='';el.style.display='none';}});
   // Reset UI
   document.querySelectorAll('.check-item').forEach(i=>i.classList.remove('answered-yes','answered-no'));
   document.querySelectorAll('.tog-btn,.bias-btn').forEach(b=>b.classList.remove('active'));
