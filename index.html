@@ -1164,6 +1164,7 @@ Trả về DUY NHẤT JSON, không markdown:
     document.getElementById('b5-result').style.display='block';
     if(navigator.vibrate)navigator.vibrate([50,30,80]);
     setTimeout(()=>document.getElementById('b5-result').scrollIntoView({behavior:'smooth',block:'start'}),200);
+    saveState();
   }catch(err){
     document.getElementById('b5-error-msg').textContent=err.message;
     document.getElementById('b5-error').classList.add('show');
@@ -1438,7 +1439,6 @@ function showRandomQuote(){
 // ══════════════════════════════════════════════
 function saveState(){
   try{
-    // Save everything except large image data
     const toSave={
       apiKey: STATE.apiKey,
       stages: STATE.stages,
@@ -1448,12 +1448,34 @@ function saveState(){
       b2FailedBreakout: STATE.b2FailedBreakout,
       b2FailedBreakoutNote: STATE.b2FailedBreakoutNote,
       b2WyckoffContext: STATE.b2WyckoffContext,
+      b3Priority: STATE.b3Priority,
+      b3TrendDir: STATE.b3TrendDir,
+      b3Mode: STATE.b3Mode,
+      b3MarketState: STATE.b3MarketState,
+      b3NextAction: STATE.b3NextAction,
+      b3EntryDirection: STATE.b3EntryDirection,
+      b3RiskLevel: STATE.b3RiskLevel,
+      b3Invalidation: STATE.b3Invalidation,
+      b3EntryZone: STATE.b3EntryZone,
+      b3PullbackQuality: STATE.b3PullbackQuality,
+      b3PullbackScore: STATE.b3PullbackScore,
+      b3InZone: STATE.b3InZone,
+      b3InZoneNote: STATE.b3InZoneNote,
+      b3ExhaustionScore: STATE.b3ExhaustionScore,
+      b3RecentImpulse: STATE.b3RecentImpulse,
       b4Entry: STATE.b4Entry,
       b4RR: STATE.b4RR,
       psychAnswers: STATE.psychAnswers,
       b3Answers: STATE.b3Answers,
       b5TradeResult: STATE.b5TradeResult,
       b5Trail: STATE.b5Trail,
+      r_b1: document.getElementById('b1-result') ? document.getElementById('b1-result').innerHTML : '',
+      r_b2: document.getElementById('b2-result') ? document.getElementById('b2-result').innerHTML : '',
+      r_b3: document.getElementById('b3-scan-result') ? document.getElementById('b3-scan-result').innerHTML : '',
+      r_b3v: document.getElementById('b3-verdict') ? document.getElementById('b3-verdict').innerHTML : '',
+      r_b4: document.getElementById('b4-result') ? document.getElementById('b4-result').innerHTML : '',
+      r_b5: document.getElementById('b5-result') ? document.getElementById('b5-result').innerHTML : '',
+      imgs: STATE.imgs,
       savedAt: Date.now()
     };
     localStorage.setItem('shs_state', JSON.stringify(toSave));
@@ -1483,15 +1505,66 @@ function loadState(){
       b2FailedBreakout: saved.b2FailedBreakout || 'FALSE',
       b2FailedBreakoutNote: saved.b2FailedBreakoutNote || '',
       b2WyckoffContext: saved.b2WyckoffContext || 'NONE',
+      b3Priority:   saved.b3Priority   || 'MEDIUM',
+      b3TrendDir:   saved.b3TrendDir   || '',
+      b3Mode:       saved.b3Mode       || '',
+      b3MarketState:saved.b3MarketState|| '',
+      b3NextAction: saved.b3NextAction || '',
+      b3EntryDirection: saved.b3EntryDirection || 'NONE',
+      b3RiskLevel:  saved.b3RiskLevel  || 'FULL',
+      b3Invalidation: saved.b3Invalidation || '',
+      b3EntryZone:  saved.b3EntryZone  || '',
+      b3PullbackQuality: saved.b3PullbackQuality || 'N_A',
+      b3PullbackScore: saved.b3PullbackScore || 0,
+      b3InZone:     saved.b3InZone     || false,
+      b3InZoneNote: saved.b3InZoneNote || '',
+      b3ExhaustionScore: saved.b3ExhaustionScore || 0,
+      b3RecentImpulse: saved.b3RecentImpulse || false,
       b4Entry:      saved.b4Entry      || '',
       b4RR:         saved.b4RR         || '',
       psychAnswers: saved.psychAnswers  || {},
       b3Answers:    saved.b3Answers    || {},
       b5TradeResult:saved.b5TradeResult|| '',
-      b5Trail:      saved.b5Trail      || ''
+      b5Trail:      saved.b5Trail      || '',
+      imgs:         saved.imgs         || STATE.imgs
     });
 
-    // Restore API key UI - only update if element exists
+    // Restore result HTML
+    const restoreEl = (id, html) => { if(!html) return; const el=document.getElementById(id); if(el){ el.innerHTML=html; el.style.display='block'; } };
+    restoreEl('b1-result', saved.r_b1);
+    restoreEl('b2-result', saved.r_b2);
+    restoreEl('b3-scan-result', saved.r_b3);
+    restoreEl('b3-verdict', saved.r_b3v);
+    restoreEl('b4-result', saved.r_b4);
+    restoreEl('b5-result', saved.r_b5);
+
+    // Restore image previews
+    if(saved.imgs){
+      [['b1','d1'],['b1','h4'],['b2','h1'],['b2','m15'],['b3','m15'],['b4','m5']].forEach(([p,t])=>{
+        const imgData = saved.imgs[p+'_'+t];
+        if(!imgData) return;
+        const box = document.getElementById(p+'-box-'+t);
+        if(!box) return;
+        box.classList.add('has-img');
+        let img = box.querySelector('img');
+        if(!img){ img=document.createElement('img'); img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:6px;opacity:0.7'; box.appendChild(img); }
+        img.src = imgData;
+      });
+    }
+
+    // Restore next buttons visibility based on stages
+    if(saved.stages){
+      if(saved.stages.psych){ const el=document.getElementById('psych-next'); if(el) el.style.display='block'; }
+      if(saved.stages.bo1){   const el=document.getElementById('b1-next');    if(el) el.style.display='block'; }
+      if(saved.stages.bo2){
+        const el=document.getElementById('b2-next');
+        if(el){ el.style.display='block'; el.textContent='→ TIẾN HÀNH BỘ 3'; }
+      }
+      if(saved.stages.bo3){   const el=document.getElementById('b3-next');    if(el) el.style.display='block'; }
+      if(saved.stages.bo4){   const el=document.getElementById('b4-next');    if(el) el.style.display='block'; }
+    }
+
+    // Restore API key UI
     if(STATE.apiKey){
       const inp = document.getElementById('dash-api-input');
       const sts = document.getElementById('dash-api-status');
@@ -2231,6 +2304,7 @@ Trả về JSON thuần túy, KHÔNG markdown, KHÔNG backtick. 100% tiếng Vi�
 
     document.getElementById('b3-scan-result').innerHTML=html;
     document.getElementById('b3-scan-result').style.display='block';
+    saveState();
 
     checkB3Verdict();
 
@@ -2647,6 +2721,7 @@ Trả về DUY NHẤT JSON:
     document.getElementById('b1-next').style.display='block';
     if(navigator.vibrate)navigator.vibrate([50,30,80]);
     setTimeout(()=>document.getElementById('b1-result').scrollIntoView({behavior:'smooth',block:'start'}),200);
+    saveState();
   }catch(err){document.getElementById('b1-error-msg').textContent=err.message;document.getElementById('b1-error').classList.add('show');}
   finally{document.getElementById('b1-loading').classList.remove('show');document.getElementById('b1-analyze-btn').disabled=false;checkB1Ready();}
 }
@@ -2937,6 +3012,7 @@ Trả về DUY NHẤT JSON:
     }
     if(navigator.vibrate)navigator.vibrate([50,30,80]);
     setTimeout(()=>document.getElementById('b2-result').scrollIntoView({behavior:'smooth',block:'start'}),200);
+    saveState();
   }catch(err){document.getElementById('b2-error-msg').textContent=err.message;document.getElementById('b2-error').classList.add('show');}
   finally{document.getElementById('b2-loading').classList.remove('show');document.getElementById('b2-analyze-btn').disabled=false;checkB2Ready();}
 }
@@ -3380,6 +3456,7 @@ Trả về DUY NHẤT JSON:
     document.getElementById('b4-result').style.display='block';
     if(navigator.vibrate) navigator.vibrate(isFire?[50,30,80,30,50]:[50,30,50]);
     setTimeout(()=>document.getElementById('b4-result').scrollIntoView({behavior:'smooth',block:'start'}),200);
+    saveState();
 
   } catch(err){
     document.getElementById('b4-error-msg').textContent=err.message;
@@ -3807,13 +3884,17 @@ function resetAll(){
   // Reset state
   Object.assign(STATE,{
     bias:'',b2Verdict:'',b2Narrative:'',b4Entry:'',b4RR:'',
-    b3TrendDir:'',b3Mode:'',b3MarketState:'',b3NextAction:'',b3EntryDirection:'',
+    b2FailedBreakout:'FALSE',b2FailedBreakoutNote:'',b2WyckoffContext:'NONE',
+    b3Priority:'MEDIUM',b3TrendDir:'',b3Mode:'',b3MarketState:'',b3NextAction:'',b3EntryDirection:'',
     b3RiskLevel:'FULL',b3Invalidation:'',b3EntryZone:'',b3RecentImpulse:false,
-    imgs:{b1_d1:null,b1_h4:null,b2_h1:null,b2_m15:null,b4_m5:null},
+    b3PullbackQuality:'N_A',b3PullbackScore:0,b3InZone:false,b3InZoneNote:'',b3ExhaustionScore:0,
+    imgs:{b1_d1:null,b1_h4:null,b2_h1:null,b2_m15:null,b3_m15:null,b4_m5:null},
     psychAnswers:{},b3Answers:{},
     stages:{psych:false,bo1:false,bo3:false,bo2:false,bo4:false,bo5:false},
     b5TradeResult:'',b5Trail:''
   });
+  // Clear result HTML
+  ['b3-scan-result'].forEach(id=>{const el=document.getElementById(id);if(el){el.innerHTML='';el.style.display='none';}});
   // Reset UI
   document.querySelectorAll('.check-item').forEach(i=>i.classList.remove('answered-yes','answered-no'));
   document.querySelectorAll('.tog-btn,.bias-btn').forEach(b=>b.classList.remove('active'));
