@@ -888,7 +888,9 @@ const STATE = {
   imgs:{ b1_d1:null, b1_h4:null, b2_h1:null, b2_m15:null, b3_m15:null, b4_m5:null },
   psychAnswers:{},
   b3Answers:{},
-  b5Result:null, b5TradeResult:'', b5Trail:''
+  b5Result:null, b5TradeResult:'', b5Trail:'',
+  b1Phase:'', b1Execution:'', b1ExecutionNote:'', b1Structure:'',
+  b1LiquidityNear:'', b1LiquidityFar:'', b1Zones:'', b1Intent:'', b1RawBias:''
 };
 
 // ══════════════════════════════════════════════
@@ -958,39 +960,22 @@ function syncBo2Context() {
   d.textContent = bias;
   d.style.color = biasColor;
 
-  // Render Bo1 detail context with highlights
+  // Render compact B1 context — chỉ Supply/Demand zones + LQ quan trọng
   const ctx = document.getElementById('b2-b1-context');
-  if(!STATE.b1Phase && !STATE.b1Structure){ctx.style.display='none';checkB2Ready();return;}
+  if(!STATE.b1Zones && !STATE.b1LiquidityNear && !STATE.b1LiquidityFar){
+    ctx.style.display='none'; checkB2Ready(); return;
+  }
 
-  const phaseColor = STATE.b1Phase==='RANGE' ? 'var(--amber)' : 'var(--green)';
   const execColor = STATE.b1Execution==='ACTIVE' ? 'var(--green)' : STATE.b1Execution==='WAIT_BREAKOUT' ? 'var(--amber)' : 'var(--muted)';
+  const execIcon  = STATE.b1Execution==='ACTIVE' ? '🟢' : STATE.b1Execution==='WAIT_BREAKOUT' ? '🟡' : '⚪';
 
-  const rows = [
-    { icon:'📊', label:'PHASE', value: STATE.b1Phase||'--', valColor: phaseColor },
-    { icon:'⚡', label:'EXECUTION', value: STATE.b1Execution||'--', valColor: execColor },
-    { icon:'🏗️', label:'STRUCTURE', value: STATE.b1Structure||'--', valColor:'var(--text)', full:true },
-    { icon:'🎯', label:'LQ GẦN', value: STATE.b1LiquidityNear||'--', valColor:'var(--amber)', full:true },
-    { icon:'🔭', label:'LQ XA', value: STATE.b1LiquidityFar||'--', valColor:'var(--muted)', full:true },
-    { icon:'📦', label:'ZONES', value: STATE.b1Zones||'--', valColor:'var(--blue)', full:true },
-    { icon:'🧭', label:'INTENT', value: STATE.b1Intent||'--', valColor:'var(--cyan)', full:true },
-  ].filter(r => r.value && r.value !== '--');
+  let lines = [];
+  if(STATE.b1Zones)          lines.push(`<span style="color:var(--blue)">📦 ${STATE.b1Zones}</span>`);
+  if(STATE.b1LiquidityNear)  lines.push(`<span style="color:var(--amber)">🎯 LQ gần: ${STATE.b1LiquidityNear}</span>`);
+  if(STATE.b1LiquidityFar)   lines.push(`<span style="color:var(--muted)">🔭 LQ xa: ${STATE.b1LiquidityFar}</span>`);
+  if(STATE.b1Execution)      lines.push(`<span style="color:${execColor}">${execIcon} ${STATE.b1Execution}</span>`);
 
-  ctx.innerHTML = rows.map((r,i) => `
-    <div style="
-      display:flex; align-items:${r.full?'flex-start':'center'}; gap:10px;
-      padding:10px 14px;
-      background:${i%2===0?'rgba(201,168,76,0.04)':'rgba(0,0,0,0.2)'};
-      border-bottom:1px solid rgba(201,168,76,0.08);
-      ${i===rows.length-1?'border-bottom:none':''}
-    ">
-      <span style="font-size:14px;flex-shrink:0;margin-top:${r.full?'2px':'0'}">${r.icon}</span>
-      <div style="flex:1;min-width:0">
-        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:rgba(201,168,76,0.6);letter-spacing:2px;margin-bottom:3px">${r.label}</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:${r.valColor};line-height:1.5;word-break:break-word">${r.value}</div>
-      </div>
-    </div>
-  `).join('');
-
+  ctx.innerHTML = `<div style="padding:10px 14px;font-family:'Share Tech Mono',monospace;font-size:10px;line-height:1.9;background:rgba(201,168,76,0.03)">${lines.join('<br>')}</div>`;
   ctx.style.display = 'block';
   checkB2Ready();
 }
@@ -1476,6 +1461,15 @@ function saveState(){
       r_b4: document.getElementById('b4-result') ? document.getElementById('b4-result').innerHTML : '',
       r_b5: document.getElementById('b5-result') ? document.getElementById('b5-result').innerHTML : '',
       imgs: STATE.imgs,
+      b1Phase: STATE.b1Phase,
+      b1Execution: STATE.b1Execution,
+      b1ExecutionNote: STATE.b1ExecutionNote,
+      b1Structure: STATE.b1Structure,
+      b1LiquidityNear: STATE.b1LiquidityNear,
+      b1LiquidityFar: STATE.b1LiquidityFar,
+      b1Zones: STATE.b1Zones,
+      b1Intent: STATE.b1Intent,
+      b1RawBias: STATE.b1RawBias,
       savedAt: Date.now()
     };
     localStorage.setItem('shs_state', JSON.stringify(toSave));
@@ -1526,7 +1520,16 @@ function loadState(){
       b3Answers:    saved.b3Answers    || {},
       b5TradeResult:saved.b5TradeResult|| '',
       b5Trail:      saved.b5Trail      || '',
-      imgs:         saved.imgs         || STATE.imgs
+      imgs:         saved.imgs         || STATE.imgs,
+      b1Phase:      saved.b1Phase      || '',
+      b1Execution:  saved.b1Execution  || '',
+      b1ExecutionNote: saved.b1ExecutionNote || '',
+      b1Structure:  saved.b1Structure  || '',
+      b1LiquidityNear: saved.b1LiquidityNear || '',
+      b1LiquidityFar:  saved.b1LiquidityFar  || '',
+      b1Zones:      saved.b1Zones      || '',
+      b1Intent:     saved.b1Intent     || '',
+      b1RawBias:    saved.b1RawBias    || ''
     });
 
     // Restore result HTML
@@ -3884,6 +3887,7 @@ function resetAll(){
   // Reset state
   Object.assign(STATE,{
     bias:'',b2Verdict:'',b2Narrative:'',b4Entry:'',b4RR:'',
+    b1Phase:'',b1Execution:'',b1ExecutionNote:'',b1Structure:'',b1LiquidityNear:'',b1LiquidityFar:'',b1Zones:'',b1Intent:'',b1RawBias:'',
     b2FailedBreakout:'FALSE',b2FailedBreakoutNote:'',b2WyckoffContext:'NONE',
     b3Priority:'MEDIUM',b3TrendDir:'',b3Mode:'',b3MarketState:'',b3NextAction:'',b3EntryDirection:'',
     b3RiskLevel:'FULL',b3Invalidation:'',b3EntryZone:'',b3RecentImpulse:false,
