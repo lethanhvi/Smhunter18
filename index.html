@@ -2919,7 +2919,22 @@ Trả về DUY NHẤT JSON:
 
     document.getElementById('b2-sec-lq').classList.add('open');
     document.getElementById('b2-result').style.display='block';
-    if(r.verdict==='GO') document.getElementById('b2-next').style.display='block';
+
+    // Hiện nút Bộ 3 cho cả GO và WAIT có setup hợp lệ (MODE 1/2)
+    const nxtB2 = document.getElementById('b2-next');
+    if(r.verdict==='GO'){
+      nxtB2.style.display='block';
+      nxtB2.textContent='→ TIẾN HÀNH BỘ 3';
+      nxtB2.style.background='';
+    } else if(r.verdict==='WAIT' && r.mode_trigger !== 'NO_TRADE'){
+      nxtB2.style.display='block';
+      nxtB2.textContent='→ VÀO BỘ 3 ĐỂ CHỜ SETUP';
+      nxtB2.style.background='linear-gradient(135deg,rgba(255,181,71,0.25),rgba(255,181,71,0.1))';
+      nxtB2.style.borderColor='rgba(255,181,71,0.5)';
+      nxtB2.style.color='var(--amber)';
+    } else {
+      nxtB2.style.display='none';
+    }
     if(navigator.vibrate)navigator.vibrate([50,30,80]);
     setTimeout(()=>document.getElementById('b2-result').scrollIntoView({behavior:'smooth',block:'start'}),200);
   }catch(err){document.getElementById('b2-error-msg').textContent=err.message;document.getElementById('b2-error').classList.add('show');}
