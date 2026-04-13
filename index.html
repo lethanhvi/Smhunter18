@@ -1491,11 +1491,11 @@ function saveState(){
       psychAnswers: STATE.psychAnswers,
       // HTML kết quả các bộ (để restore UI)
       _html_b1: document.getElementById('b1-result')?.innerHTML || '',
-      _html_b2_scan: document.getElementById('b2-scan-result')?.innerHTML || '',
+      _html_b2: document.getElementById('b2-result')?.innerHTML || '',
       _html_b3_scan: document.getElementById('b3-scan-result')?.innerHTML || '',
       _html_b4: document.getElementById('b4-result')?.innerHTML || '',
       _vis_b1: document.getElementById('b1-result')?.style.display || '',
-      _vis_b2_scan: document.getElementById('b2-scan-result')?.style.display || '',
+      _vis_b2: document.getElementById('b2-result')?.style.display || '',
       _vis_b3_scan: document.getElementById('b3-scan-result')?.style.display || '',
       _vis_b4: document.getElementById('b4-result')?.style.display || '',
       savedAt: Date.now()
@@ -1577,10 +1577,10 @@ function loadState(){
       const el = document.getElementById(id);
       if(el && html){ el.innerHTML = html; if(vis) el.style.display = vis; }
     };
-    restoreEl('b1-result',    saved._html_b1,      saved._vis_b1);
-    restoreEl('b2-scan-result', saved._html_b2_scan, saved._vis_b2_scan);
-    restoreEl('b3-scan-result', saved._html_b3_scan, saved._vis_b3_scan);
-    restoreEl('b4-result',    saved._html_b4,      saved._vis_b4);
+    restoreEl('b1-result',     saved._html_b1,      saved._vis_b1);
+    restoreEl('b2-result',     saved._html_b2,      saved._vis_b2);
+    restoreEl('b3-scan-result',saved._html_b3_scan, saved._vis_b3_scan);
+    restoreEl('b4-result',     saved._html_b4,      saved._vis_b4);
 
     // Restore API key UI - only update if element exists
     if(STATE.apiKey){
@@ -4076,6 +4076,12 @@ function resetAll(){
 }
 
 // PWA SW
+// Auto-save khi tắt app / chuyển tab / minimize
+window.addEventListener('beforeunload', () => saveState());
+window.addEventListener('pagehide', () => saveState());
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'hidden') saveState();
+});
 if('serviceWorker'in navigator){
   const sw=`self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>new Response('Offline')))});`;
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
