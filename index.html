@@ -1573,6 +1573,39 @@ function loadState(){
     restoreEl('b3-scan-result', saved._html_b3_scan, saved._vis_b3_scan);
     restoreEl('b4-result',    saved._html_b4,      saved._vis_b4);
 
+    // ── RESTORE IMAGE BOXES VISUAL (has-img + thumbnail) ──
+    const imgBoxMap = [
+      ['b1','d1'],['b1','h4'],['b2','h1'],['b2','m15'],['b3','m15'],['b4','m5']
+    ];
+    imgBoxMap.forEach(([prefix, tf]) => {
+      const key = `${prefix}_${tf}`;
+      const imgData = STATE.imgs[key];
+      if(!imgData) return;
+      const box = document.getElementById(`${prefix}-box-${tf}`);
+      if(!box) return;
+      box.classList.add('has-img');
+      let img = box.querySelector('img');
+      if(!img){ img = document.createElement('img'); box.insertBefore(img, box.firstChild); }
+      img.src = imgData;
+    });
+
+    // ── RE-ENABLE BUTTONS after restore ──
+    // Use setTimeout to ensure DOM is fully ready before checking
+    setTimeout(() => {
+      checkB1Ready();
+      checkB2Ready();
+      checkB4Ready();
+      // Also sync B4 context if we have B3 data
+      if(STATE.b3Mode || STATE.b3EntryDirection) {
+        syncBo4Context();
+      }
+    }, 100);
+    // B3 scan button
+    if(STATE.imgs.b3_m15){
+      const b3btn = document.getElementById('b3-scan-btn');
+      if(b3btn) b3btn.style.display = 'block';
+    }
+
     // Restore API key UI - only update if element exists
     if(STATE.apiKey){
       const inp = document.getElementById('dash-api-input');
