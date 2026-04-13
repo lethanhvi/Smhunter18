@@ -1429,22 +1429,59 @@ function showRandomQuote(){
 // ══════════════════════════════════════════════
 function saveState(){
   try{
-    // Save everything except large image data
     const toSave={
       apiKey: STATE.apiKey,
       stages: STATE.stages,
       bias: STATE.bias,
+      // B1
+      b1Phase: STATE.b1Phase,
+      b1Execution: STATE.b1Execution,
+      b1RawBias: STATE.b1RawBias,
+      b1Structure: STATE.b1Structure,
+      b1LiquidityNear: STATE.b1LiquidityNear,
+      b1LiquidityFar: STATE.b1LiquidityFar,
+      b1Zones: STATE.b1Zones,
+      b1Intent: STATE.b1Intent,
+      // B2
       b2Verdict: STATE.b2Verdict,
       b2Narrative: STATE.b2Narrative,
       b2FailedBreakout: STATE.b2FailedBreakout,
       b2FailedBreakoutNote: STATE.b2FailedBreakoutNote,
       b2WyckoffContext: STATE.b2WyckoffContext,
+      // B3
+      b3TrendDir: STATE.b3TrendDir,
+      b3Mode: STATE.b3Mode,
+      b3MarketState: STATE.b3MarketState,
+      b3NextAction: STATE.b3NextAction,
+      b3EntryDirection: STATE.b3EntryDirection,
+      b3Priority: STATE.b3Priority,
+      b3RiskLevel: STATE.b3RiskLevel,
+      b3Invalidation: STATE.b3Invalidation,
+      b3EntryZone: STATE.b3EntryZone,
+      b3PullbackQuality: STATE.b3PullbackQuality,
+      b3PullbackScore: STATE.b3PullbackScore,
+      b3InZone: STATE.b3InZone,
+      b3InZoneNote: STATE.b3InZoneNote,
+      b3ExhaustionScore: STATE.b3ExhaustionScore,
+      b3RecentImpulse: STATE.b3RecentImpulse,
+      b3Answers: STATE.b3Answers,
+      // B4
       b4Entry: STATE.b4Entry,
       b4RR: STATE.b4RR,
-      psychAnswers: STATE.psychAnswers,
-      b3Answers: STATE.b3Answers,
+      // B5
       b5TradeResult: STATE.b5TradeResult,
       b5Trail: STATE.b5Trail,
+      // Psych
+      psychAnswers: STATE.psychAnswers,
+      // HTML kết quả các bộ (để restore UI)
+      _html_b1: document.getElementById('b1-result')?.innerHTML || '',
+      _html_b2_scan: document.getElementById('b2-scan-result')?.innerHTML || '',
+      _html_b3_scan: document.getElementById('b3-scan-result')?.innerHTML || '',
+      _html_b4: document.getElementById('b4-result')?.innerHTML || '',
+      _vis_b1: document.getElementById('b1-result')?.style.display || '',
+      _vis_b2_scan: document.getElementById('b2-scan-result')?.style.display || '',
+      _vis_b3_scan: document.getElementById('b3-scan-result')?.style.display || '',
+      _vis_b4: document.getElementById('b4-result')?.style.display || '',
       savedAt: Date.now()
     };
     localStorage.setItem('shs_state', JSON.stringify(toSave));
@@ -1469,18 +1506,57 @@ function loadState(){
       apiKey:       saved.apiKey       || '',
       stages:       saved.stages       || STATE.stages,
       bias:         saved.bias         || '',
+      // B1
+      b1Phase:          saved.b1Phase          || '',
+      b1Execution:      saved.b1Execution      || '',
+      b1RawBias:        saved.b1RawBias        || '',
+      b1Structure:      saved.b1Structure      || '',
+      b1LiquidityNear:  saved.b1LiquidityNear  || '',
+      b1LiquidityFar:   saved.b1LiquidityFar   || '',
+      b1Zones:          saved.b1Zones          || '',
+      b1Intent:         saved.b1Intent         || '',
+      // B2
       b2Verdict:    saved.b2Verdict    || '',
       b2Narrative:  saved.b2Narrative  || '',
       b2FailedBreakout: saved.b2FailedBreakout || 'FALSE',
       b2FailedBreakoutNote: saved.b2FailedBreakoutNote || '',
       b2WyckoffContext: saved.b2WyckoffContext || 'NONE',
+      // B3
+      b3TrendDir:       saved.b3TrendDir       || '',
+      b3Mode:           saved.b3Mode           || '',
+      b3MarketState:    saved.b3MarketState    || '',
+      b3NextAction:     saved.b3NextAction     || 'NO_TRADE',
+      b3EntryDirection: saved.b3EntryDirection || 'NONE',
+      b3Priority:       saved.b3Priority       || 'MEDIUM',
+      b3RiskLevel:      saved.b3RiskLevel      || 'FULL',
+      b3Invalidation:   saved.b3Invalidation   || '',
+      b3EntryZone:      saved.b3EntryZone      || '',
+      b3PullbackQuality:saved.b3PullbackQuality|| 'N_A',
+      b3PullbackScore:  saved.b3PullbackScore  || 0,
+      b3InZone:         saved.b3InZone         || false,
+      b3InZoneNote:     saved.b3InZoneNote     || '',
+      b3ExhaustionScore:saved.b3ExhaustionScore|| 0,
+      b3RecentImpulse:  saved.b3RecentImpulse  || false,
+      b3Answers:        saved.b3Answers        || {},
+      // B4
       b4Entry:      saved.b4Entry      || '',
       b4RR:         saved.b4RR         || '',
-      psychAnswers: saved.psychAnswers  || {},
-      b3Answers:    saved.b3Answers    || {},
+      // B5
       b5TradeResult:saved.b5TradeResult|| '',
-      b5Trail:      saved.b5Trail      || ''
+      b5Trail:      saved.b5Trail      || '',
+      // Psych
+      psychAnswers: saved.psychAnswers  || {},
     });
+
+    // Restore HTML kết quả các bộ
+    const restoreEl = (id, html, vis) => {
+      const el = document.getElementById(id);
+      if(el && html){ el.innerHTML = html; if(vis) el.style.display = vis; }
+    };
+    restoreEl('b1-result',    saved._html_b1,      saved._vis_b1);
+    restoreEl('b2-scan-result', saved._html_b2_scan, saved._vis_b2_scan);
+    restoreEl('b3-scan-result', saved._html_b3_scan, saved._vis_b3_scan);
+    restoreEl('b4-result',    saved._html_b4,      saved._vis_b4);
 
     // Restore API key UI - only update if element exists
     if(STATE.apiKey){
@@ -3814,13 +3890,18 @@ function resetAll(){
   if(rb) rb.style.display='none';
   // Reset state
   Object.assign(STATE,{
-    bias:'',b2Verdict:'',b2Narrative:'',b4Entry:'',b4RR:'',
+    bias:'',
+    b1Phase:'',b1Execution:'',b1RawBias:'',b1Structure:'',
+    b1LiquidityNear:'',b1LiquidityFar:'',b1Zones:'',b1Intent:'',
+    b2Verdict:'',b2Narrative:'',b2FailedBreakout:'FALSE',b2FailedBreakoutNote:'',b2WyckoffContext:'NONE',
     b3TrendDir:'',b3Mode:'',b3MarketState:'',b3NextAction:'',b3EntryDirection:'',
-    b3RiskLevel:'FULL',b3Invalidation:'',b3EntryZone:'',b3RecentImpulse:false,
-    imgs:{b1_d1:null,b1_h4:null,b2_h1:null,b2_m15:null,b4_m5:null},
+    b3Priority:'MEDIUM',b3RiskLevel:'FULL',b3Invalidation:'',b3EntryZone:'',
+    b3PullbackQuality:'N_A',b3PullbackScore:0,b3InZone:false,b3InZoneNote:'',
+    b3ExhaustionScore:0,b3RecentImpulse:false,
+    b4Entry:'',b4RR:'',b5TradeResult:'',b5Trail:'',
+    imgs:{b1_d1:null,b1_h4:null,b2_h1:null,b2_m15:null,b3_m15:null,b4_m5:null},
     psychAnswers:{},b3Answers:{},
     stages:{psych:false,bo1:false,bo3:false,bo2:false,bo4:false,bo5:false},
-    b5TradeResult:'',b5Trail:''
   });
   // Reset UI
   document.querySelectorAll('.check-item').forEach(i=>i.classList.remove('answered-yes','answered-no'));
@@ -3829,7 +3910,9 @@ function resetAll(){
   ['p0-fill','p3-fill'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.width='0%';});
   ['psych-verdict','b3-verdict'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
   ['psych-next','b3-next','b1-next','b2-next','b4-next','b5-next'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
-  ['b1-result','b2-result','b4-result','b5-result'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  ['b1-result','b2-scan-result','b2-result','b3-scan-result','b4-result','b5-result'].forEach(id=>{
+    const el=document.getElementById(id);if(el){el.style.display='none';el.innerHTML='';}
+  });
   // Reset b5 inputs
   ['b5-close-price','b5-pnl','b5-emotion','b5-daily-loss','b5-profit-days'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
