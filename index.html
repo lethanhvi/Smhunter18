@@ -887,6 +887,8 @@ const STATE = {
   b3RecentImpulse:false,
   b3SpringSignal:'NONE',
   b3SpringNote:'',
+  b3ChochLevel:'NONE',
+  b3HasChoch:false,
   b4Entry:'',
   b4RR:'',
   kzActive:false,
@@ -1474,6 +1476,8 @@ function saveState(){
       b3RecentImpulse: STATE.b3RecentImpulse,
       b3SpringSignal: STATE.b3SpringSignal,
       b3SpringNote: STATE.b3SpringNote,
+      b3ChochLevel: STATE.b3ChochLevel,
+      b3HasChoch: STATE.b3HasChoch,
       b3Answers: STATE.b3Answers,
       // B4
       b4Entry: STATE.b4Entry,
@@ -1552,6 +1556,8 @@ function loadState(){
       b3RecentImpulse:  saved.b3RecentImpulse  || false,
       b3SpringSignal:   saved.b3SpringSignal   || 'NONE',
       b3SpringNote:     saved.b3SpringNote     || '',
+      b3ChochLevel:     saved.b3ChochLevel     || 'NONE',
+      b3HasChoch:       saved.b3HasChoch       || false,
       b3Answers:        saved.b3Answers        || {},
       // B4
       b4Entry:      saved.b4Entry      || '',
@@ -2252,6 +2258,8 @@ Trả về JSON thuần túy, KHÔNG markdown, KHÔNG backtick. 100% tiếng Vi�
     STATE.b3SpringSignal    = r.spring_signal || 'NONE';
     STATE.b3SpringNote      = r.spring_note || '';
     STATE.b3NextStepSpecific = r.next_step_specific || '';
+    STATE.b3ChochLevel      = r.choch_level || 'NONE';
+    STATE.b3HasChoch        = r.has_choch === true || r.has_choch === 'true';
     // Auto-map phase → mode cho đúng logic
     const phaseToMode = {IMPULSE:'IMPULSE_WAIT',IMPULSE_PEAK:'IMPULSE_WAIT',IMPULSE_BREAKOUT:'CONTINUATION',PULLBACK:'CONTINUATION',READY:'CONTINUATION',CONTINUATION:'CONTINUATION',CONTINUATION_BASE:'CONTINUATION',REVERSAL_FORMING:'CONTINUATION',REVERSAL:'CONTINUATION'};
     if(phaseToMode[r.phase]) STATE.b3Mode = phaseToMode[r.phase];
@@ -3204,13 +3212,28 @@ function getTradePermission() {
   // Nếu phase là PULLBACK/READY/CONTINUATION → bỏ qua nextAction, ưu tiên phase
   if(!allowPhases.includes(phase)) {
     if(blockPhases.includes(phase) || mode === 'NO_TRADE' || nextAction === 'NO_TRADE') {
-      return { allowed: false, risk: 'NONE', level: 'BLOCK',
-        reason: `Bộ 3 chặn entry — Phase: ${phase || 'NO_TRADE'} | Cần đợi hồi giá chất lượng` };
+      // Exception: EXHAUSTION + CHoCH/Spring → vẫn cho reversal setup 0.5R
+      const hasReversal = STATE.b3SpringSignal && STATE.b3SpringSignal !== 'NONE';
+      const chochLvl = STATE.b3ChochLevel || '';
+      const hasChoch = chochLvl === 'FORMING' || chochLvl === 'CONFIRMED' || STATE.b3HasChoch === true;
+      if(phase === 'EXHAUSTION' && (hasReversal || hasChoch)) {
+        // Fall through to exhaustion score check below
+      } else {
+        return { allowed: false, risk: 'NONE', level: 'BLOCK',
+          reason: `Bộ 3 chặn entry — Phase: ${phase || 'NO_TRADE'} | Cần đợi hồi giá chất lượng` };
+      }
     }
   }
 
-  // ── EXHAUSTION ≥ 3 — block trend entry ──
+  // ── EXHAUSTION ≥ 3 — block trend entry, nhưng cho phép reversal ──
   if(exhScore >= 3) {
+    const hasReversal = STATE.b3SpringSignal && STATE.b3SpringSignal !== 'NONE';
+    const chochLvl = STATE.b3ChochLevel || '';
+    const hasChoch = chochLvl === 'FORMING' || chochLvl === 'CONFIRMED' || STATE.b3HasChoch === true;
+    if(hasReversal || hasChoch) {
+      return { allowed: true, risk: 'REDUCED', level: 'REDUCED',
+        reason: `Exhaustion ${exhScore}/4 nhưng ${hasReversal ? 'Spring/Reversal signal' : 'CHoCH ' + chochLvl} → Cho phép reversal setup 0.5R` };
+    }
     return { allowed: false, risk: 'NONE', level: 'BLOCK',
       reason: `Exhaustion ${exhScore}/4 — Trend đã đi quá xa. Chặn trend entry. Chỉ cho phép reversal setup.` };
   }
