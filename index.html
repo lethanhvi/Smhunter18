@@ -1984,6 +1984,27 @@ STATE MACHINE 7 BƯỚC (thực hiện đúng thứ tự):
 
 B1-TREND: DOWN=sóng đẩy đỏ lớn+phá cấu trúc xuống | UP=sóng đẩy xanh+phá cấu trúc lên | NONE=không rõ→NO_TRADE
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ QUY TẮC ĐO IMPULSE BẮT BUỘC (áp dụng trước B2):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPULSE CHÍNH = khoảng cách từ ĐỈNH CAO NHẤT → ĐÁY THẤP NHẤT của toàn bộ sóng đẩy hiện tại (không cắt bớt)
+
+QUY TẮC XÁC ĐỊNH ĐIỂM XUẤT PHÁT:
+- Điểm bắt đầu = swing high/low TỐT NHẤT NHÌN THẤY trên chart M15 hiện tại
+- Nếu có nhiều swing: chọn swing CAO NHẤT (downtrend) hoặc THẤP NHẤT (uptrend) làm điểm xuất phát
+- KHÔNG được chọn điểm giữa chừng để đo impulse ngắn hơn
+- KHÔNG được đo từ mức tròn (4800) nếu đỉnh thực tế cao hơn (4847)
+
+BẮT BUỘC GHI VÀO recent_impulse_note:
+"Impulse từ [giá xuất phát] → [giá kết thúc] = [X] giá | Bounce hiện tại [giá đáy] → [giá hiện tại] = [Y] giá = [Y/X×100]%"
+→ Phải tính đủ 4 con số: xuất phát, kết thúc, magnitude, bounce %
+→ Nếu không nhìn thấy rõ đỉnh/đáy: ghi "Ước tính" + lý do
+
+KIỂM TRA CHÉO bounce_pct:
+bounce_pct = (giá hiện tại - đáy thấp nhất) / (đỉnh cao nhất - đáy thấp nhất) × 100
+→ Phải nhất quán với số trong recent_impulse_note và summary
+→ Nếu bounce_pct trong summary khác với tính toán → lấy kết quả tính toán làm chuẩn
+
 B2-EXHAUSTION (chạy trước mọi thứ):
 [E1]xu hướng ≥8 giá (80 pips)+≥3 chân | [E2]thân nến gần<thân impulse×0.5 | [E3]bóng nến nhiều>0.4 | [E4]không tạo được đáy/đỉnh mới
 Đủ E1+E2+(E3 hoặc E4)=EXHAUSTION→NO_TRADE. Chỉ E1=priority LOW. Chỉ E2/E3=risk REDUCED.
@@ -2104,7 +2125,7 @@ RULE BẤT BIẾN: KHÔNG BAO GIỜ FULL RISK 1R khi có cả trend_extended + e
 NGÔN NGỮ: 100% tiếng Việt. BOS=Phá Cấu Trúc, CHoCH=Đổi Hướng, Displacement=Sóng Đẩy Mạnh, Sweep=Quét Thanh Khoản, Pullback=Hồi Giá, Impulse=Sóng Đẩy, Overlap=Nến Chồng, Momentum=Động Lực. Không dùng tiếng Anh trong _reason/_note/summary.
 
 Trả về DUY NHẤT JSON (không markdown, không backtick):
-{"trend_direction":"DOWN|UP|NONE","trend_direction_reason":"...","mode":"CONTINUATION|IMPULSE_WAIT|NO_TRADE","phase":"IMPULSE|IMPULSE_PEAK|PULLBACK|READY|WEAK_PULLBACK|MICRO_RANGE|CHOP|CONTINUATION|CONTINUATION_BASE|EXHAUSTION|RANGE","in_zone":false,"in_zone_note":"giá có đang trong entry_zone không — TRUE/FALSE + lý do","entry_direction":"SELL|BUY|NONE","entry_direction_reason":"...","entry_zone":"...","htf_alignment":"ALIGNED|CONFLICT|NEUTRAL","risk_level":"FULL|REDUCED|NONE","risk_reason":"...","invalidation":"...","next_action":"WAIT_FOR_ENTRY|WAIT_PULLBACK|NO_TRADE","priority":"HIGH|MEDIUM|LOW","summary":"...","structure_detail":"...","recent_impulse":true,"recent_impulse_note":"...","has_choch":false,"choch_level":"NONE|FORMING|CONFIRMED — mức độ CHoCH","choch_note":"mô tả chi tiết: bounce=X pip (X% impulse), BOS ngược=có/không, displacement ngược=X giá","bounce_pct":"X% — bounce hiện tại so với impulse gần nhất","fail_structure":false,"fail_structure_note":"...","exhaustion_score":"X/4","exhaustion_check":"YES_EXHAUSTION|NO_EXHAUSTION","exhaustion_reason":"...","trend_extended":false,"trend_extended_note":"...","momentum_weak":false,"momentum_weak_note":"...","micro_range":false,"micro_range_note":"...","pullback_quality":"STRONG|GOOD|ACCEPTABLE|WEAK|CHOP|MICRO_RANGE|N_A","pullback_quality_score":"X/6","pullback_quality_reason":"...","no_trade_reason":"...","zone_test_count":0,"zone_freshness":"FRESH|WEAK|DEAD","sweep_detected":false,"sweep_note":"..."}`;
+{"trend_direction":"DOWN|UP|NONE","trend_direction_reason":"...","mode":"CONTINUATION|IMPULSE_WAIT|NO_TRADE","phase":"IMPULSE|IMPULSE_PEAK|PULLBACK|READY|WEAK_PULLBACK|MICRO_RANGE|CHOP|CONTINUATION|CONTINUATION_BASE|EXHAUSTION|RANGE","in_zone":false,"in_zone_note":"giá có đang trong entry_zone không — TRUE/FALSE + lý do","entry_direction":"SELL|BUY|NONE","entry_direction_reason":"...","entry_zone":"...","htf_alignment":"ALIGNED|CONFLICT|NEUTRAL","risk_level":"FULL|REDUCED|NONE","risk_reason":"...","invalidation":"...","next_action":"WAIT_FOR_ENTRY|WAIT_PULLBACK|NO_TRADE","priority":"HIGH|MEDIUM|LOW","summary":"...","structure_detail":"...","recent_impulse":true,"recent_impulse_note":"BẮT BUỘC: Impulse từ [giá] → [giá] = [X] giá | Bounce [giá đáy] → [giá hiện tại] = [Y] giá = [Y/X×100]%","has_choch":false,"choch_level":"NONE|FORMING|CONFIRMED — mức độ CHoCH","choch_note":"mô tả chi tiết: bounce=X giá (X% impulse), BOS ngược=có/không, displacement ngược=X giá","bounce_pct":"X% — tính từ (giá_hiện_tại - đáy_thấp_nhất)/(đỉnh_cao_nhất - đáy_thấp_nhất)×100 — phải khớp recent_impulse_note","fail_structure":false,"fail_structure_note":"...","exhaustion_score":"X/4","exhaustion_check":"YES_EXHAUSTION|NO_EXHAUSTION","exhaustion_reason":"...","trend_extended":false,"trend_extended_note":"...","momentum_weak":false,"momentum_weak_note":"...","micro_range":false,"micro_range_note":"...","pullback_quality":"STRONG|GOOD|ACCEPTABLE|WEAK|CHOP|MICRO_RANGE|N_A","pullback_quality_score":"X/6","pullback_quality_reason":"...","no_trade_reason":"...","zone_test_count":0,"zone_freshness":"FRESH|WEAK|DEAD","sweep_detected":false,"sweep_note":"..."}`;
 
     const b64=img.split(',')[1];
     const mtype=img.split(';')[0].split(':')[1];
